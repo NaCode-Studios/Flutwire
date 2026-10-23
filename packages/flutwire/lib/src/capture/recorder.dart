@@ -51,6 +51,7 @@ final class FlutwireCallRecorder {
   final _BodyBuffer _req;
   final _BodyBuffer _res;
   FlutwireCall _call;
+  final Completer<void> _done = Completer<void>();
   bool _requestFinal = false;
   bool _finished = false;
   String? _contentType;
@@ -65,6 +66,9 @@ final class FlutwireCallRecorder {
 
   /// Whether the call has ended. Later reports are ignored.
   bool get isFinished => _finished;
+
+  /// Completes when the call has ended, however it ended.
+  Future<void> get done => _done.future;
 
   /// Adds a chunk of the request body.
   void requestBody(List<int> chunk) => _guard(() {
@@ -209,6 +213,7 @@ final class FlutwireCallRecorder {
       response: res?.copyWith(body: _responseBody(res.headers.contentType)),
     );
     _publish(finished: true);
+    _done.complete();
   });
 
   void _finishRequest() {

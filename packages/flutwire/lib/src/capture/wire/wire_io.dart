@@ -161,7 +161,8 @@ final class FlutwireHttpClient implements HttpClient {
     }
     if (recorder == null) return request;
     _open.add(recorder);
-    return _WireRequest(request, recorder, () => _open.remove(recorder));
+    unawaited(recorder.done.then((_) => _open.remove(recorder)));
+    return _WireRequest(request, recorder);
   }
 
   @override
@@ -231,11 +232,10 @@ final class FlutwireHttpClient implements HttpClient {
 }
 
 class _WireRequest implements HttpClientRequest {
-  _WireRequest(this._inner, this._recorder, this._finished);
+  _WireRequest(this._inner, this._recorder);
 
   final HttpClientRequest _inner;
   final FlutwireCallRecorder _recorder;
-  final void Function() _finished;
   Future<HttpClientResponse>? _closing;
   HttpClientResponse? _wrapped;
 
@@ -278,12 +278,11 @@ class _WireRequest implements HttpClientRequest {
   Future<HttpClientResponse> get done => _inner.done.then(_wrap);
 
   HttpClientResponse _wrap(HttpClientResponse response) =>
-      _wrapped ??= _WireResponse(response, _recorder, _finished);
+      _wrapped ??= _WireResponse(response, _recorder);
 
   @override
   void abort([Object? exception, StackTrace? stackTrace]) {
     _recorder.cancel();
-    _finished();
     _inner.abort(exception, stackTrace);
   }
 
@@ -314,7 +313,6 @@ class _WireRequest implements HttpClientRequest {
       return _wrap(await _inner.close());
     } catch (error, stack) {
       _recorder.fail(error, stack);
-      _finished();
       rethrow;
     }
   }
@@ -350,7 +348,7 @@ class _WireRequest implements HttpClientRequest {
 }
 
 class _WireResponse extends Stream<List<int>> implements HttpClientResponse {
-  _WireResponse(this._inner, this._recorder, this._finished) {
+  _WireResponse(this._inner, this._recorder) {
     _recorder.responseHead(
       statusCode: _inner.statusCode,
       reasonPhrase: _inner.reasonPhrase,
@@ -376,7 +374,9 @@ class _WireResponse extends Stream<List<int>> implements HttpClientResponse {
 
   final HttpClientResponse _inner;
   final FlutwireCallRecorder _recorder;
-  final void Function() _finished;
+
+  /// The body as the app reads it: the same bytes, recorded on the way past.
+  late final Stream<List<int>> _observed = _recorder.observeResponse(_inner);
 
   @override
   X509Certificate? get certificate => _inner.certificate;
@@ -407,7 +407,6 @@ class _WireResponse extends Stream<List<int>> implements HttpClientResponse {
   @override
   Future<Socket> detachSocket() {
     _recorder.complete();
-    _finished();
     return _inner.detachSocket();
   }
 
@@ -424,45 +423,12 @@ class _WireResponse extends Stream<List<int>> implements HttpClientResponse {
     Function? onError,
     void Function()? onDone,
     bool? cancelOnError,
-  }) {
-    late final StreamController<List<int>> out;
-    StreamSubscription<List<int>>? subscription;
-    out = StreamController<List<int>>(
-      onListen: () {
-        subscription = _inner.listen(
-          (chunk) {
-            _recorder.responseBody(chunk);
-            out.add(chunk);
-          },
-          onError: (Object error, StackTrace stack) {
-            _recorder.fail(error, stack);
-            _finished();
-            out.addError(error, stack);
-          },
-          onDone: () {
-            _recorder.complete();
-            _finished();
-            out.close();
-          },
-        );
-      },
-      onPause: () => subscription?.pause(),
-      onResume: () => subscription?.resume(),
-      onCancel: () {
-        // Cancelling after the last chunk is a normal ending; before it, the
-        // app walked away from the body.
-        _recorder.cancel();
-        _finished();
-        return subscription?.cancel();
-      },
-    );
-    return out.stream.listen(
-      onData,
-      onError: onError,
-      onDone: onDone,
-      cancelOnError: cancelOnError,
-    );
-  }
+  }) => _observed.listen(
+    onData,
+    onError: onError,
+    onDone: onDone,
+    cancelOnError: cancelOnError,
+  );
 }
 
 FlutwireHeaders _headersOf(HttpHeaders headers) {
