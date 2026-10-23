@@ -1,6 +1,6 @@
 # Contributing
 
-Flutwire is pre-alpha and the architecture is still moving. If you are thinking about a substantial change, open an issue first so we can agree on the shape before anyone writes code.
+Flutwire is alpha and the API can still change before `1.0`. If you are thinking about a substantial change, open an issue first so we can agree on the shape before anyone writes code.
 
 ## Layout
 

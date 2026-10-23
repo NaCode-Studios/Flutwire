@@ -9,6 +9,8 @@ board can be cross-checked against what actually shipped.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-23
+
 ### Added
 
 - A call model with headers, bodies cut at a configurable limit with the real size kept, GraphQL operation detection, and redaction of header values, query values and body fields (M3)
@@ -30,5 +32,10 @@ board can be cross-checked against what actually shipped.
 
 - Dart workspace, strict analysis and CI over the Dart code and the Android and Apple builds (M1)
 - The brand kit, the README and a contrast test that keeps every text and status colour at 4.5 to 1 on its surface (M2)
+- A README and a changelog in each of the four packages, so the page of each one says what it records and when it is needed (M32)
+- A release workflow that runs the same jobs as every pull request against a tag and creates the GitHub Release from this changelog (M32)
+- The screens of the inspector work on an injected session instead of reading a global, which lets them be tested against a fake (M33)
+- Analysis rules for open subscriptions and sinks, dropped futures, catch clauses that name no type, positional booleans and dynamic calls (M33)
 
-[Unreleased]: https://github.com/NaCode-Studios/Flutwire/commits/main
+[Unreleased]: https://github.com/NaCode-Studios/Flutwire/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/NaCode-Studios/Flutwire/releases/tag/v0.1.0
