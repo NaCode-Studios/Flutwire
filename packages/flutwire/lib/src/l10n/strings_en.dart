@@ -134,6 +134,9 @@ class FlutwireStringsEn extends FlutwireStrings {
   String get emptyFiltered => 'No call matches';
 
   @override
+  String get pickACall => 'Pick a call to read it';
+
+  @override
   String get recording => 'Recording';
 
   @override

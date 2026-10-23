@@ -151,6 +151,9 @@ abstract class FlutwireStrings {
   /// What a list with filters but no match says.
   String get emptyFiltered;
 
+  /// What the detail pane says while no call is open.
+  String get pickACall;
+
   /// The badge of a recording inspector.
   String get recording;
 

@@ -162,7 +162,7 @@ class _InspectorPageState extends State<InspectorPage> {
                   child: _openId == null
                       ? Center(
                           child: Text(
-                            context.strings.tabOverview,
+                            context.strings.pickACall,
                             style: t.body(color: t.faint),
                           ),
                         )

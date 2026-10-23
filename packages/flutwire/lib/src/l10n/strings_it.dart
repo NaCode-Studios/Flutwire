@@ -137,6 +137,9 @@ class FlutwireStringsIt extends FlutwireStrings {
   String get emptyFiltered => 'Nessuna chiamata corrisponde';
 
   @override
+  String get pickACall => 'Scegli una chiamata per leggerla';
+
+  @override
   String get recording => 'In registrazione';
 
   @override
