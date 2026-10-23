@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+    # `ready_for_review` is not in the default set. Without it, taking a pull
+    # request out of draft would never run the Apple job that draft skips.
+    types: [opened, synchronize, reopened, ready_for_review]
   # release.yaml calls this rather than restating the job list, so the gate a
   # tag has to pass is the same one every pull request passes, by construction.
   workflow_call:
