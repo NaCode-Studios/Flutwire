@@ -35,6 +35,7 @@ board can be cross-checked against what actually shipped.
 - The brand kit, the README and a contrast test that keeps every text and status colour at 4.5 to 1 on its surface (M2)
 - A README and a changelog in each of the four packages, so the page of each one says what it records and when it is needed (M32)
 - A release workflow that runs the same jobs as every pull request against a tag and creates the GitHub Release from this changelog (M32)
+- A test that measures the JSON tree on a device, in profile mode, with a 200 KB response in two shapes: opening it, scrolling, collapsing and expanding it, and searching inside it (M11)
 - The screens of the inspector work on an injected session instead of reading a global, which lets them be tested against a fake (M33)
 - Analysis rules for open subscriptions and sinks, dropped futures, catch clauses that name no type, positional booleans and dynamic calls (M33)
 
