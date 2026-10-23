@@ -44,11 +44,8 @@ abstract class FlutwireStrings {
 
   // General
 
-  /// The plain part of the inspector's headline.
+  /// The inspector's headline.
   String get inspectorTitle;
-
-  /// The accented word that ends the headline, set in italic serif.
-  String get inspectorTitleAccent;
 
   /// Dismisses a screen.
   String get close;

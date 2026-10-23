@@ -14,9 +14,10 @@ import '../theme/tokens.dart';
 import '../widgets/call_tile.dart';
 import '../widgets/chip.dart';
 import '../widgets/empty_state.dart';
-import '../widgets/gradient_rule.dart';
+import '../widgets/mark.dart';
 import '../widgets/metric_strip.dart';
 import '../widgets/pulse.dart';
+import '../widgets/wire_rule.dart';
 import 'controller.dart';
 
 /// The inspector: the history as a list, with search, filters, order and a
@@ -266,17 +267,23 @@ class _InspectorPageState extends State<InspectorPage> {
     final s = context.strings;
     return AppBar(
       automaticallyImplyLeading: !wide,
-      title: Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(text: '${s.inspectorTitle} ', style: t.display(size: 21)),
-            TextSpan(text: s.inspectorTitleAccent, style: t.accent(size: 21)),
-          ],
-        ),
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const FlutwireMark(size: 20),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              s.inspectorTitle,
+              style: t.display(size: 20),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
       bottom: const PreferredSize(
-        preferredSize: Size.fromHeight(2),
-        child: GradientRule(),
+        preferredSize: Size.fromHeight(WireRule.height),
+        child: WireRule(),
       ),
       actions: [
         IconButton(
@@ -426,7 +433,7 @@ class _RecordingRow extends StatelessWidget {
     final t = context.fw;
     final s = context.strings;
     final paused = Flutwire.isPaused;
-    final dot = paused ? t.warning : t.ok;
+    final dot = paused ? t.warning : FlutwireTokens.copper;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 8, 0),
       child: Row(
@@ -554,7 +561,7 @@ class _FilterBar extends StatelessWidget {
           gap,
           state(StateFilter.failed, s.filterFailed, t.error),
           gap,
-          state(StateFilter.running, s.filterRunning, t.violetTone),
+          state(StateFilter.running, s.filterRunning, t.copperTone),
           gap,
           state(StateFilter.pinned, s.filterPinned, t.warning),
           if (controller.hasFilters) ...[
@@ -562,7 +569,7 @@ class _FilterBar extends StatelessWidget {
             TextButton(
               onPressed: controller.clearFilters,
               style: TextButton.styleFrom(
-                foregroundColor: FlutwireTokens.indigo,
+                foregroundColor: t.copperTone,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
               ),
               child: Text(s.clearFilters),

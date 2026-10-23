@@ -4,10 +4,11 @@ import '../../model/call.dart';
 
 /// The colours, type and shapes of the inspector.
 ///
-/// They follow the NaCode Studios identity: ink surfaces on dark and a quiet
-/// wash on light, the indigo to violet to pink gradient used once per surface
-/// and never under text, and a status family of its own so that a failing call
-/// never reads as branding.
+/// Flutwire looks like a wire at work: warm graphite on dark and warm paper on
+/// light, one accent, copper, which is the colour of the node at the end of the
+/// logo's wire, and a status family of its own so that a failing call never
+/// reads as branding. Corners are tight, rules are hairlines, and every number
+/// is set in the mono face so that columns of them line up.
 @immutable
 final class FlutwireTokens extends ThemeExtension<FlutwireTokens> {
   /// Creates a set of tokens. Most code uses [dark] or [light].
@@ -36,72 +37,79 @@ final class FlutwireTokens extends ThemeExtension<FlutwireTokens> {
     required this.currentMatch,
   });
 
-  /// The dark look, which is the identity's home.
+  /// The dark look: graphite with warm whites.
   static const FlutwireTokens dark = FlutwireTokens(
     brightness: Brightness.dark,
-    ground: Color(0xFF07070E),
-    surface: Color(0xFF0D0D16),
-    raised: Color(0xFF181832),
-    line: Color(0xFF1E1E3A),
-    lineStrong: Color(0xFF2C2C52),
-    ink: Color(0xFFF4F3FA),
-    text: Color(0xFFD2D0E6),
-    muted: Color(0xFFA9A6C4),
-    faint: Color(0xFF77748F),
-    ok: Color(0xFF2DD4A0),
-    warning: Color(0xFFF5B544),
-    error: Color(0xFFF0524F),
-    info: Color(0xFF5BA8F5),
-    syntaxKey: Color(0xFFA5A8FF),
-    syntaxString: Color(0xFFE9C7A0),
-    syntaxNumber: Color(0xFFF2A1C9),
-    syntaxKeyword: Color(0xFFC4A9FF),
-    syntaxPunctuation: Color(0xFF77748F),
+    ground: Color(0xFF0E0F11),
+    surface: Color(0xFF141518),
+    raised: Color(0xFF1B1D21),
+    line: Color(0xFF25272C),
+    lineStrong: Color(0xFF343740),
+    ink: Color(0xFFF4F3EF),
+    text: Color(0xFFCFCDC6),
+    muted: Color(0xFF9C9A93),
+    faint: Color(0xFF7B7A75),
+    ok: Color(0xFF3DD6A0),
+    warning: Color(0xFFF2C94C),
+    error: Color(0xFFF25C6B),
+    info: Color(0xFF5AA9FF),
+    syntaxKey: Color(0xFFF4A06A),
+    syntaxString: Color(0xFFE9D8A6),
+    syntaxNumber: Color(0xFF7FD6E4),
+    syntaxKeyword: Color(0xFFF29AAE),
+    syntaxPunctuation: Color(0xFF6D6C67),
     syntaxTag: Color(0xFF8FB8FF),
-    match: Color(0x66F5B544),
-    currentMatch: Color(0xFFF5B544),
+    match: Color(0x66F2C94C),
+    currentMatch: Color(0xFFF2C94C),
   );
 
-  /// The light look.
+  /// The light look: warm paper with ink.
   static const FlutwireTokens light = FlutwireTokens(
     brightness: Brightness.light,
-    ground: Color(0xFFF7F6FB),
+    ground: Color(0xFFF6F5F1),
     surface: Color(0xFFFFFFFF),
     raised: Color(0xFFFFFFFF),
-    line: Color(0xFFE4E3EC),
-    lineStrong: Color(0xFFD3D1E0),
-    ink: Color(0xFF12121A),
-    text: Color(0xFF2A2740),
-    muted: Color(0xFF6B6A80),
-    faint: Color(0xFF9C99AE),
-    ok: Color(0xFF0E9F74),
-    warning: Color(0xFFB7791F),
-    error: Color(0xFFD63A37),
-    info: Color(0xFF2F7FD0),
-    syntaxKey: Color(0xFF4F46E5),
-    syntaxString: Color(0xFF9A5B13),
-    syntaxNumber: Color(0xFFBE185D),
-    syntaxKeyword: Color(0xFF7C3AED),
-    syntaxPunctuation: Color(0xFF9C99AE),
+    line: Color(0xFFE4E2DB),
+    lineStrong: Color(0xFFD2CFC6),
+    ink: Color(0xFF17181B),
+    text: Color(0xFF33343A),
+    muted: Color(0xFF62636A),
+    faint: Color(0xFF8A8B90),
+    ok: Color(0xFF0B8A64),
+    warning: Color(0xFF946B00),
+    error: Color(0xFFD13A4A),
+    info: Color(0xFF2670BF),
+    syntaxKey: Color(0xFFB4531A),
+    syntaxString: Color(0xFF7A5A12),
+    syntaxNumber: Color(0xFF0B7285),
+    syntaxKeyword: Color(0xFFB3304A),
+    syntaxPunctuation: Color(0xFF9A9A9F),
     syntaxTag: Color(0xFF1D5FBF),
-    match: Color(0x55F5B544),
-    currentMatch: Color(0xFFF5B544),
+    match: Color(0x55F2C94C),
+    currentMatch: Color(0xFFF2C94C),
   );
 
-  /// The brand indigo.
-  static const Color indigo = Color(0xFF6366F1);
+  /// Copper, the one brand colour. It fills the node of the logo and every
+  /// filled control. Text on it is [onCopper].
+  static const Color copper = Color(0xFFF0803A);
 
-  /// The brand violet.
-  static const Color violet = Color(0xFF8B5CF6);
+  /// Text and icons on a [copper] fill.
+  static const Color onCopper = Color(0xFF1A0F08);
 
-  /// The brand pink.
-  static const Color pink = Color(0xFFEC4899);
+  /// The radius of tags and small marks.
+  static const double radiusXs = 5;
 
-  /// The brand gradient. It appears once on a surface, as a rule, a small mark
-  /// or a progress bar, and never behind text.
-  static const LinearGradient gradient = LinearGradient(
-    colors: [indigo, violet, pink],
-  );
+  /// The radius of chips and badges.
+  static const double radiusSm = 8;
+
+  /// The radius of fields, buttons and rows.
+  static const double radiusMd = 12;
+
+  /// The radius of cards.
+  static const double radiusLg = 14;
+
+  /// The radius of the top corners of a sheet.
+  static const double radiusXl = 20;
 
   /// Whether this is the dark look.
   final Brightness brightness;
@@ -172,11 +180,14 @@ final class FlutwireTokens extends ThemeExtension<FlutwireTokens> {
   /// Whether this is the dark look.
   bool get isDark => brightness == Brightness.dark;
 
+  /// Copper as text, borders and icons, readable on this look.
+  Color get copperTone => isDark ? copper : const Color(0xFFB4531A);
+
   /// The colour that stands for how [call] went.
   Color statusColor(FlutwireCall call) {
     switch (call.state) {
       case FlutwireCallState.pending:
-        return violetTone;
+        return copperTone;
       case FlutwireCallState.failed:
         return error;
       case FlutwireCallState.cancelled:
@@ -197,17 +208,11 @@ final class FlutwireTokens extends ThemeExtension<FlutwireTokens> {
     FlutwireStatusClass.none => faint,
   };
 
-  /// The violet of a call that is still running, readable on this look.
-  Color get violetTone => isDark ? const Color(0xFFA78BFA) : violet;
-
-  /// The brand indigo as text and borders, readable on this look.
-  Color get indigoTone => isDark ? const Color(0xFFA5A8FF) : indigo;
-
-  /// The colour of the tag for an HTTP [method].
+  /// The colour of the tag for an HTTP [method]: reads are blue, writes are
+  /// copper, a delete is red.
   Color methodColor(String method) => switch (method.toUpperCase()) {
-    'GET' => info,
-    'POST' => violetTone,
-    'PUT' || 'PATCH' => warning,
+    'GET' || 'HEAD' => info,
+    'POST' || 'PUT' || 'PATCH' || 'CALL' => copperTone,
     'DELETE' => error,
     _ => muted,
   };
@@ -215,7 +220,7 @@ final class FlutwireTokens extends ThemeExtension<FlutwireTokens> {
   /// A [color] at a strength that works as the fill behind its own text.
   Color tint(Color color) => color.withValues(alpha: isDark ? 0.16 : 0.12);
 
-  /// Headlines: Bricolage Grotesque, semibold.
+  /// Headlines: DM Sans at its display optical size, semibold.
   TextStyle display({double size = 22, Color? color}) => TextStyle(
     fontFamily: 'FlutwireDisplay',
     package: 'flutwire',
@@ -226,17 +231,7 @@ final class FlutwireTokens extends ThemeExtension<FlutwireTokens> {
     color: color ?? ink,
   );
 
-  /// The one accented word of a headline: Instrument Serif, italic.
-  TextStyle accent({double size = 22, Color? color}) => TextStyle(
-    fontFamily: 'FlutwireSerif',
-    package: 'flutwire',
-    fontStyle: FontStyle.italic,
-    fontSize: size * 1.08,
-    height: 1.1,
-    color: color ?? ink,
-  );
-
-  /// Running text: Inter.
+  /// Running text: DM Sans.
   TextStyle body({
     double size = 14,
     FontWeight weight = FontWeight.w400,
@@ -250,7 +245,7 @@ final class FlutwireTokens extends ThemeExtension<FlutwireTokens> {
     color: color ?? text,
   );
 
-  /// Anything a machine produced: JetBrains Mono.
+  /// Anything a machine produced, and every number: DM Mono.
   TextStyle mono({
     double size = 12.5,
     FontWeight weight = FontWeight.w400,
@@ -263,7 +258,6 @@ final class FlutwireTokens extends ThemeExtension<FlutwireTokens> {
     fontSize: size,
     height: height,
     color: color ?? text,
-    fontFeatures: const [FontFeature.tabularFigures()],
   );
 
   /// A small label in capitals with wide tracking, set in the mono face.

@@ -75,7 +75,12 @@ class _Metric extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               value,
-              style: t.display(size: 19, color: color ?? t.ink),
+              style: t.mono(
+                size: 18,
+                weight: FontWeight.w600,
+                color: color ?? t.ink,
+                height: 1.15,
+              ),
             ),
           ),
         ],

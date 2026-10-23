@@ -26,9 +26,9 @@ class ExampleApp extends StatelessWidget {
       title: 'Flutwire example',
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.system,
-      theme: ThemeData(colorSchemeSeed: const Color(0xFF6366F1)),
+      theme: ThemeData(colorSchemeSeed: const Color(0xFF546E7A)),
       darkTheme: ThemeData(
-        colorSchemeSeed: const Color(0xFF6366F1),
+        colorSchemeSeed: const Color(0xFF546E7A),
         brightness: Brightness.dark,
       ),
       home: const Home(),

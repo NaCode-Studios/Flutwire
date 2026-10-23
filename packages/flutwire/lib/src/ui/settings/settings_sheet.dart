@@ -35,7 +35,9 @@ class _Settings extends StatelessWidget {
       color: t.surface,
       clipBehavior: Clip.antiAlias,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(FlutwireTokens.radiusXl),
+        ),
       ),
       child: SafeArea(
         child: SingleChildScrollView(
@@ -192,7 +194,7 @@ class _ThemeOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.fw;
-    final tone = t.indigoTone;
+    final tone = t.copperTone;
     return Semantics(
       button: true,
       selected: selected,
@@ -248,7 +250,7 @@ class _Card extends StatelessWidget {
         color: t.ground,
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(FlutwireTokens.radiusLg),
           side: BorderSide(color: t.line),
         ),
         child: Padding(
@@ -325,14 +327,7 @@ class _NotificationCard extends StatelessWidget {
               ),
               if (button != null) ...[
                 const SizedBox(height: 10),
-                FilledButton(
-                  onPressed: onPressed,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: FlutwireTokens.indigo,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: Text(button),
-                ),
+                FilledButton(onPressed: onPressed, child: Text(button)),
               ],
             ],
           ),

@@ -338,7 +338,7 @@ class FlutwirePlugin :
         private const val REQUEST_OPEN = 1
         private const val REQUEST_CLEAR = 2
         private const val REQUEST_PERMISSION = 8731
-        private const val DEFAULT_COLOR = 0xFF6366F1.toInt()
+        private const val DEFAULT_COLOR = 0xFFF0803A.toInt()
 
         const val ACTION_OPEN = "it.nacodestudios.flutwire.OPEN"
         const val ACTION_CLEAR = "it.nacodestudios.flutwire.CLEAR"

@@ -122,7 +122,7 @@ class _Group extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: t.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: t.line),
       ),
       child: Column(
@@ -152,7 +152,7 @@ class _Row extends StatelessWidget {
     return InkWell(
       onTap: () => copyText(context, fact.value),
       borderRadius: last
-          ? const BorderRadius.vertical(bottom: Radius.circular(16))
+          ? const BorderRadius.vertical(bottom: Radius.circular(14))
           : null,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
@@ -188,7 +188,7 @@ class _ErrorCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: t.tint(t.error),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: t.error.withValues(alpha: 0.4)),
       ),
       child: Column(

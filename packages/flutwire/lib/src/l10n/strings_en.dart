@@ -28,10 +28,7 @@ class FlutwireStringsEn extends FlutwireStrings {
   }
 
   @override
-  String get inspectorTitle => 'Network';
-
-  @override
-  String get inspectorTitleAccent => 'activity';
+  String get inspectorTitle => 'Network activity';
 
   @override
   String get close => 'Close';

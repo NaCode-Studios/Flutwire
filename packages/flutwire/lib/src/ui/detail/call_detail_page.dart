@@ -10,10 +10,10 @@ import '../../model/headers.dart';
 import '../../util/format.dart';
 import '../actions.dart';
 import '../scope.dart';
-import '../widgets/gradient_rule.dart';
 import '../widgets/method_chip.dart';
 import '../widgets/segmented.dart';
 import '../widgets/status_pill.dart';
+import '../widgets/wire_rule.dart';
 import 'body_pane.dart';
 import 'cookies_view.dart';
 import 'headers_view.dart';
@@ -113,8 +113,8 @@ class _CallDetailPageState extends State<CallDetailPage> {
           overflow: TextOverflow.ellipsis,
         ),
         bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(2),
-          child: GradientRule(),
+          preferredSize: Size.fromHeight(WireRule.height),
+          child: WireRule(),
         ),
         actions: call == null ? null : _actions(context, call),
       ),
@@ -317,8 +317,21 @@ class _Header extends StatelessWidget {
                       style: t.mono(size: 12, color: t.muted),
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      '↑ ${formatBytes(call.requestSize)}  ↓ ${formatBytes(call.responseSize)}',
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '↑ ',
+                            style: t.body(size: 12, color: t.faint),
+                          ),
+                          TextSpan(text: formatBytes(call.requestSize)),
+                          TextSpan(
+                            text: '   ↓ ',
+                            style: t.body(size: 12, color: t.faint),
+                          ),
+                          TextSpan(text: formatBytes(call.responseSize)),
+                        ],
+                      ),
                       style: t.mono(size: 12, color: t.faint),
                     ),
                   ],

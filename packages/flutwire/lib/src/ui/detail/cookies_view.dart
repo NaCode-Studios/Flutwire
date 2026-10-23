@@ -30,11 +30,11 @@ class CookiesView extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 10),
           decoration: BoxDecoration(
             color: t.surface,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: t.line),
           ),
           child: InkWell(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
             onTap: () => copyText(context, '${cookie.name}=${cookie.value}'),
             child: Padding(
               padding: const EdgeInsets.all(14),
