@@ -31,10 +31,7 @@ class FlutwireStringsIt extends FlutwireStrings {
   }
 
   @override
-  String get inspectorTitle => 'Attività';
-
-  @override
-  String get inspectorTitleAccent => 'di rete';
+  String get inspectorTitle => 'Attività di rete';
 
   @override
   String get close => 'Chiudi';
@@ -70,7 +67,7 @@ class FlutwireStringsIt extends FlutwireStrings {
   String get unpin => 'Sblocca';
 
   @override
-  String get searchHint => 'Cerca percorso, host, stato o corpo';
+  String get searchHint => 'Cerca URL, stato, header o corpo';
 
   @override
   String get filters => 'Filtri';
@@ -135,6 +132,9 @@ class FlutwireStringsIt extends FlutwireStrings {
 
   @override
   String get emptyFiltered => 'Nessuna chiamata corrisponde';
+
+  @override
+  String get searchingBodies => 'Cerco nei corpi';
 
   @override
   String get pickACall => 'Scegli una chiamata per leggerla';
@@ -300,6 +300,18 @@ class FlutwireStringsIt extends FlutwireStrings {
   String get openSystemSettings => 'Apri le impostazioni di sistema';
 
   @override
+  String get appearanceSetting => 'Aspetto';
+
+  @override
+  String get themeSystem => 'Sistema';
+
+  @override
+  String get themeLight => 'Chiaro';
+
+  @override
+  String get themeDark => 'Scuro';
+
+  @override
   String get retentionSetting => 'Conserva la cronologia per';
 
   @override
@@ -426,4 +438,30 @@ class FlutwireStringsIt extends FlutwireStrings {
 
   @override
   String get showMore => 'Mostra di più';
+
+  // Body viewer additions
+
+  @override
+  String get viewDecoded => 'Decodificato';
+
+  @override
+  String get showLess => 'Mostra meno';
+
+  @override
+  String matchCounterCapped(int index, int total) {
+    final grouped = '$total'.replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (_) => '.',
+    );
+    return '$index di $grouped+';
+  }
+
+  @override
+  String get saveFormatted => 'Salva formattato';
+
+  @override
+  String get saveFailed => 'Impossibile condividere questo file';
+
+  @override
+  String get moreActions => 'Altre azioni';
 }

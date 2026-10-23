@@ -41,10 +41,10 @@ class EmptyState extends StatelessWidget {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: t.surface,
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: t.line),
               ),
-              child: FlutwireMark(size: 34, color: t.faint),
+              child: FlutwireMark(size: 36, color: t.faint),
             ),
             const SizedBox(height: 20),
             Text(

@@ -2,6 +2,10 @@ import 'package:flutter/foundation.dart';
 
 import '../../model/call.dart';
 
+/// Reads a call back with its bodies, which a history kept on disk does not
+/// hold in memory.
+typedef CallLoader = Future<FlutwireCall?> Function(int id);
+
 /// How the list is ordered.
 enum InspectorSort {
   /// The newest call first.
@@ -49,13 +53,17 @@ const String other = 'OTHER';
 /// The controller follows the history it is given and keeps the narrowed list
 /// ready, so a screen only has to rebuild when something changes.
 class InspectorController extends ChangeNotifier {
-  /// Creates a controller that follows [source].
-  InspectorController(this.source) {
+  /// Creates a controller that follows [source]. With a [loadCall], the search
+  /// also looks inside request and response bodies.
+  InspectorController(this.source, {this.loadCall}) {
     source.addListener(_sourceChanged);
   }
 
   /// The whole history, newest first.
   final ValueListenable<List<FlutwireCall>> source;
+
+  /// How a call is read back with its bodies, or null to search without them.
+  final CallLoader? loadCall;
 
   String _query = '';
   final Set<String> _methods = {};
@@ -64,6 +72,13 @@ class InspectorController extends ChangeNotifier {
   final Set<int> _selection = {};
   List<FlutwireCall>? _visible;
   bool _disposed = false;
+
+  // The body search runs beside the list: calls whose bodies hold the text are
+  // added to it as they are found, so a long history never blocks the screen.
+  final Set<int> _bodyMatches = {};
+  final Set<int> _scanned = {};
+  int _searchToken = 0;
+  bool _scanning = false;
 
   /// The text typed in the search field.
   String get query => _query;
@@ -83,6 +98,9 @@ class InspectorController extends ChangeNotifier {
   /// Whether a selection is in progress.
   bool get isSelecting => _selection.isNotEmpty;
 
+  /// Whether the bodies are still being read for the text in the search field.
+  bool get isSearchingBodies => _scanning;
+
   /// Whether anything narrows the list.
   bool get hasFilters =>
       _query.trim().isNotEmpty || _methods.isNotEmpty || _states.isNotEmpty;
@@ -97,6 +115,7 @@ class InspectorController extends ChangeNotifier {
   void setQuery(String value) {
     if (value == _query) return;
     _query = value;
+    _restartBodySearch();
     _changed();
   }
 
@@ -122,6 +141,7 @@ class InspectorController extends ChangeNotifier {
   /// Removes the search and every filter.
   void clearFilters() {
     _query = '';
+    _restartBodySearch();
     _methods.clear();
     _states.clear();
     _changed();
@@ -158,7 +178,72 @@ class InspectorController extends ChangeNotifier {
     // A call that is gone cannot stay selected.
     final ids = {for (final c in all) c.id};
     _selection.removeWhere((id) => !ids.contains(id));
+    _bodyMatches.removeWhere((id) => !ids.contains(id));
+    _scanned.removeWhere((id) => !ids.contains(id));
+    // Calls that arrived or finished since the last pass still have to be read.
+    _scanBodies(_searchToken);
     _changed();
+  }
+
+  /// The text a body search looks for, or null when the query is not one: a
+  /// few digits are a status code, and one character matches nearly anything.
+  String? get _bodyQuery {
+    final q = _query.trim().toLowerCase();
+    if (loadCall == null || q.length < 2) return null;
+    if (q.length <= 3 && int.tryParse(q) != null) return null;
+    return q;
+  }
+
+  void _restartBodySearch() {
+    _searchToken++;
+    _bodyMatches.clear();
+    _scanned.clear();
+    _scanning = false;
+    _scanBodies(_searchToken);
+  }
+
+  Future<void> _scanBodies(int token) async {
+    final load = loadCall;
+    final q = _bodyQuery;
+    if (load == null || q == null || _scanning || _disposed) return;
+    _scanning = true;
+    notifyListeners();
+    var read = 0;
+    try {
+      while (token == _searchToken && !_disposed) {
+        final next = [
+          for (final c in all)
+            if (!c.isPending &&
+                !_scanned.contains(c.id) &&
+                !c.searchText.contains(q))
+              c.id,
+        ];
+        if (next.isEmpty) break;
+        for (final id in next) {
+          if (token != _searchToken || _disposed) return;
+          _scanned.add(id);
+          final full = await load(id);
+          if (full != null && _bodyHolds(full, q) && token == _searchToken) {
+            _bodyMatches.add(id);
+            _changed();
+          }
+          // Let the screen draw between batches of reads.
+          if (++read % 6 == 0) await Future<void>.delayed(Duration.zero);
+        }
+      }
+    } finally {
+      if (token == _searchToken) {
+        _scanning = false;
+        if (!_disposed) notifyListeners();
+      }
+    }
+  }
+
+  static bool _bodyHolds(FlutwireCall call, String q) {
+    final request = call.request.body.text;
+    if (request != null && request.toLowerCase().contains(q)) return true;
+    final response = call.response?.body.text;
+    return response != null && response.toLowerCase().contains(q);
   }
 
   void _changed() {
@@ -172,7 +257,8 @@ class InspectorController extends ChangeNotifier {
     final digits = q.isNotEmpty && q.length <= 3 && int.tryParse(q) != null;
     final out = <FlutwireCall>[
       for (final call in all)
-        if (_matchesQuery(call, q, digits) &&
+        if ((_matchesQuery(call, q, digits) ||
+                _bodyMatches.contains(call.id)) &&
             _matchesMethod(call) &&
             _matchesState(call))
           call,

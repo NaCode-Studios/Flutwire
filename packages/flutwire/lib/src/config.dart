@@ -7,6 +7,19 @@ import 'capture/redaction.dart';
 import 'model/body.dart';
 import 'model/call.dart';
 
+/// When a floating button, which opens the inspector, shows above the app.
+enum FlutwireButtonMode {
+  /// Only where there is no notification to open it from: the web, Windows and
+  /// Linux, or when the notification is turned off in the configuration.
+  auto,
+
+  /// Always.
+  always,
+
+  /// Never.
+  never,
+}
+
 /// How long recorded calls are kept.
 enum FlutwireRetention {
   /// One hour.
@@ -137,6 +150,7 @@ final class FlutwireConfig {
     this.shortcut = true,
     this.locale,
     this.themeMode = ThemeMode.system,
+    this.floatingButton = FlutwireButtonMode.auto,
   });
 
   /// Whether recording is on. Null means on in debug builds and off in
@@ -197,7 +211,13 @@ final class FlutwireConfig {
   /// device.
   final Locale? locale;
 
-  /// Whether the inspector is dark, light, or follows the device.
+  /// When a floating button shows above the app. It needs the app to hand
+  /// `Flutwire.builder` to its `MaterialApp` or `WidgetsApp`.
+  final FlutwireButtonMode floatingButton;
+
+  /// The look the inspector starts with: dark, light, or the device's. Whoever
+  /// opens the inspector's settings can pick another, and that pick is
+  /// remembered and wins over this.
   final ThemeMode themeMode;
 
   /// Whether this configuration records in the current build mode.

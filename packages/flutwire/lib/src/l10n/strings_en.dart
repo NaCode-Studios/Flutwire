@@ -28,10 +28,7 @@ class FlutwireStringsEn extends FlutwireStrings {
   }
 
   @override
-  String get inspectorTitle => 'Network';
-
-  @override
-  String get inspectorTitleAccent => 'activity';
+  String get inspectorTitle => 'Network activity';
 
   @override
   String get close => 'Close';
@@ -67,7 +64,7 @@ class FlutwireStringsEn extends FlutwireStrings {
   String get unpin => 'Unpin';
 
   @override
-  String get searchHint => 'Search path, host, status or body';
+  String get searchHint => 'Search URL, status, headers or body';
 
   @override
   String get filters => 'Filters';
@@ -132,6 +129,9 @@ class FlutwireStringsEn extends FlutwireStrings {
 
   @override
   String get emptyFiltered => 'No call matches';
+
+  @override
+  String get searchingBodies => 'Searching the bodies';
 
   @override
   String get pickACall => 'Pick a call to read it';
@@ -295,6 +295,18 @@ class FlutwireStringsEn extends FlutwireStrings {
   String get openSystemSettings => 'Open system settings';
 
   @override
+  String get appearanceSetting => 'Appearance';
+
+  @override
+  String get themeSystem => 'System';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
   String get retentionSetting => 'Keep history for';
 
   @override
@@ -421,4 +433,30 @@ class FlutwireStringsEn extends FlutwireStrings {
 
   @override
   String get showMore => 'Show more';
+
+  // Body viewer additions
+
+  @override
+  String get viewDecoded => 'Decoded';
+
+  @override
+  String get showLess => 'Show less';
+
+  @override
+  String matchCounterCapped(int index, int total) {
+    final grouped = '$total'.replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (_) => ',',
+    );
+    return '$index of $grouped+';
+  }
+
+  @override
+  String get saveFormatted => 'Save formatted';
+
+  @override
+  String get saveFailed => 'Could not share this file';
+
+  @override
+  String get moreActions => 'More actions';
 }

@@ -7,10 +7,10 @@ import 'tokens.dart';
 ThemeData flutwireTheme(FlutwireTokens t) {
   final scheme = ColorScheme(
     brightness: t.brightness,
-    primary: FlutwireTokens.indigo,
-    onPrimary: Colors.white,
-    secondary: FlutwireTokens.violet,
-    onSecondary: Colors.white,
+    primary: FlutwireTokens.copper,
+    onPrimary: FlutwireTokens.onCopper,
+    secondary: t.copperTone,
+    onSecondary: t.isDark ? FlutwireTokens.onCopper : Colors.white,
     error: t.error,
     onError: Colors.white,
     surface: t.surface,
@@ -56,7 +56,9 @@ ThemeData flutwireTheme(FlutwireTokens t) {
       backgroundColor: t.surface,
       surfaceTintColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(FlutwireTokens.radiusXl),
+        ),
       ),
       showDragHandle: true,
       dragHandleColor: t.lineStrong,
@@ -65,7 +67,7 @@ ThemeData flutwireTheme(FlutwireTokens t) {
       backgroundColor: t.surface,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(FlutwireTokens.radiusLg + 2),
         side: BorderSide(color: t.line),
       ),
       titleTextStyle: t.display(size: 18),
@@ -75,7 +77,7 @@ ThemeData flutwireTheme(FlutwireTokens t) {
       color: t.raised,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(FlutwireTokens.radiusMd),
         side: BorderSide(color: t.lineStrong),
       ),
       textStyle: t.body(color: t.ink),
@@ -85,8 +87,27 @@ ThemeData flutwireTheme(FlutwireTokens t) {
       contentTextStyle: t.body(color: t.ink),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(FlutwireTokens.radiusMd),
         side: BorderSide(color: t.lineStrong),
+      ),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: FlutwireTokens.copper,
+        foregroundColor: FlutwireTokens.onCopper,
+        textStyle: t.body(size: 14, weight: FontWeight.w600),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(FlutwireTokens.radiusMd),
+        ),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: t.copperTone,
+        textStyle: t.body(size: 14, weight: FontWeight.w600),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(FlutwireTokens.radiusSm),
+        ),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
@@ -96,26 +117,27 @@ ThemeData flutwireTheme(FlutwireTokens t) {
       hintStyle: t.body(color: t.faint),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(FlutwireTokens.radiusMd),
         borderSide: BorderSide(color: t.line),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(FlutwireTokens.radiusMd),
         borderSide: BorderSide(color: t.line),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: FlutwireTokens.indigo, width: 1.5),
+        borderRadius: BorderRadius.circular(FlutwireTokens.radiusMd),
+        borderSide: BorderSide(color: t.copperTone, width: 1.5),
       ),
     ),
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith(
-        (states) =>
-            states.contains(WidgetState.selected) ? Colors.white : t.muted,
+        (states) => states.contains(WidgetState.selected)
+            ? FlutwireTokens.onCopper
+            : t.muted,
       ),
       trackColor: WidgetStateProperty.resolveWith(
         (states) => states.contains(WidgetState.selected)
-            ? FlutwireTokens.indigo
+            ? FlutwireTokens.copper
             : t.raised,
       ),
       trackOutlineColor: WidgetStateProperty.resolveWith(

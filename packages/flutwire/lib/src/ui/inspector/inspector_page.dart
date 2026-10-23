@@ -14,9 +14,10 @@ import '../theme/tokens.dart';
 import '../widgets/call_tile.dart';
 import '../widgets/chip.dart';
 import '../widgets/empty_state.dart';
-import '../widgets/gradient_rule.dart';
+import '../widgets/mark.dart';
 import '../widgets/metric_strip.dart';
 import '../widgets/pulse.dart';
+import '../widgets/wire_rule.dart';
 import 'controller.dart';
 
 /// The inspector: the history as a list, with search, filters, order and a
@@ -32,9 +33,11 @@ class InspectorPage extends StatefulWidget {
 class _InspectorPageState extends State<InspectorPage> {
   late final InspectorController _controller = InspectorController(
     Flutwire.calls,
+    loadCall: (id) async => Flutwire.store?.load(id),
   );
   final TextEditingController _search = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
+  final ScrollController _scroll = ScrollController();
   Timer? _clock;
   Timer? _debounce;
   bool _searching = false;
@@ -57,12 +60,23 @@ class _InspectorPageState extends State<InspectorPage> {
     _controller.dispose();
     _search.dispose();
     _searchFocus.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
   void _toggleSearch() {
     setState(() => _searching = !_searching);
     if (_searching) {
+      // The field sits at the top of the list.
+      if (_scroll.hasClients && _scroll.offset > 0) {
+        unawaited(
+          _scroll.animateTo(
+            0,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+          ),
+        );
+      }
       _searchFocus.requestFocus();
     } else {
       _search.clear();
@@ -187,74 +201,124 @@ class _InspectorPageState extends State<InspectorPage> {
     final selecting = _controller.isSelecting;
     return Scaffold(
       appBar: selecting ? _selectionBar(context) : _normalBar(context, wide),
-      body: Column(
-        children: [
-          _RecordingRow(sort: _controller.sort, onSort: _controller.setSort),
-          MetricStrip(calls: visible),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
-            child: _searching
-                ? Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                    child: TextField(
-                      controller: _search,
-                      focusNode: _searchFocus,
-                      textInputAction: TextInputAction.search,
-                      onChanged: (value) {
-                        _debounce?.cancel();
-                        _debounce = Timer(
-                          const Duration(milliseconds: 120),
-                          () => _controller.setQuery(value),
-                        );
-                      },
-                      style: t.mono(size: 13, color: t.ink),
-                      decoration: InputDecoration(
-                        hintText: s.searchHint,
-                        prefixIcon: Icon(Icons.search_rounded, color: t.faint),
-                        suffixIcon: IconButton(
-                          tooltip: s.close,
-                          icon: const Icon(Icons.close_rounded),
-                          onPressed: _toggleSearch,
+      // The recording row and the numbers scroll away with the list, so a phone
+      // keeps its height for the calls. The filters stay.
+      body: CustomScrollView(
+        controller: _scroll,
+        slivers: [
+          SliverToBoxAdapter(
+            child: _RecordingRow(
+              sort: _controller.sort,
+              onSort: _controller.setSort,
+            ),
+          ),
+          SliverToBoxAdapter(child: MetricStrip(calls: visible)),
+          SliverToBoxAdapter(
+            child: AnimatedSize(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              child: _searching
+                  ? Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                      child: TextField(
+                        controller: _search,
+                        focusNode: _searchFocus,
+                        textInputAction: TextInputAction.search,
+                        onChanged: (value) {
+                          _debounce?.cancel();
+                          _debounce = Timer(
+                            const Duration(milliseconds: 120),
+                            () => _controller.setQuery(value),
+                          );
+                        },
+                        style: t.mono(size: 13, color: t.ink),
+                        decoration: InputDecoration(
+                          hintText: s.searchHint,
+                          prefixIcon: Icon(
+                            Icons.search_rounded,
+                            color: t.faint,
+                          ),
+                          suffixIcon: IconButton(
+                            tooltip: s.close,
+                            icon: const Icon(Icons.close_rounded),
+                            onPressed: _toggleSearch,
+                          ),
                         ),
                       ),
-                    ),
-                  )
-                : const SizedBox(width: double.infinity),
+                    )
+                  : const SizedBox(width: double.infinity),
+            ),
           ),
-          _FilterBar(controller: _controller),
-          Expanded(
-            child: visible.isEmpty
-                ? (_controller.hasFilters
-                      ? EmptyState(
-                          title: s.emptyFiltered,
-                          actionLabel: s.clearFilters,
-                          action: () {
-                            _search.clear();
-                            _controller.clearFilters();
-                          },
-                        )
-                      : EmptyState(title: s.emptyTitle, message: s.emptyBody))
-                : ListView.builder(
-                    itemCount: visible.length,
-                    itemExtent: null,
-                    itemBuilder: (context, index) {
-                      final call = visible[index];
-                      return CallTile(
-                        key: ValueKey(call.id),
-                        call: call,
-                        now: _now,
-                        selecting: selecting,
-                        selected:
-                            _controller.selection.contains(call.id) ||
-                            (wide && _openId == call.id && !selecting),
-                        onTap: () => selecting
-                            ? _controller.toggleSelected(call.id)
-                            : _openCall(call, wide: wide),
-                        onLongPress: () => _controller.toggleSelected(call.id),
-                      );
-                    },
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _PinnedBar(
+              height: _FilterBar.height + 2,
+              builder: (context, overlaps) => DecoratedBox(
+                decoration: BoxDecoration(
+                  color: t.ground,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: overlaps ? t.line : Colors.transparent,
+                    ),
                   ),
+                ),
+                child: Column(
+                  children: [
+                    SizedBox(
+                      height: 2,
+                      child: _controller.isSearchingBodies
+                          ? LinearProgressIndicator(
+                              minHeight: 2,
+                              color: FlutwireTokens.copper,
+                              backgroundColor: t.line,
+                            )
+                          : null,
+                    ),
+                    _FilterBar(controller: _controller),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (visible.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: _controller.isSearchingBodies
+                  ? EmptyState(title: s.searchingBodies)
+                  : _controller.hasFilters
+                  ? EmptyState(
+                      title: s.emptyFiltered,
+                      actionLabel: s.clearFilters,
+                      action: () {
+                        _search.clear();
+                        _controller.clearFilters();
+                      },
+                    )
+                  : EmptyState(title: s.emptyTitle, message: s.emptyBody),
+            )
+          else
+            SliverList.builder(
+              itemCount: visible.length,
+              itemBuilder: (context, index) {
+                final call = visible[index];
+                return CallTile(
+                  key: ValueKey(call.id),
+                  call: call,
+                  now: _now,
+                  selecting: selecting,
+                  selected:
+                      _controller.selection.contains(call.id) ||
+                      (wide && _openId == call.id && !selecting),
+                  onTap: () => selecting
+                      ? _controller.toggleSelected(call.id)
+                      : _openCall(call, wide: wide),
+                  onLongPress: () => _controller.toggleSelected(call.id),
+                );
+              },
+            ),
+          // The last call must be able to scroll clear of the gesture bar.
+          SliverToBoxAdapter(
+            child: SizedBox(height: MediaQuery.paddingOf(context).bottom + 12),
           ),
         ],
       ),
@@ -266,17 +330,23 @@ class _InspectorPageState extends State<InspectorPage> {
     final s = context.strings;
     return AppBar(
       automaticallyImplyLeading: !wide,
-      title: Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(text: '${s.inspectorTitle} ', style: t.display(size: 21)),
-            TextSpan(text: s.inspectorTitleAccent, style: t.accent(size: 21)),
-          ],
-        ),
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const FlutwireMark(size: 20),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              s.inspectorTitle,
+              style: t.display(size: 20),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
       bottom: const PreferredSize(
-        preferredSize: Size.fromHeight(2),
-        child: GradientRule(),
+        preferredSize: Size.fromHeight(WireRule.height),
+        child: WireRule(),
       ),
       actions: [
         IconButton(
@@ -426,7 +496,7 @@ class _RecordingRow extends StatelessWidget {
     final t = context.fw;
     final s = context.strings;
     final paused = Flutwire.isPaused;
-    final dot = paused ? t.warning : t.ok;
+    final dot = paused ? t.warning : FlutwireTokens.copper;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 8, 0),
       child: Row(
@@ -503,8 +573,35 @@ class _RecordingRow extends StatelessWidget {
   }
 }
 
+/// A bar that stays at the top of the list while the calls scroll under it.
+class _PinnedBar extends SliverPersistentHeaderDelegate {
+  _PinnedBar({required this.height, required this.builder});
+
+  final double height;
+  final Widget Function(BuildContext context, bool overlapsContent) builder;
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) => builder(context, overlapsContent);
+
+  @override
+  bool shouldRebuild(_PinnedBar oldDelegate) => true;
+}
+
 class _FilterBar extends StatelessWidget {
   const _FilterBar({required this.controller});
+
+  /// How tall the chips are laid out.
+  static const double height = 52;
 
   final InspectorController controller;
 
@@ -525,7 +622,7 @@ class _FilterBar extends StatelessWidget {
     );
     final gap = const SizedBox(width: 8);
     return SizedBox(
-      height: 52,
+      height: height,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -554,7 +651,7 @@ class _FilterBar extends StatelessWidget {
           gap,
           state(StateFilter.failed, s.filterFailed, t.error),
           gap,
-          state(StateFilter.running, s.filterRunning, t.violetTone),
+          state(StateFilter.running, s.filterRunning, t.copperTone),
           gap,
           state(StateFilter.pinned, s.filterPinned, t.warning),
           if (controller.hasFilters) ...[
@@ -562,7 +659,7 @@ class _FilterBar extends StatelessWidget {
             TextButton(
               onPressed: controller.clearFilters,
               style: TextButton.styleFrom(
-                foregroundColor: FlutwireTokens.indigo,
+                foregroundColor: t.copperTone,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
               ),
               child: Text(s.clearFilters),

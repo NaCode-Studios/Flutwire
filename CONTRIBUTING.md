@@ -10,6 +10,7 @@ Flutwire is pre-alpha and the architecture is still moving. If you are thinking 
 | `packages/flutwire/example` | A Flutter app that makes every kind of call, for trying the package by hand |
 | `packages/flutwire_dio` | The Dio interceptor, for the web and for adapters that do not use `dart:io` |
 | `packages/flutwire_http` | The `package:http` client, for the same places |
+| `packages/flutwire_cloud_functions` | Firebase callable functions, which go through the native SDK and never reach `dart:io` |
 | `docs/brand` | The brand kit |
 
 ## Ground rules
@@ -34,6 +35,7 @@ flutter analyze --fatal-infos
 (cd packages/flutwire && flutter test)
 (cd packages/flutwire_dio && flutter test)
 (cd packages/flutwire_http && flutter test)
+(cd packages/flutwire_cloud_functions && flutter test)
 ```
 
 The Android and Apple halves are compiled by building the example app: `flutter build apk --debug`, `flutter build ios --simulator --no-codesign` and `flutter build macos --debug`, each from `packages/flutwire/example`.

@@ -66,7 +66,7 @@ Map<String, Object?> _request(FlutwireCall call) {
   final request = call.request;
   final body = request.body;
   return {
-    'method': call.method,
+    'method': call.wireMethod,
     'url': call.uri.toString(),
     'httpVersion': 'HTTP/1.1',
     'cookies': _requestCookies(request.headers),

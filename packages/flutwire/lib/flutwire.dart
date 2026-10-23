@@ -15,4 +15,5 @@ export 'src/model/call.dart';
 export 'src/model/headers.dart';
 export 'src/model/multipart.dart';
 export 'src/platform/native.dart' show FlutwireNotificationPermission;
+export 'src/store/preferences.dart';
 export 'src/store/store.dart';

@@ -1,0 +1,36 @@
+name: flutwire_cloud_functions
+description: >-
+  Records the Firebase Cloud Functions an app calls in Flutwire. They go through
+  the native Firebase SDK, so the dart:io capture never sees them.
+version: 0.0.1
+repository: https://github.com/NaCode-Studios/Flutwire
+issue_tracker: https://github.com/NaCode-Studios/Flutwire/issues
+funding:
+  - https://github.com/sponsors/NaCode-Studios
+
+topics:
+  - firebase
+  - cloud-functions
+  - networking
+  - debugging
+  - inspector
+
+environment:
+  sdk: ^3.9.0
+  flutter: ">=3.35.0"
+
+resolution: workspace
+
+dependencies:
+  cloud_functions_platform_interface: ">=6.0.0 <8.0.0"
+  firebase_core: ">=4.0.0 <6.0.0"
+  flutter:
+    sdk: flutter
+  flutwire: ^0.0.1
+
+dev_dependencies:
+  cloud_functions: ">=6.0.0 <8.0.0"
+  firebase_core_platform_interface: ">=8.0.0 <10.0.0"
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter

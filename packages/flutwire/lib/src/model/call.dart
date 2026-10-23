@@ -14,6 +14,11 @@ enum FlutwireSource {
   /// A `package:http` client wrapper.
   http('http'),
 
+  /// The Firebase Cloud Functions adapter, which records callable functions.
+  /// They travel through the native SDK, so the `dart:io` capture never sees
+  /// them.
+  functions('Cloud Functions'),
+
   /// An adapter written by the app.
   custom('custom');
 
@@ -447,13 +452,24 @@ final class FlutwireCall {
   /// The bytes the server sent in the body.
   int get responseSize => response?.body.totalBytes ?? 0;
 
-  /// A lower-case string a free-text search matches against.
+  /// The method as it goes over the wire. A callable function is listed as
+  /// `CALL` but travels as a POST.
+  String get wireMethod => source == FlutwireSource.functions ? 'POST' : method;
+
+  /// A lower-case string a free-text search matches against: the method, the
+  /// URL, the status, the GraphQL operation, the error and every header field.
+  /// Bodies are searched separately, because they may have to be read from
+  /// disk.
   late final String searchText = [
     method,
     uri.toString(),
     if (statusCode != null) '$statusCode',
     if (graphql?.operationName != null) graphql!.operationName!,
     if (error != null) error!.message,
+    for (final field in request.headers.entries) '${field.key} ${field.value}',
+    if (response != null)
+      for (final field in response!.headers.entries)
+        '${field.key} ${field.value}',
   ].join(' ').toLowerCase();
 
   /// A copy with the given parts replaced.

@@ -23,14 +23,13 @@ class FwChip extends StatelessWidget {
   /// Called with the new state when tapped.
   final ValueChanged<bool> onChanged;
 
-  /// The colour it takes when on. Defaults to the brand indigo.
+  /// The colour it takes when on. Defaults to copper.
   final Color? color;
 
   @override
   Widget build(BuildContext context) {
     final t = context.fw;
-    final tone =
-        color ?? (t.isDark ? const Color(0xFFA5A8FF) : FlutwireTokens.indigo);
+    final tone = color ?? t.copperTone;
     return Semantics(
       button: true,
       selected: selected,
@@ -42,7 +41,7 @@ class FwChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
             color: selected ? tone.withValues(alpha: 0.16) : Colors.transparent,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(FlutwireTokens.radiusSm),
             border: Border.all(
               color: selected ? tone.withValues(alpha: 0.55) : t.lineStrong,
             ),

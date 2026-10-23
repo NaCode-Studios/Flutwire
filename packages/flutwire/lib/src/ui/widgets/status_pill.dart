@@ -35,7 +35,7 @@ class StatusPill extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: large ? 12 : 8),
       decoration: BoxDecoration(
         color: t.tint(color),
-        borderRadius: BorderRadius.circular(large ? 12 : 10),
+        borderRadius: BorderRadius.circular(large ? 10 : 8),
         border: Border.all(color: color.withValues(alpha: 0.38)),
       ),
       child: Text(

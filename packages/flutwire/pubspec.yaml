@@ -34,17 +34,13 @@ dev_dependencies:
 
 flutter:
   fonts:
-    # The NaCode Studios faces, cut down to the Latin range: Bricolage Grotesque
-    # for headlines, Instrument Serif for the one accented word, Inter for text
-    # and JetBrains Mono for anything a machine produced. About 260 KB together.
+    # DM Sans and DM Mono, cut down to the Latin range: DM Sans at its display
+    # optical size for headlines and at its text size for prose, DM Mono for
+    # anything a machine produced. About 120 KB together.
     - family: FlutwireDisplay
       fonts:
         - asset: fonts/FlutwireDisplay-SemiBold.ttf
           weight: 600
-    - family: FlutwireSerif
-      fonts:
-        - asset: fonts/FlutwireSerif-Italic.ttf
-          style: italic
     - family: FlutwireText
       fonts:
         - asset: fonts/FlutwireText-Regular.ttf

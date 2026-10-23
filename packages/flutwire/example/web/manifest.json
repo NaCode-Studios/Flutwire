@@ -1,11 +1,11 @@
 {
-    "name": "flutwire_example",
-    "short_name": "flutwire_example",
+    "name": "Flutwire example",
+    "short_name": "Flutwire",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0E0F11",
+    "theme_color": "#0E0F11",
+    "description": "An app that makes every kind of call, to try Flutwire against.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

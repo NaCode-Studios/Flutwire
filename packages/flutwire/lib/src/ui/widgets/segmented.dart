@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../scope.dart';
+import '../theme/tokens.dart';
 
 /// A row of mutually exclusive options that reads as one control.
 class FwSegmented<T> extends StatelessWidget {
@@ -28,7 +29,7 @@ class FwSegmented<T> extends StatelessWidget {
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: t.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(FlutwireTokens.radiusMd),
         border: Border.all(color: t.line),
       ),
       child: Row(
@@ -48,7 +49,9 @@ class FwSegmented<T> extends StatelessWidget {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: entry.key == value ? t.raised : Colors.transparent,
-                      borderRadius: BorderRadius.circular(11),
+                      borderRadius: BorderRadius.circular(
+                        FlutwireTokens.radiusMd - 3,
+                      ),
                       border: entry.key == value
                           ? Border.all(color: t.lineStrong)
                           : null,

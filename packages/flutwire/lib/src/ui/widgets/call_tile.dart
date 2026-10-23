@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../model/call.dart';
 import '../../util/format.dart';
 import '../scope.dart';
+import '../theme/tokens.dart';
 import 'method_chip.dart';
 import 'pulse.dart';
 import 'status_pill.dart';
@@ -45,7 +46,7 @@ class CallTile extends StatelessWidget {
     final title = call.graphql?.operationName ?? _path(call);
     final slow = call.duration.inMilliseconds;
     final durationColor = call.isPending
-        ? t.violetTone
+        ? t.copperTone
         : slow >= 3000
         ? t.error
         : slow >= 1000
@@ -59,9 +60,17 @@ class CallTile extends StatelessWidget {
           onTap: onTap,
           onLongPress: onLongPress,
           child: Container(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            padding: const EdgeInsets.fromLTRB(13, 12, 16, 12),
             decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: t.line)),
+              border: Border(
+                left: BorderSide(
+                  color: selected && !selecting
+                      ? FlutwireTokens.copper
+                      : Colors.transparent,
+                  width: 3,
+                ),
+                bottom: BorderSide(color: t.line),
+              ),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -75,7 +84,7 @@ class CallTile extends StatelessWidget {
                             selected
                                 ? Icons.check_circle_rounded
                                 : Icons.radio_button_unchecked_rounded,
-                            color: selected ? const Color(0xFF6366F1) : t.faint,
+                            color: selected ? t.copperTone : t.faint,
                             size: 26,
                           ),
                         )
@@ -91,7 +100,7 @@ class CallTile extends StatelessWidget {
                           MethodChip(call.method),
                           if (call.graphql != null) ...[
                             const SizedBox(width: 6),
-                            _Badge('GQL', t.violetTone),
+                            _Badge('GQL', t.copperTone),
                           ],
                           if (call.pinned) ...[
                             const SizedBox(width: 6),

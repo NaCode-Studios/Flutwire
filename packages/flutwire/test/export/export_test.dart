@@ -32,12 +32,13 @@ FlutwireCall call({
   FlutwireCallState state = FlutwireCallState.completed,
   FlutwireError? error,
   FlutwireGraphql? graphql,
+  FlutwireSource source = FlutwireSource.io,
 }) {
   return FlutwireCall(
     id: id,
     method: method,
     uri: Uri.parse(url),
-    source: FlutwireSource.io,
+    source: source,
     state: state,
     startedAt: started,
     firstByteAt: started.add(const Duration(milliseconds: 80)),
@@ -156,6 +157,27 @@ void main() {
       expect(out, contains("-F 'file=@a.png'"));
       expect(out, isNot(contains('content-type')));
     });
+
+    test('writes a callable function as the POST it is on the wire', () {
+      final out = toCurl(
+        call(
+          method: 'CALL',
+          source: FlutwireSource.functions,
+          url: 'https://us-central1-demo.cloudfunctions.net/createClub',
+          requestHeaders: {'content-type': 'application/json'},
+          requestBody: body('{"data":{"a":1}}', type: 'application/json'),
+        ),
+        multiline: false,
+      );
+      expect(
+        out,
+        contains(
+          "-X POST 'https://us-central1-demo.cloudfunctions.net/createClub'",
+        ),
+      );
+      expect(out, contains('A callable function'));
+      expect(out, isNot(contains('CALL')));
+    });
   });
 
   group('HAR', () {
@@ -206,6 +228,16 @@ void main() {
         {'name': 'a', 'value': '1'},
         {'name': 'b', 'value': 'two words'},
       ]);
+    });
+
+    test('writes a callable function with the method it travels with', () {
+      final callable = toHar([
+        call(method: 'CALL', source: FlutwireSource.functions),
+      ]);
+      final log = callable['log']! as Map<String, Object?>;
+      final first =
+          (log['entries']! as List<Object?>).single! as Map<String, Object?>;
+      expect((first['request']! as Map<String, Object?>)['method'], 'POST');
     });
 
     test('describes the response, with cookie attributes and the redirect', () {

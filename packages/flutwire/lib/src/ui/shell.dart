@@ -11,17 +11,29 @@ import 'theme/tokens.dart';
 /// strings of the right language, and the localisations Material widgets need
 /// even when the app around them has none, such as a `CupertinoApp`.
 class FlutwireShell extends StatelessWidget {
-  /// Wraps [child].
-  const FlutwireShell({super.key, required this.child});
+  /// Wraps [child]. Leave [systemUi] on for a screen of its own, and turn it
+  /// off for something that sits above the app, which must not restyle the
+  /// status bar.
+  const FlutwireShell({super.key, required this.child, this.systemUi = true});
 
   /// The screen to dress.
   final Widget child;
 
+  /// Whether to set the style of the status bar and the navigation bar.
+  final bool systemUi;
+
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: Flutwire.themeModeListenable,
+      builder: (context, mode, _) => _dress(context, mode),
+    );
+  }
+
+  Widget _dress(BuildContext context, ThemeMode mode) {
     final config = Flutwire.config;
     final platform = MediaQuery.platformBrightnessOf(context);
-    final dark = switch (config.themeMode) {
+    final dark = switch (mode) {
       ThemeMode.dark => true,
       ThemeMode.light => false,
       ThemeMode.system => platform == Brightness.dark,
@@ -48,6 +60,7 @@ class FlutwireShell extends StatelessWidget {
         child: dressed,
       );
     }
+    if (!systemUi) return dressed;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: dressed,

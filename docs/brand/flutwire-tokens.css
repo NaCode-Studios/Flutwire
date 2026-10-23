@@ -1,0 +1,145 @@
+/* Flutwire design tokens.
+ *
+ * The same values as the inspector's `FlutwireTokens`, for the README banner,
+ * the social preview and any page that talks about Flutwire. Every custom
+ * property carries the `--fw-` prefix so this file can sit next to another
+ * kit's on one page without a collision.
+ */
+
+:root {
+  /* Copper: the colour of the node at the end of the wire. The only brand
+     colour. Filled controls use --fw-copper with --fw-on-copper text; copper
+     as text or a border uses --fw-copper-tone, which is readable on the look
+     in force. */
+  --fw-copper: #f0803a;
+  --fw-on-copper: #1a0f08;
+
+  /* Graphite, for the dark look. */
+  --fw-graphite-950: #0e0f11;
+  --fw-graphite-900: #141518;
+  --fw-graphite-850: #1b1d21;
+  --fw-graphite-800: #25272c;
+  --fw-graphite-700: #343740;
+  --fw-graphite-500: #82807b;
+  --fw-graphite-400: #9c9a93;
+  --fw-graphite-300: #cfcdc6;
+  --fw-graphite-50: #f4f3ef;
+
+  /* Paper, for the light look. */
+  --fw-paper-50: #ffffff;
+  --fw-paper-100: #f6f5f1;
+  --fw-paper-200: #e4e2db;
+  --fw-paper-300: #d2cfc6;
+  --fw-paper-500: #6d6e73;
+  --fw-paper-600: #55565d;
+  --fw-paper-700: #33343a;
+  --fw-paper-900: #17181b;
+
+  /* Type. DM Sans names and explains, DM Mono carries everything a machine
+     produced and every number. */
+  --fw-font-display: "DM Sans", system-ui, sans-serif;
+  --fw-font-text: "DM Sans", system-ui, sans-serif;
+  --fw-font-mono: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --fw-display-weight: 600;
+  --fw-display-tracking: -0.02em;
+  --fw-label-tracking: 0.14em;
+
+  /* Shape. Corners are tight and rules are hairlines. */
+  --fw-radius-xs: 5px;
+  --fw-radius-sm: 8px;
+  --fw-radius-md: 12px;
+  --fw-radius-lg: 14px;
+  --fw-radius-xl: 20px;
+  --fw-hairline: 1px;
+
+  /* Space, on a 4px grid. */
+  --fw-space-1: 4px;
+  --fw-space-2: 8px;
+  --fw-space-3: 12px;
+  --fw-space-4: 16px;
+  --fw-space-6: 24px;
+  --fw-space-8: 32px;
+
+  /* Elevation: one shadow, for a control that floats above the page. */
+  --fw-shadow-float: 0 8px 24px rgb(0 0 0 / 0.28);
+
+  /* The light look, which is the default. */
+  --fw-ground: var(--fw-paper-100);
+  --fw-surface: var(--fw-paper-50);
+  --fw-raised: var(--fw-paper-50);
+  --fw-line: var(--fw-paper-200);
+  --fw-line-strong: var(--fw-paper-300);
+  --fw-ink: var(--fw-paper-900);
+  --fw-text: var(--fw-paper-700);
+  --fw-muted: var(--fw-paper-600);
+  --fw-faint: var(--fw-paper-500);
+  --fw-copper-tone: #b4531a;
+
+  /* Status is a family of its own and never borrows from copper, so a failing
+     call does not read as branding. */
+  --fw-ok: #097051;
+  --fw-warning: #825e00;
+  --fw-error: #b92b3a;
+  --fw-info: #2265ac;
+
+  /* Colour of the text in a body. */
+  --fw-syntax-key: #b4531a;
+  --fw-syntax-string: #7a5a12;
+  --fw-syntax-number: #0b7285;
+  --fw-syntax-keyword: #b3304a;
+  --fw-syntax-punctuation: #9a9a9f;
+  --fw-syntax-tag: #1d5fbf;
+}
+
+/* The dark look, picked by the page or by the device. */
+:root[data-theme="dark"] {
+  --fw-ground: var(--fw-graphite-950);
+  --fw-surface: var(--fw-graphite-900);
+  --fw-raised: var(--fw-graphite-850);
+  --fw-line: var(--fw-graphite-800);
+  --fw-line-strong: var(--fw-graphite-700);
+  --fw-ink: var(--fw-graphite-50);
+  --fw-text: var(--fw-graphite-300);
+  --fw-muted: var(--fw-graphite-400);
+  --fw-faint: var(--fw-graphite-500);
+  --fw-copper-tone: var(--fw-copper);
+
+  --fw-ok: #3dd6a0;
+  --fw-warning: #f2c94c;
+  --fw-error: #f25c6b;
+  --fw-info: #5aa9ff;
+
+  --fw-syntax-key: #f4a06a;
+  --fw-syntax-string: #e9d8a6;
+  --fw-syntax-number: #7fd6e4;
+  --fw-syntax-keyword: #f29aae;
+  --fw-syntax-punctuation: #6d6c67;
+  --fw-syntax-tag: #8fb8ff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --fw-ground: var(--fw-graphite-950);
+    --fw-surface: var(--fw-graphite-900);
+    --fw-raised: var(--fw-graphite-850);
+    --fw-line: var(--fw-graphite-800);
+    --fw-line-strong: var(--fw-graphite-700);
+    --fw-ink: var(--fw-graphite-50);
+    --fw-text: var(--fw-graphite-300);
+    --fw-muted: var(--fw-graphite-400);
+    --fw-faint: var(--fw-graphite-500);
+    --fw-copper-tone: var(--fw-copper);
+
+    --fw-ok: #3dd6a0;
+    --fw-warning: #f2c94c;
+    --fw-error: #f25c6b;
+    --fw-info: #5aa9ff;
+
+    --fw-syntax-key: #f4a06a;
+    --fw-syntax-string: #e9d8a6;
+    --fw-syntax-number: #7fd6e4;
+    --fw-syntax-keyword: #f29aae;
+    --fw-syntax-punctuation: #6d6c67;
+    --fw-syntax-tag: #8fb8ff;
+  }
+}
