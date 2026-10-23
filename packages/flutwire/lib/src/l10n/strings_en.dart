@@ -430,4 +430,27 @@ class FlutwireStringsEn extends FlutwireStrings {
 
   @override
   String get showMore => 'Show more';
+
+  // Body viewer additions
+
+  @override
+  String get viewDecoded => 'Decoded';
+
+  @override
+  String get showLess => 'Show less';
+
+  @override
+  String matchCounterCapped(int index, int total) {
+    final grouped = '$total'.replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (_) => ',',
+    );
+    return '$index of $grouped+';
+  }
+
+  @override
+  String get saveFormatted => 'Save formatted';
+
+  @override
+  String get moreActions => 'More actions';
 }

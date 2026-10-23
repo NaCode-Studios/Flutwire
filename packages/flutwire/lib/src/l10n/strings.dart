@@ -450,4 +450,22 @@ abstract class FlutwireStrings {
 
   /// Shows the rest of a long value.
   String get showMore;
+
+  // Body viewer additions
+
+  /// The view of text that a decoder produced.
+  String get viewDecoded;
+
+  /// Folds a long value back to its first part.
+  String get showLess;
+
+  /// Says the search is on match [index] of more than [total], because the
+  /// search stops counting at a limit.
+  String matchCounterCapped(int index, int total);
+
+  /// Saves the body indented, or as a decoder showed it, to a file.
+  String get saveFormatted;
+
+  /// The label of a menu that holds the less common actions.
+  String get moreActions;
 }
