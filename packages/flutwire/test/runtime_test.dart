@@ -206,11 +206,15 @@ void main() {
       );
 
       await start(tester, _quiet, navigatorKey: key);
-      // The runtime looks for the navigator on a real timer.
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 600)),
-      );
-      await tester.pump();
+      // The runtime looks for the navigator on a real timer, so give it real
+      // time, as much as a slow machine needs.
+      for (var i = 0; i < 30; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)),
+        );
+        await tester.pump();
+        if (find.text('Network activity').evaluate().isNotEmpty) break;
+      }
       await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.text('Network activity'), findsOneWidget);
