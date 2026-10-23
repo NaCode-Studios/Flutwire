@@ -1,0 +1,73 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/NaCode-Studios/Flutwire/main/docs/flutwire-hero.png" alt="Flutwire, a network inspector for Flutter" width="100%">
+</p>
+
+# flutwire
+
+**A network inspector for Flutter that opens from the notification shade.**
+
+Flutwire records the HTTP calls an app makes, keeps them on the device and lists the latest ones in the notification shade. Tapping it opens the inspector, and each call opens in full: URL, timings, headers, cookies, and the request and response bodies as a JSON tree, indented text, form fields, an image or a hex dump.
+
+## Getting started
+
+```bash
+flutter pub add flutwire
+```
+
+```dart
+Future<void> main() async {
+  await Flutwire.init();
+  runApp(const MyApp());
+}
+```
+
+That is the whole integration. From then on every call that goes through `dart:io` is recorded, including the ones made by packages you did not write: `package:http`, Dio's default adapter, Chopper, `Image.network`. In a release build `init` does nothing and nothing is recorded.
+
+## Opening the inspector
+
+On Android, iOS and macOS the notification opens it. On Android 13 and later Flutwire asks for the notification permission the first time there is something to show. If the user declines, `Flutwire.open()` and the "Open Flutwire" shortcut on the app icon still work.
+
+The web, Windows and Linux have no notification. Hand the builder to the app and a small button floats above it, with the Ctrl or Cmd, Shift and L shortcut beside it. The navigator key is optional and makes the inspector open above the app's own routes.
+
+```dart
+MaterialApp(
+  navigatorKey: Flutwire.navigatorKey,
+  builder: Flutwire.builder,
+  home: const Home(),
+);
+```
+
+## Configuration
+
+```dart
+await Flutwire.init(
+  config: FlutwireConfig(
+    retention: FlutwireRetention.oneDay,
+    ignore: [FlutwireIgnore.host('analytics.example.com', subdomains: true)],
+    redaction: const FlutwireRedaction(
+      queryParameters: {'api_key'},
+      bodyFields: {'password'},
+    ),
+  ),
+);
+```
+
+Authorization and cookie headers are masked by default. A masked value is replaced when the call is recorded, so it never reaches memory, disk, a notification or an export. The other options are documented on `FlutwireConfig`: how much of a body is kept, where the history is stored, what the notification lists, the language, the look, and decoders for formats the inspector does not read, such as Protobuf.
+
+## Clients that bypass `dart:io`
+
+`dart:io` does not exist on the web, and some clients bring a transport of their own. Three packages cover them.
+
+| Package | Records |
+| --- | --- |
+| [`flutwire_dio`](https://pub.dev/packages/flutwire_dio) | Dio, through an interceptor |
+| [`flutwire_http`](https://pub.dev/packages/flutwire_http) | `package:http`, through a client |
+| [`flutwire_cloud_functions`](https://pub.dev/packages/flutwire_cloud_functions) | Firebase callable functions |
+
+## What it does not do
+
+Flutwire reads traffic and never changes it. It does not proxy other apps, and it cannot see what never passes through Dart: Firestore, Auth and Storage speak their own protocols through native SDKs.
+
+## More
+
+The source, the roadmap and the issue tracker are in the [repository](https://github.com/NaCode-Studios/Flutwire). The package is Apache-2.0.
