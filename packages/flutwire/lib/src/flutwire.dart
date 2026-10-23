@@ -16,6 +16,7 @@ import 'share.dart';
 import 'store/open_store.dart';
 import 'store/store.dart';
 import 'ui/inspector_route.dart';
+import 'ui/overlay/floating_button.dart';
 import 'version.dart';
 
 /// The sharing service of the running app, for the inspector. Not part of the
@@ -186,6 +187,18 @@ abstract final class Flutwire {
 
   /// Whether the inspector is on screen.
   static ValueListenable<bool> get inspectorOpen => _inspectorOpen;
+
+  /// For `MaterialApp.builder` and `WidgetsApp.builder`: floats a small button
+  /// above the app that opens the inspector, and listens for Ctrl or Cmd with
+  /// Shift and L. It is meant for the web, Windows and Linux, where there is no
+  /// notification to open the inspector from, and it shows only there unless
+  /// [FlutwireConfig.floatingButton] says otherwise.
+  ///
+  /// ```dart
+  /// MaterialApp(builder: Flutwire.builder, ...)
+  /// ```
+  static Widget builder(BuildContext context, Widget? child) =>
+      FlutwireOverlay(child: child ?? const SizedBox.shrink());
 
   /// Starts recording one call. This is what a capture adapter calls; an app
   /// that only uses `dart:io` never needs it. Returns null when the call

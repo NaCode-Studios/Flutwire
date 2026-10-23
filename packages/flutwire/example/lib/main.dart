@@ -24,6 +24,9 @@ class ExampleApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutwire example',
+      navigatorKey: Flutwire.navigatorKey,
+      // Floats the inspector button where there is no notification to tap.
+      builder: Flutwire.builder,
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.system,
       theme: ThemeData(colorSchemeSeed: const Color(0xFF546E7A)),
