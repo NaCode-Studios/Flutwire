@@ -1,0 +1,68 @@
+name: flutwire
+description: >-
+  Network inspector for Flutter. Records the HTTP calls your app makes, keeps
+  them across restarts, and opens them from a notification in the shade.
+version: 0.0.1
+repository: https://github.com/NaCode-Studios/Flutwire
+issue_tracker: https://github.com/NaCode-Studios/Flutwire/issues
+funding:
+  - https://github.com/sponsors/NaCode-Studios
+
+topics:
+  - http
+  - networking
+  - debugging
+  - inspector
+  - notifications
+
+environment:
+  sdk: ^3.9.0
+  flutter: ">=3.35.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  dio: ^5.11.0
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+  http: ^1.6.0
+
+flutter:
+  fonts:
+    # The NaCode Studios faces, cut down to the Latin range: Bricolage Grotesque
+    # for headlines, Instrument Serif for the one accented word, Inter for text
+    # and JetBrains Mono for anything a machine produced. About 260 KB together.
+    - family: FlutwireDisplay
+      fonts:
+        - asset: fonts/FlutwireDisplay-SemiBold.ttf
+          weight: 600
+    - family: FlutwireSerif
+      fonts:
+        - asset: fonts/FlutwireSerif-Italic.ttf
+          style: italic
+    - family: FlutwireText
+      fonts:
+        - asset: fonts/FlutwireText-Regular.ttf
+        - asset: fonts/FlutwireText-SemiBold.ttf
+          weight: 600
+    - family: FlutwireMono
+      fonts:
+        - asset: fonts/FlutwireMono-Regular.ttf
+        - asset: fonts/FlutwireMono-SemiBold.ttf
+          weight: 600
+  plugin:
+    platforms:
+      android:
+        package: it.nacodestudios.flutwire
+        pluginClass: FlutwirePlugin
+      ios:
+        pluginClass: FlutwirePlugin
+        sharedDarwinSource: true
+      macos:
+        pluginClass: FlutwirePlugin
+        sharedDarwinSource: true

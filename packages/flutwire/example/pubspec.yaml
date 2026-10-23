@@ -1,0 +1,30 @@
+name: flutwire_example
+description: A small app that makes every kind of HTTP call, to try Flutwire against.
+publish_to: none
+
+environment:
+  sdk: ^3.9.0
+
+resolution: workspace
+
+dependencies:
+  dio: ^5.11.0
+  flutter:
+    sdk: flutter
+  flutwire:
+    path: ../
+  flutwire_dio:
+    path: ../../flutwire_dio
+  flutwire_http:
+    path: ../../flutwire_http
+  http: ^1.6.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
