@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:flutwire/flutwire.dart';
 import 'package:flutwire/src/platform/native.dart';
 import 'package:flutwire/src/session.dart';
@@ -40,13 +41,26 @@ class FakeSession implements FlutwireSession {
   @override
   final MemoryFlutwireStore store = MemoryFlutwireStore();
 
+  /// There is no share sheet and no folder to write to, so sharing falls back
+  /// to the clipboard, as it does on the web.
   @override
-  late final FlutwireSharing sharing = FlutwireSharing(
-    native: FlutwireNative(channel: const MethodChannel('flutwire.test/none')),
-    store: store,
-    temporaryPath: null,
-    version: 'test',
-  );
+  late final FlutwireSharing sharing = _sharingWithoutSheet();
+
+  FlutwireSharing _sharingWithoutSheet() {
+    const channel = MethodChannel('flutwire.test/native');
+    // A channel nobody answers never completes under the test clock, so the
+    // answer is given here: no sheet was shown.
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(channel, (_) async => false);
+    addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+    return FlutwireSharing(
+      native: FlutwireNative(channel: channel),
+      store: store,
+      temporaryPath: null,
+      version: 'test',
+    );
+  }
 
   final ValueNotifier<FlutwireNotificationPermission> _permission;
   final ValueNotifier<bool> _inspectorOpen = ValueNotifier(false);

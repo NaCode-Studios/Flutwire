@@ -3,9 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../l10n/strings.dart';
+import '../actions.dart';
 import '../scope.dart';
 import '../theme/tokens.dart';
-import 'copy.dart';
 import 'highlight.dart';
 import 'json_guides.dart';
 import 'json_model.dart';
@@ -191,7 +191,7 @@ class _JsonTreeState extends State<JsonTree> with BodyMetricsState<JsonTree> {
 
   Future<void> _run(int node, _NodeAction action) {
     final model = _tree.model;
-    return copyToClipboard(
+    return copyText(
       context,
       action == _NodeAction.copyValue
           ? model.valueTextOf(node)

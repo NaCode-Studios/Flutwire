@@ -6,12 +6,12 @@ import '../../l10n/strings.dart';
 import '../../model/body.dart';
 import '../../model/call.dart';
 import '../../util/format.dart';
+import '../actions.dart';
 import '../scope.dart';
 import 'body_files.dart';
 import 'body_modes.dart';
 import 'body_toolbar.dart';
 import 'code_view.dart';
-import 'copy.dart';
 import 'fields_view.dart';
 import 'hex_view.dart';
 import 'highlight.dart';
@@ -254,7 +254,7 @@ class _FlutwireBodyViewerState extends State<FlutwireBodyViewer> {
     final strings = context.strings;
     final raw = _body.text;
     MenuEntry entry(String label, String Function() text) =>
-        MenuEntry(label, () => copyToClipboard(context, text()));
+        MenuEntry(label, () => copyText(context, text()));
     switch (_mode) {
       case BodyMode.hex:
         return [entry(strings.copyBody, () => hexDump(_body.bytes))];

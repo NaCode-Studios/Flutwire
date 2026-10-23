@@ -198,6 +198,83 @@ void main() {
     });
   });
 
+  group('sharing', () {
+    String? copied;
+
+    setUp(() {
+      copied = null;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+            if (call.method == 'Clipboard.setData') {
+              copied = (call.arguments as Map)['text'] as String?;
+            }
+            return null;
+          });
+    });
+
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null);
+    });
+
+    testWidgets('a call as text lands on the clipboard without a share sheet', (
+      tester,
+    ) async {
+      await open(tester, makeCall(1, url: 'https://api.test/clubs'));
+
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await settle(tester);
+      await tester.tap(find.text('Share as text'));
+      await settle(tester);
+
+      expect(copied, contains('https://api.test/clubs'));
+      expect(find.text('Copied'), findsOneWidget);
+    });
+
+    testWidgets('a call as HAR is written out whole', (tester) async {
+      await open(tester, makeCall(1, url: 'https://api.test/clubs'));
+
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await settle(tester);
+      await tester.tap(find.text('Share as HAR'));
+      await settle(tester);
+
+      expect(copied, contains('"log"'));
+      expect(copied, contains('https://api.test/clubs'));
+    });
+
+    testWidgets('a body is saved as a file, and says when it cannot be', (
+      tester,
+    ) async {
+      await open(tester, makeCall(1, responseBody: '{"club":"Orion"}'));
+      await tester.tap(find.text('Response'));
+      await settle(tester);
+
+      await tester.tap(find.byTooltip('Save'));
+      await settle(tester);
+      await tester.tap(find.text('Save body to a file'));
+      await settle(tester);
+
+      expect(find.text('Could not share this file'), findsOneWidget);
+    });
+
+    testWidgets('the formatted body is kept on the clipboard instead', (
+      tester,
+    ) async {
+      await open(tester, makeCall(1, responseBody: '{"club":"Orion"}'));
+      await tester.tap(find.text('Response'));
+      await settle(tester);
+
+      await tester.tap(find.byTooltip('Save'));
+      await settle(tester);
+      await tester.tap(find.text('Save formatted'));
+      await settle(tester);
+
+      expect(copied, '{\n  "club": "Orion"\n}');
+      expect(find.text('Copied'), findsOneWidget);
+    });
+  });
+
   testWidgets('beside the list it shows no back arrow', (tester) async {
     setScreen(tester, const Size(1200, 800));
     await tester.pumpWidget(

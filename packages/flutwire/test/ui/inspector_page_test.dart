@@ -4,6 +4,7 @@ import 'package:flutwire/flutwire.dart';
 import 'package:flutwire/src/ui/inspector/inspector_page.dart';
 import 'package:flutwire/src/ui/widgets/toggle_chip.dart';
 
+import 'body/helpers.dart' show spyOnClipboard;
 import 'calls.dart';
 import 'fake_session.dart';
 
@@ -295,6 +296,35 @@ void main() {
       final slowest = tester.getTopLeft(find.text('/items/9')).dy;
       final newest = tester.getTopLeft(find.text('/login')).dy;
       expect(slowest, lessThan(newest));
+    });
+
+    testWidgets('export all writes the whole history out', (tester) async {
+      final clipboard = spyOnClipboard(tester);
+      await open(tester);
+
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await settle(tester);
+      await tester.tap(find.text('Export all: cURL'));
+      await settle(tester);
+
+      expect(clipboard.last, contains("curl -X POST 'https://api.test/login'"));
+      expect(
+        clipboard.last,
+        contains("curl -X DELETE 'https://cdn.test/files/7'"),
+      );
+    });
+
+    testWidgets('selected calls can be shared', (tester) async {
+      final clipboard = spyOnClipboard(tester);
+      await open(tester);
+      await tester.longPress(find.text('/login'));
+      await settle(tester);
+
+      await tester.tap(find.byTooltip('Share'));
+      await settle(tester);
+
+      expect(clipboard.last, contains('/login'));
+      expect(clipboard.last, isNot(contains('/items/9')));
     });
 
     testWidgets('settings open as a sheet', (tester) async {

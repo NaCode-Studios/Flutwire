@@ -2,8 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../actions.dart';
 import '../scope.dart';
-import 'copy.dart';
 import 'highlight.dart';
 import 'metrics.dart';
 import 'quiet_note.dart';
@@ -183,7 +183,7 @@ class _FieldsViewState extends State<FieldsView> {
               ),
             ],
           );
-    void copyValue() => copyToClipboard(context, value);
+    void copyValue() => copyText(context, value);
     return KeyedSubtree(
       key: _revealer.keyFor(index),
       child: InkWell(
