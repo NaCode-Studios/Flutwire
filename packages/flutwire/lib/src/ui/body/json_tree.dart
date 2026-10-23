@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
@@ -8,7 +7,9 @@ import '../scope.dart';
 import '../theme/tokens.dart';
 import 'copy.dart';
 import 'highlight.dart';
+import 'json_guides.dart';
 import 'json_model.dart';
+import 'json_tree_layout.dart';
 import 'metrics.dart';
 import 'search.dart';
 
@@ -36,23 +37,10 @@ class JsonTree extends StatefulWidget {
 }
 
 class _JsonTreeState extends State<JsonTree> with BodyMetricsState<JsonTree> {
-  static const double _indentStep = 14;
-  static const double _chevronBox = 18;
-  static const double _padLeft = 8;
-  static const double _padRight = 4;
-  static const double _menuWidth = 40;
-  static const double _controlWidth = 84;
   static const double _verticalPadding = 6;
 
   final ScrollController _vertical = ScrollController();
-
-  Int32List _nodes = Int32List(0);
-  Int32List _subs = Int32List(0);
-  bool _stale = true;
-  double _width = -1;
-  bool _narrow = false;
-  double _rowHeight = 28;
-  double _charWidth = 0;
+  late JsonTreeLayout _layout;
 
   Map<int, List<int>> _matchesByNode = const {};
   List<BodyMatch>? _mapFor;
@@ -65,6 +53,7 @@ class _JsonTreeState extends State<JsonTree> with BodyMetricsState<JsonTree> {
   @override
   void initState() {
     super.initState();
+    _layout = JsonTreeLayout(_tree);
     _tree.addListener(_onTree);
     widget.search.addListener(_onSearch);
   }
@@ -75,7 +64,7 @@ class _JsonTreeState extends State<JsonTree> with BodyMetricsState<JsonTree> {
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.removeListener(_onTree);
       widget.controller.addListener(_onTree);
-      _stale = true;
+      _layout = JsonTreeLayout(widget.controller);
     }
     if (oldWidget.search != widget.search) {
       oldWidget.search.removeListener(_onSearch);
@@ -92,94 +81,8 @@ class _JsonTreeState extends State<JsonTree> with BodyMetricsState<JsonTree> {
   }
 
   void _onTree() {
-    if (mounted) setState(() => _stale = true);
-  }
-
-  double _leading(int depth) => depth * _indentStep + _chevronBox;
-
-  /// How many characters fit on each row after the first of an opened string.
-  int _restChars(int depth) => math.max(
-    8,
-    metrics.cellsIn(_width - _padLeft - _leading(depth) - _padRight),
-  );
-
-  /// How many characters of an opened string fit on its first row, which also
-  /// holds the key and, on a phone, the menu button.
-  int _firstChars(int node) {
-    final model = _tree.model;
-    var room = _width - _padLeft - _leading(model.depth[node]) - _padRight;
-    if (_narrow) room -= _menuWidth;
-    final value = model.values[node];
-    if (value is String && value.length > jsonStringCut) {
-      room -= _controlWidth;
-    }
-    final prefix = node == 0 ? 0 : model.keyLabel(node).length + 2;
-    return math.max(8, metrics.cellsIn(room) - prefix);
-  }
-
-  int _extraRows(int node) {
-    final whole = _tree.wholeText(node);
-    if (whole == null) return 0;
-    return JsonTreeController.rowsFor(
-          whole.length,
-          first: _firstChars(node),
-          rest: _restChars(_tree.model.depth[node]),
-        ) -
-        1;
-  }
-
-  void _layoutFor(double width) {
-    final m = metrics;
-    final narrow = width < bodyNarrowWidth;
-    final changed =
-        _stale ||
-        width != _width ||
-        narrow != _narrow ||
-        m.charWidth != _charWidth;
-    _width = width;
-    _narrow = narrow;
-    _charWidth = m.charWidth;
-    _rowHeight = ((narrow ? 40 : 28) * m.lineHeight / bodyLineHeight)
-        .roundToDouble();
-    if (!changed) return;
-    _stale = false;
-    final model = _tree.model;
-    final nodes = <int>[];
-    final subs = <int>[];
-    var i = 0;
-    while (i < model.length) {
-      nodes.add(i);
-      subs.add(0);
-      if (!model.isContainer(i)) {
-        final extra = _extraRows(i);
-        for (var k = 1; k <= extra; k++) {
-          nodes.add(i);
-          subs.add(k);
-        }
-        i++;
-      } else if (_tree.isExpanded(i)) {
-        i++;
-      } else {
-        i = model.end[i];
-      }
-    }
-    _nodes = Int32List.fromList(nodes);
-    _subs = Int32List.fromList(subs);
-  }
-
-  /// The index of the first row that shows [node].
-  int _firstRowOf(int node) {
-    var lo = 0;
-    var hi = _nodes.length;
-    while (lo < hi) {
-      final mid = (lo + hi) >> 1;
-      if (_nodes[mid] < node) {
-        lo = mid + 1;
-      } else {
-        hi = mid;
-      }
-    }
-    return lo;
+    if (!mounted) return;
+    setState(_layout.invalidate);
   }
 
   void _syncMarks() {
@@ -247,24 +150,25 @@ class _JsonTreeState extends State<JsonTree> with BodyMetricsState<JsonTree> {
   }
 
   void _scrollTo(BodyMatch match) {
-    if (!_vertical.hasClients || _nodes.isEmpty) return;
+    if (!_vertical.hasClients || _layout.nodes.isEmpty) return;
     final node = match.unit >> 1;
-    var index = _firstRowOf(node);
-    if (index >= _nodes.length || _nodes[index] != node) return;
+    var index = _layout.firstRowOf(node);
+    if (index >= _layout.nodes.length || _layout.nodes[index] != node) return;
     if (match.unit.isOdd && _tree.isWhole(node)) {
-      final first = _firstChars(node);
-      final rest = _restChars(_tree.model.depth[node]);
+      final first = _layout.firstChars(node);
+      final rest = _layout.restChars(_tree.model.depth[node]);
       final at = match.start + 1; // past the opening quote
       final sub = at < first ? 0 : 1 + (at - first) ~/ rest;
-      index += math.min(sub, _extraRows(node));
+      index += math.min(sub, _layout.extraRows(node));
     }
     final position = _vertical.position;
-    final top = _verticalPadding + index * _rowHeight;
+    final top = _verticalPadding + index * _layout.rowHeight;
     if (top >= position.pixels &&
-        top + _rowHeight <= position.pixels + position.viewportDimension) {
+        top + _layout.rowHeight <=
+            position.pixels + position.viewportDimension) {
       return;
     }
-    final target = top - (position.viewportDimension - _rowHeight) / 2;
+    final target = top - (position.viewportDimension - _layout.rowHeight) / 2;
     _vertical.jumpTo(
       math.min(
         math.max(target, position.minScrollExtent),
@@ -281,7 +185,7 @@ class _JsonTreeState extends State<JsonTree> with BodyMetricsState<JsonTree> {
       final value = model.values[node];
       if (value is String &&
           (value.length > jsonStringCut ||
-              value.length + 2 > _firstChars(node))) {
+              value.length + 2 > _layout.firstChars(node))) {
         _tree.toggleWhole(node);
       }
     }
@@ -356,8 +260,8 @@ class _JsonTreeState extends State<JsonTree> with BodyMetricsState<JsonTree> {
       var start = 0;
       var end = text.length;
       if (whole != null) {
-        final first = _firstChars(node);
-        final rest = _restChars(model.depth[node]);
+        final first = _layout.firstChars(node);
+        final rest = _layout.restChars(model.depth[node]);
         if (sub == 0) {
           end = math.min(end, first);
         } else {
@@ -405,8 +309,8 @@ class _JsonTreeState extends State<JsonTree> with BodyMetricsState<JsonTree> {
   ) {
     final m = metrics;
     final model = _tree.model;
-    final node = _nodes[index];
-    final sub = _subs[index];
+    final node = _layout.nodes[index];
+    final sub = _layout.subs[index];
     final depth = model.depth[node];
     final value = model.values[node];
     final hasChildren = model.childCount[node] > 0;
@@ -444,20 +348,20 @@ class _JsonTreeState extends State<JsonTree> with BodyMetricsState<JsonTree> {
         sub == 0 && value is String && value.length > jsonStringCut;
     final row = Row(
       children: [
-        const SizedBox(width: _padLeft),
+        const SizedBox(width: JsonTreeLayout.padLeft),
         SizedBox(
-          width: _leading(depth),
-          height: _rowHeight,
+          width: JsonTreeLayout.leading(depth),
+          height: _layout.rowHeight,
           child: CustomPaint(
-            painter: _GuidePainter(
+            painter: GuidePainter(
               depth: depth,
-              step: _indentStep,
-              box: _chevronBox,
+              step: JsonTreeLayout.indentStep,
+              box: JsonTreeLayout.chevronBox,
               guide: tokens.line,
               chevron: tokens.muted,
               chevronState: sub == 0 && hasChildren
-                  ? (_tree.isExpanded(node) ? _Chevron.open : _Chevron.closed)
-                  : _Chevron.none,
+                  ? (_tree.isExpanded(node) ? Chevron.open : Chevron.closed)
+                  : Chevron.none,
             ),
           ),
         ),
@@ -476,8 +380,8 @@ class _JsonTreeState extends State<JsonTree> with BodyMetricsState<JsonTree> {
           InkWell(
             onTap: () => _tree.toggleWhole(node),
             child: SizedBox(
-              width: _controlWidth,
-              height: _rowHeight,
+              width: JsonTreeLayout.controlWidth,
+              height: _layout.rowHeight,
               child: Center(
                 child: Text(
                   _tree.isWhole(node) ? strings.showLess : strings.showMore,
@@ -491,7 +395,7 @@ class _JsonTreeState extends State<JsonTree> with BodyMetricsState<JsonTree> {
               ),
             ),
           ),
-        if (_narrow && sub == 0)
+        if (_layout.narrow && sub == 0)
           PopupMenuButton<_NodeAction>(
             tooltip: strings.moreActions,
             padding: EdgeInsets.zero,
@@ -507,8 +411,8 @@ class _JsonTreeState extends State<JsonTree> with BodyMetricsState<JsonTree> {
               ),
             ],
             child: SizedBox(
-              width: _menuWidth,
-              height: _rowHeight,
+              width: JsonTreeLayout.menuWidth,
+              height: _layout.rowHeight,
               child: Icon(
                 Icons.more_horiz_rounded,
                 size: 18,
@@ -516,9 +420,9 @@ class _JsonTreeState extends State<JsonTree> with BodyMetricsState<JsonTree> {
               ),
             ),
           )
-        else if (_narrow)
-          const SizedBox(width: _menuWidth),
-        const SizedBox(width: _padRight),
+        else if (_layout.narrow)
+          const SizedBox(width: JsonTreeLayout.menuWidth),
+        const SizedBox(width: JsonTreeLayout.padRight),
       ],
     );
     return InkWell(
@@ -536,15 +440,15 @@ class _JsonTreeState extends State<JsonTree> with BodyMetricsState<JsonTree> {
     final strings = context.strings;
     return LayoutBuilder(
       builder: (context, box) {
-        _layoutFor(box.maxWidth);
+        _layout.update(box.maxWidth, metrics);
         return ListenableBuilder(
           listenable: widget.search,
           builder: (context, _) {
             _syncMarks();
             return ListView.builder(
               controller: _vertical,
-              itemExtent: _rowHeight,
-              itemCount: _nodes.length,
+              itemExtent: _layout.rowHeight,
+              itemCount: _layout.nodes.length,
               padding: const EdgeInsets.symmetric(vertical: _verticalPadding),
               addAutomaticKeepAlives: false,
               itemBuilder: (context, index) =>
@@ -555,63 +459,4 @@ class _JsonTreeState extends State<JsonTree> with BodyMetricsState<JsonTree> {
       },
     );
   }
-}
-
-enum _Chevron { none, closed, open }
-
-/// Draws the guide lines of the levels above a row, and its chevron.
-class _GuidePainter extends CustomPainter {
-  const _GuidePainter({
-    required this.depth,
-    required this.step,
-    required this.box,
-    required this.guide,
-    required this.chevron,
-    required this.chevronState,
-  });
-
-  final int depth;
-  final double step;
-  final double box;
-  final Color guide;
-  final Color chevron;
-  final _Chevron chevronState;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final line = Paint()
-      ..color = guide
-      ..strokeWidth = 1;
-    for (var d = 0; d < depth; d++) {
-      final x = d * step + box / 2;
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), line);
-    }
-    if (chevronState == _Chevron.none) return;
-    final cx = depth * step + box / 2;
-    final cy = size.height / 2;
-    const r = 3.5;
-    final path = Path();
-    if (chevronState == _Chevron.closed) {
-      path
-        ..moveTo(cx - r * 0.6, cy - r)
-        ..lineTo(cx + r * 0.9, cy)
-        ..lineTo(cx - r * 0.6, cy + r);
-    } else {
-      path
-        ..moveTo(cx - r, cy - r * 0.6)
-        ..lineTo(cx, cy + r * 0.9)
-        ..lineTo(cx + r, cy - r * 0.6);
-    }
-    path.close();
-    canvas.drawPath(path, Paint()..color = chevron);
-  }
-
-  @override
-  bool shouldRepaint(_GuidePainter old) =>
-      old.depth != depth ||
-      old.guide != guide ||
-      old.chevron != chevron ||
-      old.chevronState != chevronState ||
-      old.step != step ||
-      old.box != box;
 }
