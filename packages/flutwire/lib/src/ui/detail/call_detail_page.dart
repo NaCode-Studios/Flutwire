@@ -1,0 +1,353 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+
+import '../../export/export.dart';
+import '../../flutwire.dart';
+import '../../model/call.dart';
+import '../../model/cookies.dart';
+import '../../model/headers.dart';
+import '../../util/format.dart';
+import '../actions.dart';
+import '../scope.dart';
+import '../widgets/gradient_rule.dart';
+import '../widgets/method_chip.dart';
+import '../widgets/segmented.dart';
+import '../widgets/status_pill.dart';
+import 'body_pane.dart';
+import 'cookies_view.dart';
+import 'headers_view.dart';
+import 'overview_tab.dart';
+
+enum _Tab { overview, request, response }
+
+enum _Part { body, headers, cookies }
+
+/// One call in full: an overview, then the request and the response, each as a
+/// body, header fields and cookies.
+///
+/// The page follows the call while it runs, so a response that is still
+/// arriving fills in as it comes.
+class CallDetailPage extends StatefulWidget {
+  /// Opens the call with [callId]. [embedded] drops the back button, for the
+  /// two-pane layout on a wide screen.
+  const CallDetailPage({
+    super.key,
+    required this.callId,
+    this.embedded = false,
+  });
+
+  /// The id of the call to show.
+  final int callId;
+
+  /// Whether the page sits beside the list instead of on top of it.
+  final bool embedded;
+
+  @override
+  State<CallDetailPage> createState() => _CallDetailPageState();
+}
+
+class _CallDetailPageState extends State<CallDetailPage> {
+  FlutwireCall? _call;
+  bool _gone = false;
+  _Tab _tab = _Tab.overview;
+  _Part _requestPart = _Part.body;
+  _Part _responsePart = _Part.body;
+  Timer? _refresh;
+  FlutwireCall? _lastSeen;
+
+  @override
+  void initState() {
+    super.initState();
+    Flutwire.calls.addListener(_historyChanged);
+    unawaited(_load());
+  }
+
+  @override
+  void dispose() {
+    Flutwire.calls.removeListener(_historyChanged);
+    _refresh?.cancel();
+    super.dispose();
+  }
+
+  void _historyChanged() {
+    final latest = Flutwire.store?.find(widget.callId);
+    if (latest == null) {
+      if (mounted && _call != null) setState(() => _gone = true);
+      return;
+    }
+    if (identical(latest, _lastSeen)) return;
+    // A burst of progress updates is read once.
+    _refresh?.cancel();
+    _refresh = Timer(const Duration(milliseconds: 150), _load);
+  }
+
+  Future<void> _load() async {
+    final store = Flutwire.store;
+    final summary = store?.find(widget.callId);
+    final full = await store?.load(widget.callId);
+    if (!mounted) return;
+    setState(() {
+      _lastSeen = summary;
+      _call = full;
+      _gone = full == null;
+    });
+  }
+
+  Future<void> _togglePin(FlutwireCall call) async {
+    await Flutwire.store?.setPinned([call.id], pinned: !call.pinned);
+    await _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.fw;
+    final s = context.strings;
+    final call = _call;
+    return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: !widget.embedded,
+        title: Text(
+          call == null ? '' : '${call.method}  ${call.host}',
+          style: t.mono(size: 14, weight: FontWeight.w600, color: t.ink),
+          overflow: TextOverflow.ellipsis,
+        ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(2),
+          child: GradientRule(),
+        ),
+        actions: call == null ? null : _actions(context, call),
+      ),
+      body: _gone
+          ? Center(
+              child: Text(s.callGone, style: t.body(color: t.faint)),
+            )
+          : call == null
+          ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
+          : Column(
+              children: [
+                _Header(call: call),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+                  child: FwSegmented<_Tab>(
+                    options: {
+                      _Tab.overview: s.tabOverview,
+                      _Tab.request: s.tabRequest,
+                      _Tab.response: s.tabResponse,
+                    },
+                    value: _tab,
+                    onChanged: (v) => setState(() => _tab = v),
+                  ),
+                ),
+                Expanded(child: _content(context, call)),
+              ],
+            ),
+    );
+  }
+
+  List<Widget> _actions(BuildContext context, FlutwireCall call) {
+    final s = context.strings;
+    return [
+      IconButton(
+        tooltip: call.pinned ? s.unpin : s.pin,
+        icon: Icon(
+          call.pinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
+          color: call.pinned ? context.fw.warning : null,
+        ),
+        onPressed: () => _togglePin(call),
+      ),
+      PopupMenuButton<_Action>(
+        tooltip: s.share,
+        icon: const Icon(Icons.more_vert_rounded),
+        onSelected: (action) async {
+          switch (action) {
+            case _Action.copyUrl:
+              await copyText(context, call.uri.toString());
+            case _Action.copyCurl:
+              await copyCurl(context, call);
+            case _Action.text:
+              await shareCalls(context, [call], FlutwireExportFormat.text);
+            case _Action.curl:
+              await shareCalls(context, [call], FlutwireExportFormat.curl);
+            case _Action.har:
+              await shareCalls(context, [call], FlutwireExportFormat.har);
+            case _Action.json:
+              await shareCalls(context, [call], FlutwireExportFormat.json);
+          }
+        },
+        itemBuilder: (context) => [
+          PopupMenuItem(value: _Action.copyUrl, child: Text(s.copyUrl)),
+          PopupMenuItem(value: _Action.copyCurl, child: Text(s.copyCurl)),
+          const PopupMenuDivider(),
+          PopupMenuItem(value: _Action.text, child: Text(s.shareAsText)),
+          PopupMenuItem(value: _Action.curl, child: Text(s.shareAsCurl)),
+          PopupMenuItem(value: _Action.har, child: Text(s.shareAsHar)),
+          PopupMenuItem(value: _Action.json, child: Text(s.shareAsJson)),
+        ],
+      ),
+    ];
+  }
+
+  Widget _content(BuildContext context, FlutwireCall call) {
+    final s = context.strings;
+    switch (_tab) {
+      case _Tab.overview:
+        return OverviewTab(call: call);
+      case _Tab.request:
+        final cookies = [
+          for (final line in call.request.headers['cookie'])
+            ...parseCookieHeader(line),
+        ];
+        return _Side(
+          parts: {
+            _Part.body: s.tabBody,
+            _Part.headers: s.tabHeaders,
+            if (cookies.isNotEmpty) _Part.cookies: s.tabCookies,
+          },
+          value: _requestPart,
+          onChanged: (v) => setState(() => _requestPart = v),
+          builder: (part) => switch (part) {
+            _Part.body => BodyPane(
+              call: call,
+              body: call.request.body,
+              isRequest: true,
+            ),
+            _Part.headers => HeadersView(headers: call.request.headers),
+            _Part.cookies => CookiesView(cookies: cookies),
+          },
+        );
+      case _Tab.response:
+        final response = call.response;
+        if (response == null) {
+          return Center(
+            child: Text(
+              call.isPending ? s.running : s.noResponseYet,
+              style: context.fw.body(color: context.fw.faint),
+            ),
+          );
+        }
+        final cookies = _setCookies(response.headers);
+        return _Side(
+          parts: {
+            _Part.body: s.tabBody,
+            _Part.headers: s.tabHeaders,
+            if (cookies.isNotEmpty) _Part.cookies: s.tabCookies,
+          },
+          value: _responsePart,
+          onChanged: (v) => setState(() => _responsePart = v),
+          builder: (part) => switch (part) {
+            _Part.body => BodyPane(
+              call: call,
+              body: response.body,
+              isRequest: false,
+            ),
+            _Part.headers => HeadersView(headers: response.headers),
+            _Part.cookies => CookiesView(cookies: cookies),
+          },
+        );
+    }
+  }
+
+  static List<FlutwireCookie> _setCookies(FlutwireHeaders headers) => [
+    for (final line in headers['set-cookie']) ?parseSetCookie(line),
+  ];
+}
+
+enum _Action { copyUrl, copyCurl, text, curl, har, json }
+
+/// A row of sub-tabs above a full-height pane.
+class _Side extends StatelessWidget {
+  const _Side({
+    required this.parts,
+    required this.value,
+    required this.onChanged,
+    required this.builder,
+  });
+
+  final Map<_Part, String> parts;
+  final _Part value;
+  final ValueChanged<_Part> onChanged;
+  final Widget Function(_Part) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    final current = parts.containsKey(value) ? value : _Part.body;
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: FwSegmented<_Part>(
+            options: parts,
+            value: current,
+            onChanged: onChanged,
+          ),
+        ),
+        Expanded(child: builder(current)),
+      ],
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header({required this.call});
+
+  final FlutwireCall call;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.fw;
+    final path = call.uri.path.isEmpty ? '/' : call.uri.path;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          StatusPill(call: call, large: true),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    MethodChip(call.method),
+                    const SizedBox(width: 8),
+                    Text(
+                      formatDuration(call.duration),
+                      style: t.mono(size: 12, color: t.muted),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '↑ ${formatBytes(call.requestSize)}  ↓ ${formatBytes(call.responseSize)}',
+                      style: t.mono(size: 12, color: t.faint),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  call.graphql?.operationName ?? path,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: t.mono(
+                    size: 14,
+                    weight: FontWeight.w600,
+                    color: t.ink,
+                  ),
+                ),
+                if (call.uri.hasQuery) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    '?${call.uri.query}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: t.mono(size: 11.5, color: t.muted),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

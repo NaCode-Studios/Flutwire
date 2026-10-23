@@ -66,3 +66,31 @@ const Map<int, String> _phrases = {
   503: 'Service Unavailable',
   504: 'Gateway Timeout',
 };
+
+/// How long before [now] [time] was, in the shortest honest words: `now`,
+/// `12s`, `4m`, `3h`, and from a day on the date itself.
+String formatAgo(DateTime time, DateTime now) {
+  final gap = now.difference(time);
+  if (gap.inSeconds < 3) return 'now';
+  if (gap.inSeconds < 60) return '${gap.inSeconds}s';
+  if (gap.inMinutes < 60) return '${gap.inMinutes}m';
+  if (gap.inHours < 24) return '${gap.inHours}h';
+  final t = time.toLocal();
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${t.year}-${two(t.month)}-${two(t.day)}';
+}
+
+/// A clock time with milliseconds, in the device's time zone: `12:04:31.482`.
+String formatClock(DateTime time) {
+  final t = time.toLocal();
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${two(t.hour)}:${two(t.minute)}:${two(t.second)}.'
+      '${t.millisecond.toString().padLeft(3, '0')}';
+}
+
+/// A date and a clock time: `2026-10-23 12:04:31.482`.
+String formatDateTime(DateTime time) {
+  final t = time.toLocal();
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${t.year}-${two(t.month)}-${two(t.day)} ${formatClock(time)}';
+}

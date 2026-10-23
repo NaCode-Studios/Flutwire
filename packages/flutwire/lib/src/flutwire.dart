@@ -12,9 +12,21 @@ import 'model/call.dart';
 import 'model/headers.dart';
 import 'notify/notifier.dart';
 import 'platform/native.dart';
+import 'share.dart';
 import 'store/open_store.dart';
 import 'store/store.dart';
 import 'ui/inspector_route.dart';
+import 'version.dart';
+
+/// The sharing service of the running app, for the inspector. Not part of the
+/// public API: the library exports only [Flutwire].
+FlutwireSharing? get flutwireSharing => Flutwire._sharing;
+
+/// The notifier of the running app, for the inspector's settings.
+FlutwireNotifier? get flutwireNotifier => Flutwire._notifier;
+
+/// The engine of the running app, for the inspector's settings.
+FlutwireEngine? get flutwireEngine => Flutwire._engine;
 
 /// The entry point of Flutwire.
 ///
@@ -32,6 +44,7 @@ abstract final class Flutwire {
   static FlutwireEngine? _engine;
   static FlutwireNative? _native;
   static FlutwireNotifier? _notifier;
+  static FlutwireSharing? _sharing;
   static StreamSubscription<String>? _actions;
   static void Function()? _uninstallWire;
   static Future<void>? _starting;
@@ -85,6 +98,12 @@ abstract final class Flutwire {
       locale: () => config.locale ?? _deviceLocale(),
     );
     _notifier = notifier;
+    _sharing = FlutwireSharing(
+      native: native,
+      store: store,
+      temporaryPath: info?.temporaryPath,
+      version: flutwireVersion,
+    );
     if (config.notification.enabled && info != null) {
       notifier.start(known: info.permission);
     }
@@ -243,6 +262,7 @@ abstract final class Flutwire {
     _engine = null;
     _native = null;
     _notifier = null;
+    _sharing = null;
     _actions = null;
     _uninstallWire = null;
     _starting = null;

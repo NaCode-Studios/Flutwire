@@ -1,6 +1,7 @@
 import 'dart:ui' show Locale;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show ThemeMode;
 
 import 'capture/redaction.dart';
 import 'model/body.dart';
@@ -135,6 +136,7 @@ final class FlutwireConfig {
     this.notification = const FlutwireNotificationConfig(),
     this.shortcut = true,
     this.locale,
+    this.themeMode = ThemeMode.system,
   });
 
   /// Whether recording is on. Null means on in debug builds and off in
@@ -194,6 +196,9 @@ final class FlutwireConfig {
   /// The language of the notification and the inspector. Null follows the
   /// device.
   final Locale? locale;
+
+  /// Whether the inspector is dark, light, or follows the device.
+  final ThemeMode themeMode;
 
   /// Whether this configuration records in the current build mode.
   bool get isActive {

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import '../model/body.dart';
 import '../model/call.dart';
+import '../model/cookies.dart';
 import '../model/headers.dart';
 import '../util/format.dart';
 
@@ -139,44 +140,20 @@ List<Map<String, String>> _headers(FlutwireHeaders headers) => [
 
 List<Map<String, String>> _requestCookies(FlutwireHeaders headers) => [
   for (final line in headers['cookie'])
-    for (final pair in line.split(';'))
-      if (pair.contains('='))
-        {
-          'name': pair.substring(0, pair.indexOf('=')).trim(),
-          'value': pair.substring(pair.indexOf('=') + 1).trim(),
-        },
+    for (final cookie in parseCookieHeader(line))
+      {'name': cookie.name, 'value': cookie.value},
 ];
 
-List<Map<String, Object?>> _responseCookies(FlutwireHeaders headers) {
-  final out = <Map<String, Object?>>[];
-  for (final line in headers['set-cookie']) {
-    final segments = line.split(';').map((s) => s.trim()).toList();
-    final first = segments.first;
-    final eq = first.indexOf('=');
-    if (eq <= 0) continue;
-    final cookie = <String, Object?>{
-      'name': first.substring(0, eq),
-      'value': first.substring(eq + 1),
-    };
-    for (final attribute in segments.skip(1)) {
-      final at = attribute.indexOf('=');
-      final key = (at < 0 ? attribute : attribute.substring(0, at))
-          .toLowerCase();
-      final value = at < 0 ? '' : attribute.substring(at + 1);
-      switch (key) {
-        case 'path':
-          cookie['path'] = value;
-        case 'domain':
-          cookie['domain'] = value;
-        case 'expires':
-          cookie['expires'] = value;
-        case 'httponly':
-          cookie['httpOnly'] = true;
-        case 'secure':
-          cookie['secure'] = true;
-      }
-    }
-    out.add(cookie);
-  }
-  return out;
-}
+List<Map<String, Object?>> _responseCookies(FlutwireHeaders headers) => [
+  for (final line in headers['set-cookie'])
+    if (parseSetCookie(line) case final cookie?)
+      {
+        'name': cookie.name,
+        'value': cookie.value,
+        if (cookie.path != null) 'path': cookie.path,
+        if (cookie.domain != null) 'domain': cookie.domain,
+        if (cookie.expires != null) 'expires': cookie.expires,
+        if (cookie.httpOnly) 'httpOnly': true,
+        if (cookie.secure) 'secure': true,
+      },
+];

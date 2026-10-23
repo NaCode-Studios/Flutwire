@@ -9,7 +9,7 @@ export 'src/capture/redaction.dart';
 export 'src/config.dart';
 export 'src/engine.dart';
 export 'src/export/export.dart' show FlutwireExportFormat, callToJson;
-export 'src/flutwire.dart';
+export 'src/flutwire.dart' show Flutwire;
 export 'src/model/body.dart';
 export 'src/model/call.dart';
 export 'src/model/headers.dart';
