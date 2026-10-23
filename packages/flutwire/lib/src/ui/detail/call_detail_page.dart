@@ -308,15 +308,18 @@ class _Header extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                // A wrap rather than a row: on a narrow screen the sizes go to a
+                // second line instead of running off the edge.
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     MethodChip(call.method),
-                    const SizedBox(width: 8),
                     Text(
                       formatDuration(call.duration),
                       style: t.mono(size: 12, color: t.muted),
                     ),
-                    const SizedBox(width: 8),
                     Text.rich(
                       TextSpan(
                         children: [
