@@ -49,6 +49,7 @@ final class FlutwireCallRecorder {
   FlutwireCall _call;
   bool _requestFinal = false;
   bool _finished = false;
+  String? _contentType;
   DateTime? _lastProgress;
   int _publishedResponseBytes = -1;
 
@@ -65,6 +66,18 @@ final class FlutwireCallRecorder {
   void requestBody(List<int> chunk) => _guard(() {
     if (_requestFinal || _finished) return;
     _req.add(chunk);
+  });
+
+  /// Replaces the request headers, for a client that learns them after the
+  /// call began. The redaction policy is applied.
+  void requestHeaders(FlutwireHeaders headers) => _guard(() {
+    if (_requestFinal || _finished) return;
+    _call = _call.copyWith(
+      request: _call.request.copyWith(
+        headers: _host.config.redaction.applyToHeaders(headers),
+      ),
+    );
+    _contentType = headers.contentType;
   });
 
   /// Says the request has been sent in full, fixing the request body.
@@ -153,7 +166,7 @@ final class FlutwireCallRecorder {
     if (_requestFinal) return;
     _requestFinal = true;
     final headers = _call.request.headers;
-    final contentType = headers.contentType;
+    final contentType = _contentType ?? headers.contentType;
     final redaction = _host.config.redaction;
     final raw = _req.bytes();
     final body = FlutwireBody(

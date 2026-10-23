@@ -38,6 +38,11 @@ final class FlutwireEngine implements FlutwireRecorderHost {
   int _lastId = 0;
   bool _reportedInternalError = false;
 
+  /// Whether the `dart:io` capture is installed for this engine. Capture
+  /// adapters for a single client stand down while it is, because it already
+  /// sees their calls.
+  bool wireCaptureActive = false;
+
   /// How many failures inside Flutwire were swallowed. A test or a bug report
   /// can read it; the app never sees them.
   int internalErrorCount = 0;
