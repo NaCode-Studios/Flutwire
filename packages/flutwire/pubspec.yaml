@@ -1,0 +1,43 @@
+name: flutwire
+description: >-
+  Network inspector for Flutter. Records the HTTP calls your app makes, keeps
+  them across restarts, and opens them from a notification in the shade.
+version: 0.0.1
+repository: https://github.com/NaCode-Studios/Flutwire
+issue_tracker: https://github.com/NaCode-Studios/Flutwire/issues
+funding:
+  - https://github.com/sponsors/NaCode-Studios
+
+topics:
+  - http
+  - networking
+  - debugging
+  - inspector
+  - notifications
+
+environment:
+  sdk: ^3.9.0
+  flutter: ">=3.35.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  path_provider: ^2.1.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: it.nacodestudios.flutwire
+        pluginClass: FlutwirePlugin
+      ios:
+        pluginClass: FlutwirePlugin
+      macos:
+        pluginClass: FlutwirePlugin
