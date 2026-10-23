@@ -114,6 +114,39 @@ void main() {
     expect(find.textContaining('abc123'), findsWidgets);
   });
 
+  testWidgets(
+    'the cookies of a call are listed by name, with their values hidden',
+    (tester) async {
+      // As the default policy leaves them: the names and attributes stay.
+      await open(
+        tester,
+        makeCall(
+          1,
+          requestHeaders: {'cookie': 'session=[redacted]; theme=[redacted]'},
+          responseHeaders: {
+            'set-cookie': 'session=[redacted]; Path=/; HttpOnly',
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Request'));
+      await settle(tester);
+      await tester.tap(find.text('Cookies'));
+      await settle(tester);
+      expect(find.text('session'), findsOneWidget);
+      expect(find.text('theme'), findsOneWidget);
+      expect(find.text('Hidden'), findsNWidgets(2));
+
+      await tester.tap(find.text('Response'));
+      await settle(tester);
+      await tester.tap(find.text('Cookies'));
+      await settle(tester);
+      expect(find.text('session'), findsOneWidget);
+      expect(find.text('HttpOnly'), findsOneWidget);
+      expect(find.text('Path=/'), findsOneWidget);
+    },
+  );
+
   testWidgets('a call that is not in the history says so', (tester) async {
     setScreen(tester, const Size(420, 900));
     await tester.pumpWidget(

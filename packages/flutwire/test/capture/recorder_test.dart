@@ -155,7 +155,7 @@ void main() {
       ..responseBody(utf('{"token":"t0p","user":"a"}'))
       ..complete();
     final res = t.store.find(rec.id)!.response!;
-    expect(res.headers.first('set-cookie'), '[redacted]');
+    expect(res.headers.first('set-cookie'), 'sid=[redacted]');
     expect(res.body.text, contains('"token":"[redacted]"'));
     expect(res.body.text, isNot(contains('t0p')));
     expect(res.body.text, contains('"user":"a"'));

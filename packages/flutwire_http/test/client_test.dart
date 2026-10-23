@@ -66,7 +66,7 @@ void main() {
       expect(call.request.body.text, '{"name":"a"}');
       expect(call.request.headers.first('authorization'), '[redacted]');
       expect(call.response!.body.jsonValue, {'id': 7});
-      expect(call.response!.headers.first('set-cookie'), '[redacted]');
+      expect(call.response!.headers.first('set-cookie'), 'sid=[redacted]');
     },
   );
 

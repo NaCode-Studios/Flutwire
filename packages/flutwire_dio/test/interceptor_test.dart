@@ -82,7 +82,10 @@ void main() {
     expect(call.request.headers.contentType, startsWith('application/json'));
     expect(call.request.body.text, '{"name":"a"}');
     expect(call.response!.body.jsonValue, {'id': 7});
-    expect(call.response!.headers.first('set-cookie'), '[redacted]');
+    expect(
+      call.response!.headers.first('set-cookie'),
+      'sid=[redacted]; Path=/',
+    );
   });
 
   test('an error status is a completed call with its body', () async {

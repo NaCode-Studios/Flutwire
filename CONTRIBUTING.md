@@ -44,6 +44,8 @@ flutter analyze --fatal-infos
 
 The Android and Apple halves are compiled by building the example app: `flutter build apk --debug`, `flutter build ios --simulator --no-codesign` and `flutter build macos --debug`, each from `packages/flutwire/example`.
 
+How the JSON tree behaves on a big response is measured on a device, in profile mode, by `integration_test/json_tree_performance_test.dart` in the example app. Its first lines say how to run it. CI does not run it, because it needs a device.
+
 ## Commits and branches
 
 `main` is protected; work on a branch and open a pull request. Keep commits scoped to one change and write the message in the imperative mood.

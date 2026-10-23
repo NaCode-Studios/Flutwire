@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../model/headers.dart';
 import '../actions.dart';
 import '../scope.dart';
+import '../widgets/hidden_value.dart';
 
 /// The header fields of a request or a response, one per row. Tapping a row
 /// copies it. A value the redaction policy hid is marked as hidden.
@@ -69,32 +70,7 @@ class HeadersView extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 hidden
-                    ? Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: t.raised,
-                          borderRadius: BorderRadius.circular(7),
-                          border: Border.all(color: t.lineStrong),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.lock_outline_rounded,
-                              size: 13,
-                              color: t.faint,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              s.redacted,
-                              style: t.mono(size: 11.5, color: t.muted),
-                            ),
-                          ],
-                        ),
-                      )
+                    ? HiddenValue(label: s.redacted)
                     : Text(
                         field.value,
                         style: t.mono(size: 12.5, color: t.ink),
