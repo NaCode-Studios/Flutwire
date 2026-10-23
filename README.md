@@ -6,11 +6,18 @@
 
 **A network inspector for Flutter that opens from the notification shade.**
 
-![License](https://img.shields.io/badge/license-Apache--2.0-F0803A?style=flat-square)
+[![CI](https://img.shields.io/github/actions/workflow/status/NaCode-Studios/Flutwire/ci.yaml?branch=main&label=CI&labelColor=141518&style=flat-square)](https://github.com/NaCode-Studios/Flutwire/actions/workflows/ci.yaml)
+[![pub.dev](https://img.shields.io/pub/v/flutwire?label=pub.dev&labelColor=141518&color=F0803A&style=flat-square)](https://pub.dev/packages/flutwire)
+[![pub points](https://img.shields.io/pub/points/flutwire?labelColor=141518&color=F0803A&style=flat-square)](https://pub.dev/packages/flutwire/score)
+[![License](https://img.shields.io/badge/license-Apache--2.0-F0803A?labelColor=141518&style=flat-square)](LICENSE)
 
 When an app misbehaves on a phone, the call that explains it is usually out of reach. The console shows only what a logger was told to print. A proxy needs a certificate on the device and a changed Wi-Fi setting. Every HTTP client in the app has to be wired by hand before it says anything, and when the app is killed the evidence goes with it.
 
 Flutwire records the calls an app makes, keeps them on the device and lists the latest ones in the notification shade. Tapping it opens the inspector, and each call opens in full: URL, timings, headers, cookies, and the request and response bodies as a JSON tree, indented text, form fields, an image or a hex dump. A debug build needs one line in `main`; a release build records nothing.
+
+```bash
+flutter pub add flutwire
+```
 
 ```dart
 Future<void> main() async {
