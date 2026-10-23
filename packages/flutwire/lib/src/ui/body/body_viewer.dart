@@ -7,6 +7,9 @@ import '../../model/body.dart';
 import '../../model/call.dart';
 import '../../util/format.dart';
 import '../scope.dart';
+import 'body_files.dart';
+import 'body_modes.dart';
+import 'body_toolbar.dart';
 import 'code_view.dart';
 import 'copy.dart';
 import 'fields_view.dart';
@@ -43,17 +46,7 @@ class FlutwireBodyActions {
   final Future<void> Function(String text, String fileName)? onSaveText;
 }
 
-enum _Mode { decoded, tree, pretty, raw, hex, fields, parts, preview }
-
 enum _More { expandAll, collapseAll, lineNumbers }
-
-/// One line of the copy or save menu: what it says and what it does.
-class _Entry {
-  const _Entry(this.label, this.run);
-
-  final String label;
-  final Future<void> Function() run;
-}
 
 /// A request or a response body, shown the way its content wants to be read.
 ///
@@ -100,8 +93,8 @@ class FlutwireBodyViewer extends StatefulWidget {
 class _FlutwireBodyViewerState extends State<FlutwireBodyViewer> {
   final BodySearchController _search = BodySearchController();
 
-  List<_Mode> _modes = const [];
-  _Mode _mode = _Mode.raw;
+  late BodyModes _modes;
+  BodyMode _mode = BodyMode.raw;
   ({String name, String text})? _decoded;
   bool _searchOpen = false;
   bool _wrap = true;
@@ -110,7 +103,7 @@ class _FlutwireBodyViewerState extends State<FlutwireBodyViewer> {
   JsonTreeController? _tree;
   FieldsModel? _fields;
   PartsModel? _parts;
-  final Map<_Mode, TextSearchSource> _textSources = {};
+  final Map<BodyMode, TextSearchSource> _textSources = {};
   String? _prettyText;
 
   FlutwireBody get _body => widget.body;
@@ -150,17 +143,18 @@ class _FlutwireBodyViewerState extends State<FlutwireBodyViewer> {
   void _prepare({bool keepView = false}) {
     final before = keepView ? _mode : null;
     _decoded = _decode();
-    final base = _baseModes();
-    _modes = [if (_decoded != null) _Mode.decoded, ...base];
+    _modes = BodyModes(_body, hasDecoded: _decoded != null);
     _tree = null;
     _fields = null;
     _parts = null;
     _prettyText = null;
     _textSources.clear();
-    if (before != null && _modes.contains(before) && _isEnabled(before)) {
+    if (before != null &&
+        _modes.all.contains(before) &&
+        _modes.isEnabled(before)) {
       _mode = before;
     } else {
-      _mode = _decoded != null ? _Mode.decoded : _defaultMode(base);
+      _mode = _modes.initial;
       _searchOpen = false;
     }
     if (!_searchOpen) _search.clear();
@@ -185,36 +179,6 @@ class _FlutwireBodyViewerState extends State<FlutwireBodyViewer> {
     return null;
   }
 
-  List<_Mode> _baseModes() => switch (_body.kind) {
-    FlutwireBodyKind.json => const [_Mode.tree, _Mode.pretty, _Mode.raw],
-    FlutwireBodyKind.xml => const [_Mode.pretty, _Mode.raw],
-    FlutwireBodyKind.html || FlutwireBodyKind.text => const [_Mode.raw],
-    FlutwireBodyKind.form => const [_Mode.fields, _Mode.raw],
-    FlutwireBodyKind.multipart => const [_Mode.parts, _Mode.hex],
-    FlutwireBodyKind.image => const [_Mode.preview, _Mode.hex],
-    FlutwireBodyKind.binary => const [_Mode.hex],
-    FlutwireBodyKind.empty => const [],
-  };
-
-  _Mode _defaultMode(List<_Mode> base) {
-    if (base.isEmpty) return _Mode.raw;
-    if (_body.kind == FlutwireBodyKind.json) {
-      return _body.isValidJson ? _Mode.tree : _Mode.raw;
-    }
-    return base.first;
-  }
-
-  /// A cut or malformed JSON body has no tree and no indented form.
-  bool _isEnabled(_Mode mode) =>
-      _body.kind != FlutwireBodyKind.json ||
-      (mode != _Mode.tree && mode != _Mode.pretty) ||
-      _body.isValidJson;
-
-  bool _isSearchable(_Mode mode) => mode != _Mode.hex && mode != _Mode.preview;
-
-  bool _isCode(_Mode mode) =>
-      mode == _Mode.decoded || mode == _Mode.pretty || mode == _Mode.raw;
-
   String get _pretty {
     return _prettyText ??= () {
       try {
@@ -234,27 +198,27 @@ class _FlutwireBodyViewerState extends State<FlutwireBodyViewer> {
 
   PartsModel get _partsModel => _parts ??= PartsModel(_body);
 
-  TextSearchSource _textSource(_Mode mode, String text) =>
+  TextSearchSource _textSource(BodyMode mode, String text) =>
       _textSources.putIfAbsent(mode, () => TextSearchSource(text));
 
-  String _textOf(_Mode mode) => switch (mode) {
-    _Mode.decoded => _decoded?.text ?? '',
-    _Mode.pretty => _pretty,
+  String _textOf(BodyMode mode) => switch (mode) {
+    BodyMode.decoded => _decoded?.text ?? '',
+    BodyMode.pretty => _pretty,
     _ => _body.text ?? '',
   };
 
-  BodySearchSource? _sourceFor(_Mode mode) => switch (mode) {
-    _Mode.decoded ||
-    _Mode.pretty ||
-    _Mode.raw => _textSource(mode, _textOf(mode)),
-    _Mode.tree => _treeController,
-    _Mode.fields => _fieldsModel,
-    _Mode.parts => _partsModel,
-    _Mode.hex || _Mode.preview => null,
+  BodySearchSource? _sourceFor(BodyMode mode) => switch (mode) {
+    BodyMode.decoded ||
+    BodyMode.pretty ||
+    BodyMode.raw => _textSource(mode, _textOf(mode)),
+    BodyMode.tree => _treeController,
+    BodyMode.fields => _fieldsModel,
+    BodyMode.parts => _partsModel,
+    BodyMode.hex || BodyMode.preview => null,
   };
 
-  void _setMode(_Mode mode) {
-    if (mode == _mode || !_isEnabled(mode)) return;
+  void _setMode(BodyMode mode) {
+    if (mode == _mode || !_modes.isEnabled(mode)) return;
     setState(() {
       _mode = mode;
       final source = _sourceFor(mode);
@@ -279,58 +243,33 @@ class _FlutwireBodyViewerState extends State<FlutwireBodyViewer> {
     _ => CodeLanguage.plain,
   };
 
-  String _fileName({String? extension}) {
-    final side = widget.isRequest ? 'request' : 'response';
-    return 'flutwire-${widget.call.id}-$side.${extension ?? _extension()}';
-  }
+  String _fileName({String? extension}) => bodyFileName(
+    widget.call,
+    _body,
+    isRequest: widget.isRequest,
+    extension: extension,
+  );
 
-  String _extension() {
-    switch (_body.kind) {
-      case FlutwireBodyKind.json:
-        return 'json';
-      case FlutwireBodyKind.xml:
-        return _body.mimeType == 'image/svg+xml' ? 'svg' : 'xml';
-      case FlutwireBodyKind.html:
-        return 'html';
-      case FlutwireBodyKind.text:
-      case FlutwireBodyKind.form:
-        return 'txt';
-      case FlutwireBodyKind.image:
-        return switch (_body.mimeType) {
-          'image/png' => 'png',
-          'image/jpeg' => 'jpg',
-          'image/gif' => 'gif',
-          'image/webp' => 'webp',
-          'image/bmp' => 'bmp',
-          _ => 'img',
-        };
-      case FlutwireBodyKind.multipart:
-      case FlutwireBodyKind.binary:
-      case FlutwireBodyKind.empty:
-        return 'bin';
-    }
-  }
-
-  List<_Entry> _copyEntries(BuildContext context) {
+  List<MenuEntry> _copyEntries(BuildContext context) {
     final strings = context.strings;
     final raw = _body.text;
-    _Entry entry(String label, String Function() text) =>
-        _Entry(label, () => copyToClipboard(context, text()));
+    MenuEntry entry(String label, String Function() text) =>
+        MenuEntry(label, () => copyToClipboard(context, text()));
     switch (_mode) {
-      case _Mode.hex:
+      case BodyMode.hex:
         return [entry(strings.copyBody, () => hexDump(_body.bytes))];
-      case _Mode.preview:
-      case _Mode.parts:
+      case BodyMode.preview:
+      case BodyMode.parts:
         return const [];
-      case _Mode.decoded:
+      case BodyMode.decoded:
         return [
           entry(strings.copyBody, () => _decoded?.text ?? ''),
           if (raw != null) entry(strings.copyRaw, () => raw),
         ];
-      case _Mode.tree:
-      case _Mode.pretty:
-      case _Mode.raw:
-      case _Mode.fields:
+      case BodyMode.tree:
+      case BodyMode.pretty:
+      case BodyMode.raw:
+      case BodyMode.fields:
         if (raw == null) return const [];
         // Offer the indented form only when it differs from what was sent.
         final pretty = _pretty;
@@ -345,20 +284,20 @@ class _FlutwireBodyViewerState extends State<FlutwireBodyViewer> {
   }
 
   bool get _canCopy => switch (_mode) {
-    _Mode.hex || _Mode.decoded => true,
-    _Mode.preview || _Mode.parts => false,
+    BodyMode.hex || BodyMode.decoded => true,
+    BodyMode.preview || BodyMode.parts => false,
     _ => _body.text != null,
   };
 
-  List<_Entry> _saveEntries(BuildContext context) {
+  List<MenuEntry> _saveEntries(BuildContext context) {
     final strings = context.strings;
     final actions = widget.actions;
     final onBytes = actions.onSaveBytes;
     final onText = actions.onSaveText;
-    final entries = <_Entry>[];
+    final entries = <MenuEntry>[];
     if (onBytes != null && _body.bytes.isNotEmpty) {
       entries.add(
-        _Entry(
+        MenuEntry(
           strings.saveBody,
           () => onBytes(
             _body.bytes,
@@ -368,7 +307,7 @@ class _FlutwireBodyViewerState extends State<FlutwireBodyViewer> {
         ),
       );
     }
-    final decoded = _mode == _Mode.decoded;
+    final decoded = _mode == BodyMode.decoded;
     final text = decoded
         ? _decoded?.text
         : (_body.text == null ? null : _pretty);
@@ -376,7 +315,7 @@ class _FlutwireBodyViewerState extends State<FlutwireBodyViewer> {
         text != null &&
         (onBytes == null || text != _body.text)) {
       entries.add(
-        _Entry(
+        MenuEntry(
           onBytes == null ? strings.saveBody : strings.saveFormatted,
           () => onText(text, _fileName(extension: decoded ? 'txt' : null)),
         ),
@@ -392,11 +331,11 @@ class _FlutwireBodyViewerState extends State<FlutwireBodyViewer> {
     final actions = widget.actions;
     if (actions.onSaveBytes != null && _body.bytes.isNotEmpty) return true;
     return actions.onSaveText != null &&
-        (_mode == _Mode.decoded || _body.text != null);
+        (_mode == BodyMode.decoded || _body.text != null);
   }
 
   /// Runs a menu entry, and says so when the host's save fails.
-  Future<void> _run(_Entry entry) async {
+  Future<void> _run(MenuEntry entry) async {
     try {
       await entry.run();
     } on Object {
@@ -440,28 +379,28 @@ class _FlutwireBodyViewerState extends State<FlutwireBodyViewer> {
 
   Widget _buildContent(BuildContext context, bool narrow) {
     switch (_mode) {
-      case _Mode.decoded:
-      case _Mode.pretty:
-      case _Mode.raw:
+      case BodyMode.decoded:
+      case BodyMode.pretty:
+      case BodyMode.raw:
         return CodeView(
           text: _textOf(_mode),
-          language: _mode == _Mode.decoded ? CodeLanguage.plain : _language,
+          language: _mode == BodyMode.decoded ? CodeLanguage.plain : _language,
           wrap: _wrap,
           lineNumbers: _lineNumbers ?? !narrow,
           search: _search,
         );
-      case _Mode.tree:
+      case BodyMode.tree:
         return JsonTree(controller: _treeController, search: _search);
-      case _Mode.hex:
+      case BodyMode.hex:
         return HexView(bytes: _body.bytes);
-      case _Mode.fields:
+      case BodyMode.fields:
         return FieldsView(model: _fieldsModel, search: _search);
-      case _Mode.parts:
+      case BodyMode.parts:
         return PartsView(model: _partsModel, search: _search);
-      case _Mode.preview:
+      case BodyMode.preview:
         return ImageView(
           bytes: _body.bytes,
-          onShowHex: () => _setMode(_Mode.hex),
+          onShowHex: () => _setMode(BodyMode.hex),
         );
     }
   }
@@ -472,7 +411,7 @@ class _FlutwireBodyViewerState extends State<FlutwireBodyViewer> {
     final decoded = _decoded;
     return [
       if (_body.truncated)
-        _Banner(
+        NoteBanner(
           icon: Icons.content_cut_rounded,
           color: tokens.warning,
           text: strings.bodyTruncated(
@@ -481,23 +420,21 @@ class _FlutwireBodyViewerState extends State<FlutwireBodyViewer> {
           ),
         ),
       if (decoded != null)
-        _Banner(
+        NoteBanner(
           icon: Icons.auto_awesome_rounded,
           color: tokens.copperTone,
           text: strings.bodyDecodedBy(decoded.name),
-          actionLabel: _mode == _Mode.decoded
+          actionLabel: _mode == BodyMode.decoded
               ? strings.showRaw
               : strings.showDecoded,
           onAction: () => _setMode(
-            _mode == _Mode.decoded
-                ? _defaultMode(_modes.skip(1).toList())
-                : _Mode.decoded,
+            _mode == BodyMode.decoded ? _modes.undecoded : BodyMode.decoded,
           ),
         ),
       // The decoded text of a body that is not text deserves a word about what
       // is underneath it. The modes that draw the bytes say so themselves.
-      if (_mode == _Mode.decoded && _body.text == null)
-        _Banner(
+      if (_mode == BodyMode.decoded && _body.text == null)
+        NoteBanner(
           icon: Icons.data_object_rounded,
           color: tokens.info,
           text: strings.bodyBinary(
@@ -508,15 +445,15 @@ class _FlutwireBodyViewerState extends State<FlutwireBodyViewer> {
     ];
   }
 
-  String _label(_Mode mode, FlutwireStrings strings) => switch (mode) {
-    _Mode.decoded => strings.viewDecoded,
-    _Mode.tree => strings.viewTree,
-    _Mode.pretty => strings.viewPretty,
-    _Mode.raw => strings.viewRaw,
-    _Mode.hex => strings.viewHex,
-    _Mode.fields => strings.viewFields,
-    _Mode.parts => strings.viewParts,
-    _Mode.preview => strings.viewPreview,
+  String _label(BodyMode mode, FlutwireStrings strings) => switch (mode) {
+    BodyMode.decoded => strings.viewDecoded,
+    BodyMode.tree => strings.viewTree,
+    BodyMode.pretty => strings.viewPretty,
+    BodyMode.raw => strings.viewRaw,
+    BodyMode.hex => strings.viewHex,
+    BodyMode.fields => strings.viewFields,
+    BodyMode.parts => strings.viewParts,
+    BodyMode.preview => strings.viewPreview,
   };
 
   Widget _buildToolbar(BuildContext context, bool narrow) {
@@ -524,7 +461,7 @@ class _FlutwireBodyViewerState extends State<FlutwireBodyViewer> {
     final strings = context.strings;
     final copy = _canCopy;
     final save = _canSave;
-    final more = _mode == _Mode.tree || _isCode(_mode);
+    final more = _mode == BodyMode.tree || _mode.isCode;
     return Container(
       constraints: const BoxConstraints(minHeight: 52),
       padding: const EdgeInsets.fromLTRB(8, 6, 4, 6),
@@ -540,40 +477,40 @@ class _FlutwireBodyViewerState extends State<FlutwireBodyViewer> {
             child: Wrap(
               spacing: 4,
               children: [
-                for (final mode in _modes)
-                  _ModeChip(
+                for (final mode in _modes.all)
+                  ModeChip(
                     key: ValueKey<String>('flutwire.body.mode.${mode.name}'),
                     label: _label(mode, strings),
                     selected: mode == _mode,
-                    enabled: _isEnabled(mode),
+                    enabled: _modes.isEnabled(mode),
                     onTap: () => _setMode(mode),
                   ),
               ],
             ),
           ),
-          if (_isSearchable(_mode))
-            _ToolButton(
+          if (_mode.isSearchable)
+            ToolButton(
               icon: Icons.search_rounded,
               tooltip: strings.search,
               selected: _searchOpen,
               onPressed: _toggleSearch,
             ),
-          if (_isCode(_mode))
-            _ToolButton(
+          if (_mode.isCode)
+            ToolButton(
               icon: Icons.wrap_text_rounded,
               tooltip: strings.wrapLines,
               selected: _wrap,
               onPressed: () => setState(() => _wrap = !_wrap),
             ),
           if (copy)
-            _MenuButton(
+            MenuButton(
               icon: Icons.copy_rounded,
               tooltip: strings.copy,
               entries: () => _copyEntries(context),
               onSelected: _run,
             ),
           if (save)
-            _MenuButton(
+            MenuButton(
               icon: Icons.save_alt_rounded,
               tooltip: strings.save,
               entries: () => _saveEntries(context),
@@ -603,7 +540,7 @@ class _FlutwireBodyViewerState extends State<FlutwireBodyViewer> {
         }
       },
       itemBuilder: (context) => [
-        if (_mode == _Mode.tree) ...[
+        if (_mode == BodyMode.tree) ...[
           PopupMenuItem(value: _More.expandAll, child: Text(strings.expandAll)),
           PopupMenuItem(
             value: _More.collapseAll,
@@ -616,208 +553,7 @@ class _FlutwireBodyViewerState extends State<FlutwireBodyViewer> {
             child: Text(strings.lineNumbers),
           ),
       ],
-      child: _ToolIcon(icon: Icons.more_vert_rounded, color: tokens.muted),
-    );
-  }
-}
-
-/// One mode of the viewer, as a pill the user can pick.
-class _ModeChip extends StatelessWidget {
-  const _ModeChip({
-    super.key,
-    required this.label,
-    required this.selected,
-    required this.enabled,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final bool enabled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.fw;
-    final color = !enabled
-        ? tokens.faint.withValues(alpha: 0.6)
-        : selected
-        ? tokens.ink
-        : tokens.muted;
-    // The pill is the touch target: 40 logical pixels tall, like the icon
-    // buttons beside it, so the ink of a press fills it exactly.
-    final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-      side: BorderSide(
-        color: selected ? tokens.lineStrong : Colors.transparent,
-      ),
-    );
-    return Semantics(
-      button: true,
-      selected: selected,
-      enabled: enabled,
-      child: Material(
-        color: selected ? tokens.raised : Colors.transparent,
-        shape: shape,
-        animationDuration: Duration.zero,
-        child: InkWell(
-          onTap: enabled ? onTap : null,
-          customBorder: shape,
-          child: SizedBox(
-            height: 40,
-            child: Center(
-              widthFactor: 1,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Text(
-                  label,
-                  style: tokens.mono(
-                    size: 12.5,
-                    weight: selected ? FontWeight.w600 : FontWeight.w400,
-                    color: color,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// An icon button of the toolbar: 40 logical pixels square, quiet until it is
-/// switched on.
-class _ToolButton extends StatelessWidget {
-  const _ToolButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onPressed,
-    this.selected = false,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onPressed;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.fw;
-    return IconButton(
-      tooltip: tooltip,
-      onPressed: onPressed,
-      isSelected: selected,
-      icon: Icon(icon, size: 20),
-      style: IconButton.styleFrom(
-        foregroundColor: selected ? tokens.ink : tokens.muted,
-        backgroundColor: selected ? tokens.raised : Colors.transparent,
-        fixedSize: const Size.square(40),
-        minimumSize: const Size.square(40),
-        padding: EdgeInsets.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
-}
-
-class _ToolIcon extends StatelessWidget {
-  const _ToolIcon({required this.icon, required this.color});
-
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) =>
-      SizedBox.square(dimension: 40, child: Icon(icon, size: 20, color: color));
-}
-
-/// A toolbar button that opens a menu of [_Entry]s, built when it opens.
-class _MenuButton extends StatelessWidget {
-  const _MenuButton({
-    required this.icon,
-    required this.tooltip,
-    required this.entries,
-    required this.onSelected,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final List<_Entry> Function() entries;
-  final Future<void> Function(_Entry entry) onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return PopupMenuButton<_Entry>(
-      tooltip: tooltip,
-      padding: EdgeInsets.zero,
-      onSelected: onSelected,
-      itemBuilder: (context) => [
-        for (final entry in entries())
-          PopupMenuItem(value: entry, child: Text(entry.label)),
-      ],
-      child: _ToolIcon(icon: icon, color: context.fw.muted),
-    );
-  }
-}
-
-/// A note above the content: the body was cut, or it was decoded.
-class _Banner extends StatelessWidget {
-  const _Banner({
-    required this.icon,
-    required this.color,
-    required this.text,
-    this.actionLabel,
-    this.onAction,
-  });
-
-  final IconData icon;
-  final Color color;
-  final String text;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.fw;
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-      padding: const EdgeInsets.only(left: 12),
-      constraints: const BoxConstraints(minHeight: 40),
-      decoration: BoxDecoration(
-        color: tokens.tint(color),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                text,
-                style: tokens.body(size: 12.5, color: tokens.text),
-              ),
-            ),
-          ),
-          if (actionLabel != null)
-            TextButton(
-              onPressed: onAction,
-              style: TextButton.styleFrom(
-                foregroundColor: tokens.syntaxKey,
-                minimumSize: const Size(40, 40),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                textStyle: tokens.body(size: 12.5, weight: FontWeight.w600),
-              ),
-              child: Text(actionLabel!),
-            )
-          else
-            const SizedBox(width: 12),
-        ],
-      ),
+      child: ToolIcon(icon: Icons.more_vert_rounded, color: tokens.muted),
     );
   }
 }
