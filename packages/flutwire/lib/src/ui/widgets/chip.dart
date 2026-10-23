@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../scope.dart';
-import '../theme/tokens.dart';
 
 /// A small toggle in the mono face, used for filters.
 class FwChip extends StatelessWidget {
@@ -29,8 +28,7 @@ class FwChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.fw;
-    final tone =
-        color ?? (t.isDark ? const Color(0xFFA5A8FF) : FlutwireTokens.indigo);
+    final tone = color ?? t.indigoTone;
     return Semantics(
       button: true,
       selected: selected,

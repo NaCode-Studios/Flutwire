@@ -200,6 +200,9 @@ final class FlutwireTokens extends ThemeExtension<FlutwireTokens> {
   /// The violet of a call that is still running, readable on this look.
   Color get violetTone => isDark ? const Color(0xFFA78BFA) : violet;
 
+  /// The brand indigo as text and borders, readable on this look.
+  Color get indigoTone => isDark ? const Color(0xFFA5A8FF) : indigo;
+
   /// The colour of the tag for an HTTP [method].
   Color methodColor(String method) => switch (method.toUpperCase()) {
     'GET' => info,

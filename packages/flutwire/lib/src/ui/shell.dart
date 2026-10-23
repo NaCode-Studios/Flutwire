@@ -19,9 +19,16 @@ class FlutwireShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: Flutwire.themeModeListenable,
+      builder: (context, mode, _) => _dress(context, mode),
+    );
+  }
+
+  Widget _dress(BuildContext context, ThemeMode mode) {
     final config = Flutwire.config;
     final platform = MediaQuery.platformBrightnessOf(context);
-    final dark = switch (config.themeMode) {
+    final dark = switch (mode) {
       ThemeMode.dark => true,
       ThemeMode.light => false,
       ThemeMode.system => platform == Brightness.dark,

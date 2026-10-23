@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import '../config.dart';
 import '../model/call.dart';
+import 'preferences_io.dart';
 import 'store.dart';
 
 /// A store that keeps the history on disk, so it survives a restart and a
@@ -13,9 +14,10 @@ import 'store.dart';
 /// Layout, under the folder it is given:
 ///
 /// ```
-/// calls/<id>.json   the summary of a call: headers, status, timings
-/// bodies/<id>.req   the request body bytes that were kept
-/// bodies/<id>.res   the response body bytes that were kept
+/// calls/<id>.json     the summary of a call: headers, status, timings
+/// bodies/<id>.req     the request body bytes that were kept
+/// bodies/<id>.res     the response body bytes that were kept
+/// preferences.json    what the user picked in the settings
 /// ```
 ///
 /// A call is written when it ends, bodies first and summary last, through a
@@ -27,11 +29,16 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
   DiskFlutwireStore._(
     Directory root,
     this._config,
-    this._now, {
+    this._now,
+    this._preferences, {
     super.notifyInterval,
   }) : _calls = Directory('${root.path}/calls'),
        _bodies = Directory('${root.path}/bodies'),
-       super(maxCalls: _config.maxCalls, maxBytes: _config.maxMemoryBytes);
+       super(
+         maxCalls: _config.maxCalls,
+         maxBytes: _config.maxMemoryBytes,
+         preferences: _preferences,
+       );
 
   /// Opens the history stored under [root], creating it if needed, and applies
   /// the retention policy and the limits to what it finds.
@@ -45,6 +52,7 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
       root,
       config,
       clock ?? DateTime.now,
+      await FileFlutwirePreferences.open(root),
       notifyInterval: notifyInterval,
     );
     await store._load();
@@ -53,6 +61,7 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
 
   final FlutwireConfig _config;
   final DateTime Function() _now;
+  final FileFlutwirePreferences _preferences;
   final Directory _calls;
   final Directory _bodies;
 
@@ -129,6 +138,7 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
   @override
   Future<void> dispose() async {
     await _queue;
+    await _preferences.settled;
     await super.dispose();
   }
 

@@ -300,6 +300,18 @@ class FlutwireStringsIt extends FlutwireStrings {
   String get openSystemSettings => 'Apri le impostazioni di sistema';
 
   @override
+  String get appearanceSetting => 'Aspetto';
+
+  @override
+  String get themeSystem => 'Sistema';
+
+  @override
+  String get themeLight => 'Chiaro';
+
+  @override
+  String get themeDark => 'Scuro';
+
+  @override
   String get retentionSetting => 'Conserva la cronologia per';
 
   @override

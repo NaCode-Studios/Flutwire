@@ -197,7 +197,9 @@ final class FlutwireConfig {
   /// device.
   final Locale? locale;
 
-  /// Whether the inspector is dark, light, or follows the device.
+  /// The look the inspector starts with: dark, light, or the device's. Whoever
+  /// opens the inspector's settings can pick another, and that pick is
+  /// remembered and wins over this.
   final ThemeMode themeMode;
 
   /// Whether this configuration records in the current build mode.

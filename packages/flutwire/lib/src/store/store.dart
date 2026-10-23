@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../model/call.dart';
+import 'preferences.dart';
 
 /// Where recorded calls are kept.
 ///
@@ -16,6 +17,10 @@ abstract interface class FlutwireStore {
   /// in quick succession are folded into one notification so that a busy
   /// connection does not rebuild a screen for every chunk it reads.
   ValueListenable<List<FlutwireCall>> get calls;
+
+  /// What the user picked in the inspector's settings, kept next to the
+  /// history. Clearing the history leaves it alone.
+  FlutwirePreferences get preferences;
 
   /// The call with [id], or null. Its bodies may not be loaded; see [load].
   FlutwireCall? find(int id);
@@ -50,7 +55,11 @@ class MemoryFlutwireStore implements FlutwireStore {
     this.maxCalls = 500,
     this.maxBytes = 32 * 1024 * 1024,
     this.notifyInterval = const Duration(milliseconds: 120),
-  });
+    FlutwirePreferences? preferences,
+  }) : preferences = preferences ?? MemoryFlutwirePreferences();
+
+  @override
+  final FlutwirePreferences preferences;
 
   /// The most calls kept.
   final int maxCalls;

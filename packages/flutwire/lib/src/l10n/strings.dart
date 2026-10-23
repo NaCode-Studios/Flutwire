@@ -314,6 +314,18 @@ abstract class FlutwireStrings {
   /// Opens the system settings.
   String get openSystemSettings;
 
+  /// The label of the look setting.
+  String get appearanceSetting;
+
+  /// Follows the device's light or dark setting.
+  String get themeSystem;
+
+  /// The light look.
+  String get themeLight;
+
+  /// The dark look.
+  String get themeDark;
+
   /// The label of the retention setting.
   String get retentionSetting;
 

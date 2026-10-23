@@ -295,6 +295,18 @@ class FlutwireStringsEn extends FlutwireStrings {
   String get openSystemSettings => 'Open system settings';
 
   @override
+  String get appearanceSetting => 'Appearance';
+
+  @override
+  String get themeSystem => 'System';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
   String get retentionSetting => 'Keep history for';
 
   @override

@@ -50,7 +50,12 @@ abstract final class Flutwire {
   static Future<void>? _starting;
   static Timer? _opening;
 
+  static const String _themeKey = 'themeMode';
+
   static final ValueNotifier<bool> _inspectorOpen = ValueNotifier(false);
+  static final ValueNotifier<ThemeMode> _themeMode = ValueNotifier(
+    ThemeMode.system,
+  );
   static final ValueNotifier<List<FlutwireCall>> _none = ValueNotifier(
     const [],
   );
@@ -88,6 +93,9 @@ abstract final class Flutwire {
     final engine = FlutwireEngine(config: config, store: store);
     _engine = engine;
     _native = native;
+    _themeMode.value =
+        ThemeMode.values.asNameMap()[store.preferences.read(_themeKey)] ??
+        config.themeMode;
     if (config.captureDartIo) _uninstallWire = installWireCapture(engine);
 
     final notifier = FlutwireNotifier(
@@ -150,6 +158,21 @@ abstract final class Flutwire {
   /// Notifies when recording is paused or resumed.
   static ValueListenable<bool> get pausedListenable =>
       _engine?.pausedListenable ?? ValueNotifier(false);
+
+  /// The look of the inspector: dark, light, or whichever the device uses.
+  ///
+  /// It starts as [FlutwireConfig.themeMode], and from the moment someone picks
+  /// a look in the settings that pick wins and is remembered next to the
+  /// history.
+  static ThemeMode get themeMode => _themeMode.value;
+
+  static set themeMode(ThemeMode mode) {
+    _themeMode.value = mode;
+    unawaited(_engine?.store.preferences.write(_themeKey, mode.name));
+  }
+
+  /// Notifies when the look of the inspector changes.
+  static ValueListenable<ThemeMode> get themeModeListenable => _themeMode;
 
   /// Whether the `dart:io` capture is installed. Client adapters check it to
   /// avoid recording a call twice.
@@ -267,5 +290,6 @@ abstract final class Flutwire {
     _uninstallWire = null;
     _starting = null;
     _inspectorOpen.value = false;
+    _themeMode.value = ThemeMode.system;
   }
 }
