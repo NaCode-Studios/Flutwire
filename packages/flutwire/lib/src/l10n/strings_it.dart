@@ -457,5 +457,8 @@ class FlutwireStringsIt extends FlutwireStrings {
   String get saveFormatted => 'Salva formattato';
 
   @override
+  String get saveFailed => 'Impossibile condividere questo file';
+
+  @override
   String get moreActions => 'Altre azioni';
 }

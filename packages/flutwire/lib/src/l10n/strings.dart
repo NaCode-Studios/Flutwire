@@ -466,6 +466,9 @@ abstract class FlutwireStrings {
   /// Saves the body indented, or as a decoder showed it, to a file.
   String get saveFormatted;
 
+  /// Says a body could not be handed to the system as a file.
+  String get saveFailed;
+
   /// The label of a menu that holds the less common actions.
   String get moreActions;
 }

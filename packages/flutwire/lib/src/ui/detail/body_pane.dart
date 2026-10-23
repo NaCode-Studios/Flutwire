@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../../flutwire.dart';
 import '../../model/body.dart';
 import '../../model/call.dart';
+import '../actions.dart';
+import '../body/body_viewer.dart';
 import '../scope.dart';
 
-/// The body of a request or a response.
+/// The body of a request or a response, in the viewer that fits its content.
 class BodyPane extends StatelessWidget {
   /// Creates the pane for [body].
   const BodyPane({
@@ -37,12 +41,38 @@ class BodyPane extends StatelessWidget {
         child: Text(s.bodyEmpty, style: t.body(color: t.faint)),
       );
     }
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: SelectableText(
-        body.prettyText ?? '(${body.kind.name}, ${body.totalBytes} bytes)',
-        style: t.mono(size: 12.5, color: t.ink),
-      ),
+    final sharing = flutwireSharing;
+    return FlutwireBodyViewer(
+      call: call,
+      body: body,
+      isRequest: isRequest,
+      decoders: Flutwire.config.decoders,
+      actions: sharing == null
+          ? const FlutwireBodyActions()
+          : FlutwireBodyActions(
+              onSaveBytes: (bytes, fileName, mimeType) async {
+                final shared = await sharing.shareBytes(
+                  bytes,
+                  fileName,
+                  mimeType,
+                  origin: originOf(context),
+                );
+                if (!shared && context.mounted) {
+                  showToast(context, s.saveFailed);
+                }
+              },
+              onSaveText: (text, fileName) async {
+                final shared = await sharing.shareText(
+                  text,
+                  fileName,
+                  origin: originOf(context),
+                );
+                if (shared) return;
+                // No sheet to hand a file to: the text is still worth having.
+                await Clipboard.setData(ClipboardData(text: text));
+                if (context.mounted) showToast(context, s.copied);
+              },
+            ),
     );
   }
 }
