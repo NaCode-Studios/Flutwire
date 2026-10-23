@@ -136,7 +136,6 @@ void main() {
     await settle(tester);
 
     expect(find.text('Network activity'), findsOneWidget);
-    expect(Flutwire.inspectorOpen.value, isTrue);
     expect(button, findsNothing);
   });
 

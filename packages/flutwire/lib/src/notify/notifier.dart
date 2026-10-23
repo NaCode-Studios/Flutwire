@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import '../config.dart';
-import '../l10n/strings.dart';
+import '../l10n/lookup.dart';
 import '../model/call.dart';
 import '../platform/native.dart';
 import '../store/store.dart';
@@ -145,7 +145,7 @@ final class FlutwireNotifier with WidgetsBindingObserver {
     // Read only now: the history may have moved on while permission was asked.
     final calls = _store.calls.value;
     if (calls.isEmpty) return;
-    final strings = FlutwireStrings.of(_locale());
+    final strings = stringsFor(_locale());
     final shown = calls.take(_config.lines).map(callLine).toList();
     final failed = calls.where((c) => c.isError).length;
     final summary = strings.summary(calls: calls.length, failed: failed);

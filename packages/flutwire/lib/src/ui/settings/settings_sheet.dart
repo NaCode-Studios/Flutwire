@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../config.dart';
-import '../../flutwire.dart';
 import '../../platform/native.dart';
 import '../../version.dart';
 import '../scope.dart';
@@ -12,6 +11,7 @@ import '../theme/tokens.dart';
 
 /// Opens the settings as a sheet over the inspector.
 Future<void> showSettingsSheet(BuildContext context) {
+  final session = context.session;
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -20,7 +20,7 @@ Future<void> showSettingsSheet(BuildContext context) {
     backgroundColor: Colors.transparent,
     elevation: 0,
     showDragHandle: false,
-    builder: (_) => const FlutwireShell(child: _Settings()),
+    builder: (_) => FlutwireShell(session: session, child: const _Settings()),
   );
 }
 
@@ -31,6 +31,7 @@ class _Settings extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.fw;
     final s = context.strings;
+    final session = context.session;
     return Material(
       color: t.surface,
       clipBehavior: Clip.antiAlias,
@@ -60,7 +61,7 @@ class _Settings extends StatelessWidget {
               Text(s.settings, style: t.display(size: 22)),
               const SizedBox(height: 16),
               ValueListenableBuilder<bool>(
-                valueListenable: Flutwire.pausedListenable,
+                valueListenable: session.paused,
                 builder: (context, paused, _) => _Card(
                   child: SwitchListTile(
                     contentPadding: EdgeInsets.zero,
@@ -77,7 +78,7 @@ class _Settings extends StatelessWidget {
                       style: t.body(size: 12.5, color: t.muted),
                     ),
                     value: !paused,
-                    onChanged: (on) => Flutwire.isPaused = !on,
+                    onChanged: (on) => session.setPaused(!on),
                   ),
                 ),
               ),
@@ -95,7 +96,7 @@ class _Settings extends StatelessWidget {
                       style: t.label(color: t.faint),
                     ),
                     const SizedBox(height: 6),
-                    Text(switch (Flutwire.config.retention) {
+                    Text(switch (session.config.retention) {
                       FlutwireRetention.oneHour => s.retentionHour,
                       FlutwireRetention.oneDay => s.retentionDay,
                       FlutwireRetention.oneWeek => s.retentionWeek,
@@ -103,7 +104,7 @@ class _Settings extends StatelessWidget {
                     }, style: t.display(size: 18)),
                     const SizedBox(height: 4),
                     ValueListenableBuilder(
-                      valueListenable: Flutwire.calls,
+                      valueListenable: session.store.calls,
                       builder: (context, calls, _) => Text(
                         s.summary(
                           calls: calls.length,
@@ -139,6 +140,7 @@ class _AppearanceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.fw;
     final s = context.strings;
+    final session = context.session;
     final options = [
       (ThemeMode.system, Icons.brightness_auto_rounded, s.themeSystem),
       (ThemeMode.light, Icons.light_mode_rounded, s.themeLight),
@@ -154,7 +156,7 @@ class _AppearanceCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           ValueListenableBuilder<ThemeMode>(
-            valueListenable: Flutwire.themeModeListenable,
+            valueListenable: session.themeMode,
             builder: (context, mode, _) => Row(
               children: [
                 for (final (index, (value, icon, label))
@@ -165,7 +167,7 @@ class _AppearanceCard extends StatelessWidget {
                       icon: icon,
                       label: label,
                       selected: mode == value,
-                      onTap: () => Flutwire.themeMode = value,
+                      onTap: () => session.setThemeMode(value),
                     ),
                   ),
                 ],
@@ -269,10 +271,11 @@ class _NotificationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.fw;
     final s = context.strings;
+    final session = context.session;
     return ValueListenableBuilder<FlutwireNotificationPermission>(
-      valueListenable: Flutwire.notificationPermission,
+      valueListenable: session.notificationPermission,
       builder: (context, permission, _) {
-        final enabled = Flutwire.config.notification.enabled;
+        final enabled = session.config.notification.enabled;
         final (text, color, button, onPressed) = switch (permission) {
           _ when !enabled => (s.notificationUnsupported, t.faint, null, null),
           FlutwireNotificationPermission.granted => (
@@ -285,13 +288,13 @@ class _NotificationCard extends StatelessWidget {
             s.notificationDenied,
             t.warning,
             s.openSystemSettings,
-            () => unawaited(Flutwire.openNotificationSettings()),
+            () => unawaited(session.openNotificationSettings()),
           ),
           FlutwireNotificationPermission.notDetermined => (
             s.notificationDenied,
             t.warning,
             s.allowNotifications,
-            () => unawaited(Flutwire.requestNotificationPermission()),
+            () => unawaited(session.requestNotificationPermission()),
           ),
           FlutwireNotificationPermission.unsupported => (
             s.notificationUnsupported,

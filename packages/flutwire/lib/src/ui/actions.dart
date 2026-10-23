@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../export/export.dart';
-import '../flutwire.dart';
 import '../model/call.dart';
 import 'scope.dart';
 
@@ -42,10 +41,9 @@ Future<void> shareCalls(
   List<FlutwireCall> calls,
   FlutwireExportFormat format,
 ) async {
-  final sharing = flutwireSharing;
-  if (sharing == null || calls.isEmpty) return;
+  if (calls.isEmpty) return;
   final origin = originOf(context);
-  final shared = await sharing.share(
+  final shared = await context.session.sharing.share(
     calls,
     format,
     subject: calls.length == 1
@@ -58,9 +56,8 @@ Future<void> shareCalls(
 
 /// Copies one call as a cURL command.
 Future<void> copyCurl(BuildContext context, FlutwireCall call) async {
-  final sharing = flutwireSharing;
-  final text = sharing == null
-      ? FlutwireExportFormat.curl.render([call])
-      : await sharing.render([call], FlutwireExportFormat.curl);
+  final text = await context.session.sharing.render([
+    call,
+  ], FlutwireExportFormat.curl);
   if (context.mounted) await copyText(context, text);
 }

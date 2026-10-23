@@ -42,11 +42,12 @@ enum StateFilter {
   pinned,
 }
 
-/// The methods the filter names; every other method counts as [other].
+/// The methods the filter names; every other method counts as
+/// [otherMethods].
 const List<String> filterMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
 /// The key of every method the filter does not name.
-const String other = 'OTHER';
+const String otherMethods = 'OTHER';
 
 /// What the list shows, and what the user did to narrow and order it.
 ///
@@ -119,7 +120,7 @@ class InspectorController extends ChangeNotifier {
     _changed();
   }
 
-  /// Turns the filter for [method] on or off. Use [other] for the rest.
+  /// Turns the filter for [method] on or off. Use [otherMethods] for the rest.
   void toggleMethod(String method) {
     if (!_methods.remove(method)) _methods.add(method);
     _changed();
@@ -189,10 +190,14 @@ class InspectorController extends ChangeNotifier {
   /// few digits are a status code, and one character matches nearly anything.
   String? get _bodyQuery {
     final q = _query.trim().toLowerCase();
-    if (loadCall == null || q.length < 2) return null;
-    if (q.length <= 3 && int.tryParse(q) != null) return null;
+    if (loadCall == null || q.length < 2 || _isStatusPrefix(q)) return null;
     return q;
   }
+
+  /// Whether [q] is the start of a status code, which is how a few digits are
+  /// read: "40" finds 400 and 404 and not every URL with a 40 in it.
+  static bool _isStatusPrefix(String q) =>
+      q.isNotEmpty && q.length <= 3 && int.tryParse(q) != null;
 
   void _restartBodySearch() {
     _searchToken++;
@@ -254,10 +259,10 @@ class InspectorController extends ChangeNotifier {
 
   List<FlutwireCall> _compute() {
     final q = _query.trim().toLowerCase();
-    final digits = q.isNotEmpty && q.length <= 3 && int.tryParse(q) != null;
+    final statusPrefix = _isStatusPrefix(q);
     final out = <FlutwireCall>[
       for (final call in all)
-        if ((_matchesQuery(call, q, digits) ||
+        if ((_matchesQuery(call, q, statusPrefix) ||
                 _bodyMatches.contains(call.id)) &&
             _matchesMethod(call) &&
             _matchesState(call))
@@ -278,17 +283,17 @@ class InspectorController extends ChangeNotifier {
     return out;
   }
 
-  static bool _matchesQuery(FlutwireCall call, String q, bool digits) {
+  static bool _matchesQuery(FlutwireCall call, String q, bool statusPrefix) {
     if (q.isEmpty) return true;
-    // A few digits are a status code, so "40" finds 400 and 404 and not every
-    // URL with a 40 in it.
-    if (digits) return '${call.statusCode ?? ''}'.startsWith(q);
+    if (statusPrefix) return '${call.statusCode ?? ''}'.startsWith(q);
     return call.searchText.contains(q);
   }
 
   bool _matchesMethod(FlutwireCall call) {
     if (_methods.isEmpty) return true;
-    final key = filterMethods.contains(call.method) ? call.method : other;
+    final key = filterMethods.contains(call.method)
+        ? call.method
+        : otherMethods;
     return _methods.contains(key);
   }
 

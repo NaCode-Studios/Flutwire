@@ -6,7 +6,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutwire/flutwire_io.dart';
+import 'package:flutwire/src/capture/wire/wire_io.dart';
 import 'package:flutwire/src/config.dart';
 import 'package:flutwire/src/engine.dart';
 import 'package:flutwire/src/model/call.dart';

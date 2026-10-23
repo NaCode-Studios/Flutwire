@@ -1,29 +1,21 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutwire/flutwire.dart';
 import 'package:flutwire/src/l10n/strings_it.dart';
+import 'package:flutwire/src/platform/native.dart';
 import 'package:flutwire/src/ui/scope.dart';
 import 'package:flutwire/src/ui/settings/settings_sheet.dart';
 import 'package:flutwire/src/ui/shell.dart';
 import 'package:flutwire/src/ui/theme/tokens.dart';
 
-const _channel = MethodChannel('it.nacodestudios.flutwire/native');
+import 'calls.dart';
+import 'fake_session.dart';
 
-const _config = FlutwireConfig(
-  enabled: true,
-  captureDartIo: false,
-  persist: false,
-  shortcut: false,
-  notification: FlutwireNotificationConfig(enabled: false),
-);
-
-Future<void> _openSettings(WidgetTester tester) async {
+Future<void> _openSettings(WidgetTester tester, FakeSession session) async {
   await tester.pumpWidget(
     MaterialApp(
       home: FlutwireShell(
+        session: session,
         child: Builder(
           builder: (context) => Scaffold(
             body: Center(
@@ -45,22 +37,33 @@ FlutwireTokens _tokensOfSheet(WidgetTester tester) =>
     FlutwireTokens.of(tester.element(find.text('APPEARANCE')));
 
 void main() {
-  // Without a handler the platform call of `Flutwire.init` never answers.
-  setUp(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(_channel, (_) async => null);
-  });
+  group('the recording switch', () {
+    testWidgets('shows whether Flutwire is recording', (tester) async {
+      final session = FakeSession();
+      await _openSettings(tester, session);
 
-  tearDown(() async {
-    await Flutwire.reset();
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(_channel, null);
+      expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+      expect(find.text('Paused'), findsNothing);
+    });
+
+    testWidgets('pauses and resumes the recording', (tester) async {
+      final session = FakeSession();
+      await _openSettings(tester, session);
+
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+      expect(session.paused.value, isTrue);
+      expect(find.text('Paused'), findsOneWidget);
+
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+      expect(session.paused.value, isFalse);
+    });
   });
 
   group('the appearance setting', () {
     testWidgets('offers the three looks', (tester) async {
-      await tester.runAsync(() => Flutwire.init(config: _config));
-      await _openSettings(tester);
+      await _openSettings(tester, FakeSession());
 
       expect(find.text('Appearance'.toUpperCase()), findsOneWidget);
       expect(find.text('System'), findsOneWidget);
@@ -71,32 +74,32 @@ void main() {
     testWidgets('repaints the sheet at once when a look is picked', (
       tester,
     ) async {
-      await tester.runAsync(() => Flutwire.init(config: _config));
+      final session = FakeSession(themeMode: ThemeMode.system);
       tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
       addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
-      await _openSettings(tester);
+      await _openSettings(tester, session);
       expect(_tokensOfSheet(tester).isDark, isTrue);
 
       await tester.tap(find.text('Light'));
       await tester.pumpAndSettle();
 
-      expect(Flutwire.themeMode, ThemeMode.light);
+      expect(session.themeMode.value, ThemeMode.light);
       expect(_tokensOfSheet(tester).isDark, isFalse);
 
       await tester.tap(find.text('Dark'));
       await tester.pumpAndSettle();
 
-      expect(Flutwire.themeMode, ThemeMode.dark);
+      expect(session.themeMode.value, ThemeMode.dark);
       expect(_tokensOfSheet(tester).isDark, isTrue);
     });
 
     testWidgets('follows the device again when System is picked', (
       tester,
     ) async {
-      await tester.runAsync(() => Flutwire.init(config: _config));
+      final session = FakeSession(themeMode: ThemeMode.system);
       tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
       addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
-      await _openSettings(tester);
+      await _openSettings(tester, session);
 
       await tester.tap(find.text('Dark'));
       await tester.pumpAndSettle();
@@ -104,13 +107,12 @@ void main() {
 
       await tester.tap(find.text('System'));
       await tester.pumpAndSettle();
-      expect(Flutwire.themeMode, ThemeMode.system);
+      expect(session.themeMode.value, ThemeMode.system);
       expect(_tokensOfSheet(tester).isDark, isFalse);
     });
 
     testWidgets('marks the look in force as selected', (tester) async {
-      await tester.runAsync(() => Flutwire.init(config: _config));
-      await _openSettings(tester);
+      await _openSettings(tester, FakeSession());
 
       bool selected(String label) => tester
           .widget<Semantics>(
@@ -134,8 +136,9 @@ void main() {
     });
 
     testWidgets('speaks the language of the inspector', (tester) async {
-      await tester.runAsync(
-        () => Flutwire.init(
+      await _openSettings(
+        tester,
+        FakeSession(
           config: const FlutwireConfig(
             enabled: true,
             captureDartIo: false,
@@ -146,7 +149,6 @@ void main() {
           ),
         ),
       );
-      await _openSettings(tester);
 
       expect(
         find.text(const FlutwireStringsIt().appearanceSetting.toUpperCase()),
@@ -161,65 +163,103 @@ void main() {
     });
   });
 
-  group('the saved look', () {
-    late Directory root;
-
-    setUp(() async {
-      root = await Directory.systemTemp.createTemp('flutwire_theme_');
-    });
-
-    tearDown(() async {
-      if (await root.exists()) await root.delete(recursive: true);
-    });
-
-    FlutwireConfig onDisk([ThemeMode mode = ThemeMode.system]) =>
-        FlutwireConfig(
-          enabled: true,
-          captureDartIo: false,
-          shortcut: false,
-          notification: const FlutwireNotificationConfig(enabled: false),
-          storagePath: root.path,
-          themeMode: mode,
+  group('the notification card', () {
+    FakeSession withNotifications(FlutwireNotificationPermission permission) =>
+        FakeSession(
+          permission: permission,
+          config: const FlutwireConfig(
+            enabled: true,
+            captureDartIo: false,
+            persist: false,
+            shortcut: false,
+            locale: Locale('en'),
+          ),
         );
 
-    testWidgets('starts as the app configured it', (tester) async {
-      await tester.runAsync(
-        () => Flutwire.init(config: onDisk(ThemeMode.dark)),
-      );
-      expect(Flutwire.themeMode, ThemeMode.dark);
-    });
-
-    testWidgets('is remembered across a restart and wins over the config', (
+    testWidgets('says so when the notification is turned off in the config', (
       tester,
     ) async {
-      await tester.runAsync(() async {
-        await Flutwire.init(config: onDisk(ThemeMode.dark));
-        Flutwire.themeMode = ThemeMode.light;
-        await Flutwire.reset();
-        await Flutwire.init(config: onDisk(ThemeMode.dark));
-      });
-      expect(Flutwire.themeMode, ThemeMode.light);
+      await _openSettings(tester, FakeSession());
+
+      expect(find.text('This platform has no notification'), findsOneWidget);
+      expect(find.byType(FilledButton), findsNothing);
     });
 
-    testWidgets('survives clearing the history', (tester) async {
-      await tester.runAsync(() async {
-        await Flutwire.init(config: onDisk());
-        Flutwire.themeMode = ThemeMode.dark;
-        await Flutwire.clear(keepPinned: false);
-        await Flutwire.reset();
-        await Flutwire.init(config: onDisk());
-      });
-      expect(Flutwire.themeMode, ThemeMode.dark);
+    testWidgets('says so when the platform has none', (tester) async {
+      await _openSettings(
+        tester,
+        withNotifications(FlutwireNotificationPermission.unsupported),
+      );
+
+      expect(find.text('This platform has no notification'), findsOneWidget);
+      expect(find.byType(FilledButton), findsNothing);
     });
 
-    testWidgets('ignores a stored value it does not know', (tester) async {
-      await tester.runAsync(() async {
-        await File(
-          '${root.path}/preferences.json',
-        ).writeAsString('{"themeMode":"sepia"}');
-        await Flutwire.init(config: onDisk(ThemeMode.light));
-      });
-      expect(Flutwire.themeMode, ThemeMode.light);
+    testWidgets('confirms that the notification is on', (tester) async {
+      await _openSettings(
+        tester,
+        withNotifications(FlutwireNotificationPermission.granted),
+      );
+
+      expect(
+        find.text('Showing the latest calls in the shade'),
+        findsOneWidget,
+      );
+      expect(find.byType(FilledButton), findsNothing);
     });
+
+    testWidgets('sends the user to the system settings when refused', (
+      tester,
+    ) async {
+      final session = withNotifications(FlutwireNotificationPermission.denied);
+      await _openSettings(tester, session);
+
+      expect(
+        find.text('Notifications are turned off for this app'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Open system settings'));
+      await tester.pumpAndSettle();
+
+      expect(session.settingsOpened, 1);
+    });
+
+    testWidgets('asks for the permission when it was never asked', (
+      tester,
+    ) async {
+      final session = withNotifications(
+        FlutwireNotificationPermission.notDetermined,
+      );
+      await _openSettings(tester, session);
+
+      await tester.tap(find.text('Allow notifications'));
+      await tester.pumpAndSettle();
+
+      expect(session.permissionRequests, 1);
+      expect(
+        find.text('Showing the latest calls in the shade'),
+        findsOneWidget,
+      );
+    });
+  });
+
+  testWidgets('says how long the history is kept and how big it is', (
+    tester,
+  ) async {
+    final session = FakeSession(
+      calls: [
+        makeCall(1),
+        makeCall(
+          2,
+          status: null,
+          state: FlutwireCallState.failed,
+          error: const FlutwireError(type: 'SocketException', message: 'down'),
+        ),
+      ],
+    );
+    await _openSettings(tester, session);
+
+    expect(find.text('1 week'), findsOneWidget);
+    expect(find.text('2 calls · 1 failed'), findsOneWidget);
   });
 }

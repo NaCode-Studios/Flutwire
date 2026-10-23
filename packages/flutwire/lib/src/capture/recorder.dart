@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show internal;
+
 import '../config.dart';
 import '../model/body.dart';
 import '../model/call.dart';
@@ -37,6 +39,7 @@ final class FlutwireCallRecorder {
   ///
   /// Adapters get theirs from `Flutwire.begin`; this constructor is for the
   /// engine and for tests.
+  @internal
   FlutwireCallRecorder(this._host, FlutwireCall call)
     : _call = call,
       _req = _BodyBuffer(_host.config.maxBodyBytes),

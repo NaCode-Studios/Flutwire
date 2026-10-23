@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../flutwire.dart';
 import '../../model/body.dart';
 import '../../model/call.dart';
 import '../actions.dart';
@@ -41,38 +40,34 @@ class BodyPane extends StatelessWidget {
         child: Text(s.bodyEmpty, style: t.body(color: t.faint)),
       );
     }
-    final sharing = flutwireSharing;
+    final session = context.session;
     return FlutwireBodyViewer(
       call: call,
       body: body,
       isRequest: isRequest,
-      decoders: Flutwire.config.decoders,
-      actions: sharing == null
-          ? const FlutwireBodyActions()
-          : FlutwireBodyActions(
-              onSaveBytes: (bytes, fileName, mimeType) async {
-                final shared = await sharing.shareBytes(
-                  bytes,
-                  fileName,
-                  mimeType,
-                  origin: originOf(context),
-                );
-                if (!shared && context.mounted) {
-                  showToast(context, s.saveFailed);
-                }
-              },
-              onSaveText: (text, fileName) async {
-                final shared = await sharing.shareText(
-                  text,
-                  fileName,
-                  origin: originOf(context),
-                );
-                if (shared) return;
-                // No sheet to hand a file to: the text is still worth having.
-                await Clipboard.setData(ClipboardData(text: text));
-                if (context.mounted) showToast(context, s.copied);
-              },
-            ),
+      decoders: session.config.decoders,
+      actions: FlutwireBodyActions(
+        onSaveBytes: (bytes, fileName, mimeType) async {
+          final shared = await session.sharing.shareBytes(
+            bytes,
+            fileName,
+            mimeType,
+            origin: originOf(context),
+          );
+          if (!shared && context.mounted) showToast(context, s.saveFailed);
+        },
+        onSaveText: (text, fileName) async {
+          final shared = await session.sharing.shareText(
+            text,
+            fileName,
+            origin: originOf(context),
+          );
+          if (shared) return;
+          // No sheet to hand a file to: the text is still worth having.
+          await Clipboard.setData(ClipboardData(text: text));
+          if (context.mounted) showToast(context, s.copied);
+        },
+      ),
     );
   }
 }

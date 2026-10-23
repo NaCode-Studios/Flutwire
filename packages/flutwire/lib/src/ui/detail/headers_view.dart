@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../flutwire.dart';
 import '../../model/headers.dart';
 import '../actions.dart';
 import '../scope.dart';
@@ -23,7 +22,7 @@ class HeadersView extends StatelessWidget {
         child: Text(s.noHeaders, style: t.body(color: t.faint)),
       );
     }
-    final mask = Flutwire.config.redaction.mask;
+    final mask = context.session.config.redaction.mask;
     final fields = headers.entries.toList();
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 32),
