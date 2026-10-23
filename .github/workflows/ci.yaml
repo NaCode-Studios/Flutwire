@@ -40,6 +40,61 @@ jobs:
       - run: flutter test
         working-directory: packages/flutwire_cloud_functions
 
+  # Everything `flutter pub publish` checks without uploading: the pubspec, the
+  # files that would ship, and a changelog that mentions the version being
+  # released. It is the command the release runs minus the upload, so a warning
+  # shows up on the pull request and not on the tag.
+  publishable:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter pub publish --dry-run
+        working-directory: packages/flutwire
+      - run: flutter pub publish --dry-run
+        working-directory: packages/flutwire_dio
+      - run: flutter pub publish --dry-run
+        working-directory: packages/flutwire_http
+      - run: flutter pub publish --dry-run
+        working-directory: packages/flutwire_cloud_functions
+
+  # pub.dev takes twenty points from a package that no longer compiles at the
+  # lowest versions its constraints allow, and a constraint nobody tested is a
+  # promise that breaks on a stranger's machine. A workspace resolves all its
+  # members together, so a constraint raised by one member hides a stale one in
+  # another: each package is copied out and resolved on its own. The adapters
+  # take the core from this checkout, so they are judged against the core they
+  # will ship with.
+  lower-bounds:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Analyze and test each package at its lowest versions
+        run: |
+          for pkg in flutwire flutwire_dio flutwire_http flutwire_cloud_functions; do
+            echo "::group::$pkg"
+            work="$RUNNER_TEMP/$pkg"
+            cp -R "packages/$pkg" "$work"
+            sed -i '/^resolution: workspace/d' "$work/pubspec.yaml"
+            if [ "$pkg" = flutwire ]; then
+              # The example app is a package of its own, resolved with the workspace.
+              rm -rf "$work/example"
+            else
+              printf 'dependency_overrides:\n  flutwire:\n    path: %s\n' \
+                "$PWD/packages/flutwire" >> "$work/pubspec.yaml"
+            fi
+            (cd "$work" && flutter pub downgrade && flutter analyze && flutter test)
+            echo "::endgroup::"
+          done
+
   # The plugin has native halves that `flutter analyze` never reads. Building
   # the example app is what compiles them, so a Kotlin or Swift error fails
   # here and not on a stranger's machine.
