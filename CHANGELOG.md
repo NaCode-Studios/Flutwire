@@ -25,6 +25,13 @@ board can be cross-checked against what actually shipped.
 
 - `flutwire_dio` and `flutwire_http`: an interceptor and a client for the places the `dart:io` capture does not reach, above all the web. Next to the capture they stand down by themselves, so a call is never listed twice (M5)
 
+- The inspector: a list of calls with search, filters for method and outcome, sorting and multi-select, a call in full with its timings, request and response, and two panes on a wide screen. It speaks English and Italian, has a look of its own in dark and light, and keeps the look the user picks in the settings (M10, M11, M13)
+- A body viewer that shows content the way it wants to be read: a collapsible JSON tree, colour-coded XML, HTML and text, a form as a list of fields, a multipart upload as cards, images, and a hex dump for anything else, with search inside the body, copy, save, and a hook for decoders that teach it a format (M11)
+- Share, save and copy: one call or many as text, cURL, HAR or JSON, and a body as a file (M12)
+- An example app that makes every kind of call and builds for Android, iOS, macOS and the web (M14)
+
+- `flutwire_cloud_functions`: Firebase callable functions, called by name or by URL, are listed with their payload, their result or error code, and how long they took. They go through the native SDK, so the `dart:io` capture cannot see them. The adapter sits on the Dart interface of the `cloud_functions` plugin, installs with one line and changes nothing for the app (M31)
+
 ### Internal
 
 - Dart workspace, strict analysis and CI over the Dart code and the Android and Apple builds (M1)

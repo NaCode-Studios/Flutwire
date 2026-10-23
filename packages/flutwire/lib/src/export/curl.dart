@@ -24,7 +24,7 @@ String toCurl(FlutwireCall call, {bool multiline = true}) {
   final args = <String>[];
   final request = call.request;
   final body = request.body;
-  final method = call.method;
+  final method = call.wireMethod;
 
   // The method and the URL stay together on the first line.
   final target = _quote(call.uri.toString());
@@ -33,6 +33,13 @@ String toCurl(FlutwireCall call, {bool multiline = true}) {
       : method == 'GET'
       ? target
       : '-X $method $target';
+
+  if (call.source == FlutwireSource.functions) {
+    notes.add(
+      'A callable function. The Firebase SDK also sends the signed-in user\'s '
+      'ID token and the App Check token, which are not part of this command.',
+    );
+  }
 
   final isMultipart = body.kind == FlutwireBodyKind.multipart;
   for (final field in request.headers.entries) {

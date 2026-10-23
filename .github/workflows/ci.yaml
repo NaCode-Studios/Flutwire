@@ -40,6 +40,8 @@ jobs:
         working-directory: packages/flutwire_dio
       - run: flutter test
         working-directory: packages/flutwire_http
+      - run: flutter test
+        working-directory: packages/flutwire_cloud_functions
 
   # The plugin has native halves that `flutter analyze` never reads. Building
   # the example app is what compiles them, so a Kotlin or Swift error fails
