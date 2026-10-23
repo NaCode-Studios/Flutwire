@@ -33,6 +33,7 @@ class InspectorPage extends StatefulWidget {
 class _InspectorPageState extends State<InspectorPage> {
   late final InspectorController _controller = InspectorController(
     Flutwire.calls,
+    loadCall: (id) async => Flutwire.store?.load(id),
   );
   final TextEditingController _search = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
@@ -223,10 +224,22 @@ class _InspectorPageState extends State<InspectorPage> {
                   )
                 : const SizedBox(width: double.infinity),
           ),
+          SizedBox(
+            height: 2,
+            child: _controller.isSearchingBodies
+                ? LinearProgressIndicator(
+                    minHeight: 2,
+                    color: FlutwireTokens.copper,
+                    backgroundColor: t.line,
+                  )
+                : null,
+          ),
           _FilterBar(controller: _controller),
           Expanded(
             child: visible.isEmpty
-                ? (_controller.hasFilters
+                ? (_controller.isSearchingBodies
+                      ? EmptyState(title: s.searchingBodies)
+                      : _controller.hasFilters
                       ? EmptyState(
                           title: s.emptyFiltered,
                           actionLabel: s.clearFilters,

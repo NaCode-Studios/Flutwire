@@ -64,7 +64,7 @@ class FlutwireStringsEn extends FlutwireStrings {
   String get unpin => 'Unpin';
 
   @override
-  String get searchHint => 'Search path, host, status or body';
+  String get searchHint => 'Search URL, status, headers or body';
 
   @override
   String get filters => 'Filters';
@@ -129,6 +129,9 @@ class FlutwireStringsEn extends FlutwireStrings {
 
   @override
   String get emptyFiltered => 'No call matches';
+
+  @override
+  String get searchingBodies => 'Searching the bodies';
 
   @override
   String get pickACall => 'Pick a call to read it';

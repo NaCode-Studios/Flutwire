@@ -67,7 +67,7 @@ class FlutwireStringsIt extends FlutwireStrings {
   String get unpin => 'Sblocca';
 
   @override
-  String get searchHint => 'Cerca percorso, host, stato o corpo';
+  String get searchHint => 'Cerca URL, stato, header o corpo';
 
   @override
   String get filters => 'Filtri';
@@ -132,6 +132,9 @@ class FlutwireStringsIt extends FlutwireStrings {
 
   @override
   String get emptyFiltered => 'Nessuna chiamata corrisponde';
+
+  @override
+  String get searchingBodies => 'Cerco nei corpi';
 
   @override
   String get pickACall => 'Scegli una chiamata per leggerla';

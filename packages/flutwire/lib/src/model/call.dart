@@ -456,13 +456,20 @@ final class FlutwireCall {
   /// `CALL` but travels as a POST.
   String get wireMethod => source == FlutwireSource.functions ? 'POST' : method;
 
-  /// A lower-case string a free-text search matches against.
+  /// A lower-case string a free-text search matches against: the method, the
+  /// URL, the status, the GraphQL operation, the error and every header field.
+  /// Bodies are searched separately, because they may have to be read from
+  /// disk.
   late final String searchText = [
     method,
     uri.toString(),
     if (statusCode != null) '$statusCode',
     if (graphql?.operationName != null) graphql!.operationName!,
     if (error != null) error!.message,
+    for (final field in request.headers.entries) '${field.key} ${field.value}',
+    if (response != null)
+      for (final field in response!.headers.entries)
+        '${field.key} ${field.value}',
   ].join(' ').toLowerCase();
 
   /// A copy with the given parts replaced.

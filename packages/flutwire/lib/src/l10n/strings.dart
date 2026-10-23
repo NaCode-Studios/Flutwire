@@ -148,6 +148,9 @@ abstract class FlutwireStrings {
   /// What a list with filters but no match says.
   String get emptyFiltered;
 
+  /// What the list says while the bodies are searched and nothing matched yet.
+  String get searchingBodies;
+
   /// What the detail pane says while no call is open.
   String get pickACall;
 
