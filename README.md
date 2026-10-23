@@ -47,7 +47,7 @@ Flutwire reads traffic and never changes it. It does not proxy other apps, and i
 
 In a release build `Flutwire.init` does nothing: no call is recorded, no file is written and no notification is posted. The plugin's native code still ships in the app, like any other plugin's, and on Android its manifest adds the notification permission to the merged one.
 
-> **Status — `0.0`, pre-alpha.** Flutwire is not published yet and the API will move. The plan is on [the project board](https://github.com/orgs/NaCode-Studios/projects/13).
+> **Status — `0.1`, alpha.** Minor versions may still break the API until `1.0`. The plan is on [the project board](https://github.com/orgs/NaCode-Studios/projects/13).
 
 ## Why Flutwire
 
@@ -90,11 +90,11 @@ Flutwire
 
 ## Roadmap
 
+**Shipped (`0.1.0`).** Capture, the history on disk, the notification on Android, iOS and macOS, the inspector with the body viewer, export, the adapters and the example app. [`CHANGELOG.md`](CHANGELOG.md) has the detail.
+
+**Next, `0.2.0`: beyond the interceptor.** Editing and resending a call, WebSocket and server-sent event frames, comparing two calls, mocking a response, calls made from other isolates, statistics and a waterfall, and decoders for Protobuf and MessagePack. The ideas that were turned down, with the reason, are on the board too.
+
 The plan lives on [the project board](https://github.com/orgs/NaCode-Studios/projects/13) and is mirrored as [milestones](https://github.com/NaCode-Studios/Flutwire/milestones).
-
-**Next, `0.1.0`: record and notify.** The first release: capture, the history on disk, the notification on Android, iOS and macOS, the inspector with the body viewer, export, the adapters and the example app.
-
-**Later, `0.2.0`: beyond the interceptor.** Editing and resending a call, WebSocket and server-sent event frames, comparing two calls, mocking a response, calls made from other isolates, statistics and a waterfall, and decoders for Protobuf and MessagePack. The ideas that were turned down, with the reason, are on the board too.
 
 ## Building and testing
 
