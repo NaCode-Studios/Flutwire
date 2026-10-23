@@ -23,6 +23,8 @@ board can be cross-checked against what actually shipped.
 
 - The same notification on iOS and macOS. It lists the latest calls in the notification centre without a banner or a sound, updates in place, has a Clear action, and opens the inspector when tapped, also after the app was killed. It hands every other notification to the delegate the app already had (M9)
 
+- `flutwire_dio` and `flutwire_http`: an interceptor and a client for the places the `dart:io` capture does not reach, above all the web. Next to the capture they stand down by themselves, so a call is never listed twice (M5)
+
 ### Internal
 
 - Dart workspace, strict analysis and CI over the Dart code and the Android and Apple builds (M1)

@@ -8,6 +8,8 @@ Flutwire is pre-alpha and the architecture is still moving. If you are thinking 
 | --- | --- |
 | `packages/flutwire` | The package: call model, capture, storage, export, notifications and the inspector UI, with its Android and Apple halves |
 | `packages/flutwire/example` | A Flutter app that makes every kind of call, for trying the package by hand |
+| `packages/flutwire_dio` | The Dio interceptor, for the web and for adapters that do not use `dart:io` |
+| `packages/flutwire_http` | The `package:http` client, for the same places |
 | `docs/brand` | The brand kit |
 
 ## Ground rules
@@ -29,7 +31,9 @@ flutter pub get
 ```bash
 dart format --output=none --set-exit-if-changed packages
 flutter analyze --fatal-infos
-cd packages/flutwire && flutter test
+(cd packages/flutwire && flutter test)
+(cd packages/flutwire_dio && flutter test)
+(cd packages/flutwire_http && flutter test)
 ```
 
 The Android and Apple halves are compiled by building the example app: `flutter build apk --debug`, `flutter build ios --simulator --no-codesign` and `flutter build macos --debug`, each from `packages/flutwire/example`.

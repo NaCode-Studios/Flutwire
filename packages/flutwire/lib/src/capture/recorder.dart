@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import '../config.dart';
@@ -129,6 +130,51 @@ final class FlutwireCallRecorder {
     _lastProgress = now;
     _publishProgress();
   });
+
+  /// Passes [source], the bytes of the request body, through unchanged while
+  /// recording them. Use it for a body that is only available as a stream.
+  Stream<List<int>> observeRequest(Stream<List<int>> source) =>
+      source.map((chunk) {
+        requestBody(chunk);
+        return chunk;
+      });
+
+  /// Passes [source], the bytes of the response body, through unchanged while
+  /// recording them, and ends the call when the stream ends, fails, or is
+  /// cancelled by the app.
+  ///
+  /// The returned stream has the semantics of [source]: it is paused, resumed
+  /// and cancelled with it, so reading through it cannot change how fast, or
+  /// whether, the app gets its bytes.
+  Stream<List<int>> observeResponse(Stream<List<int>> source) {
+    late final StreamController<List<int>> out;
+    StreamSubscription<List<int>>? subscription;
+    out = StreamController<List<int>>(
+      onListen: () {
+        subscription = source.listen(
+          (chunk) {
+            responseBody(chunk);
+            out.add(chunk);
+          },
+          onError: (Object error, StackTrace stack) {
+            fail(error, stack);
+            out.addError(error, stack);
+          },
+          onDone: () {
+            complete();
+            out.close();
+          },
+        );
+      },
+      onPause: () => subscription?.pause(),
+      onResume: () => subscription?.resume(),
+      onCancel: () {
+        cancel();
+        return subscription?.cancel();
+      },
+    );
+    return out.stream;
+  }
 
   /// Ends the call: the response, if any, was read to its end.
   void complete() => _end(FlutwireCallState.completed);
