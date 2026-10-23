@@ -8,6 +8,8 @@ import android.os.Looper
  * Clear button, and the Dart side, which is only listening while the engine lives.
  */
 object FlutwireBridge {
+    private val main = Handler(Looper.getMainLooper())
+
     @Volatile
     private var sink: ((String) -> Unit)? = null
 
@@ -22,7 +24,7 @@ object FlutwireBridge {
     /** Hands [action] to Dart if it is listening. Returns false when it is not. */
     fun deliver(action: String): Boolean {
         val target = sink ?: return false
-        Handler(Looper.getMainLooper()).post { target(action) }
+        main.post { target(action) }
         return true
     }
 }

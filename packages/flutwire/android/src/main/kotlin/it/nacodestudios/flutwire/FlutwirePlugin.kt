@@ -48,7 +48,6 @@ class FlutwirePlugin :
 
     // The action that started the app, kept until Dart asks for it.
     private var launchAction: String? = null
-    private var channelReady = false
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         context = binding.applicationContext
@@ -133,7 +132,6 @@ class FlutwirePlugin :
         )
         call.argument<String>("shortcutLabel")?.let { pushShortcut(it) }
         FlutwireBridge.attach { action -> channel.invokeMethod("onAction", action) }
-        channelReady = true
         val temporary = File(context.cacheDir, "flutwire").apply { mkdirs() }
         result.success(
             mapOf(
@@ -211,7 +209,6 @@ class FlutwirePlugin :
         val summary = call.argument<String>("summary") ?: ""
         val count = call.argument<Int>("count") ?: lines.size
         val clearLabel = call.argument<String>("clearLabel") ?: "Clear"
-        val color = call.argument<Number>("color")?.toInt() ?: DEFAULT_COLOR
 
         val inbox = NotificationCompat.InboxStyle()
             .setBigContentTitle(title)
@@ -222,7 +219,7 @@ class FlutwirePlugin :
             context,
             REQUEST_CLEAR,
             Intent(context, FlutwireReceiver::class.java).setAction(ACTION_CLEAR),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            PENDING_FLAGS,
         )
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
@@ -232,7 +229,7 @@ class FlutwirePlugin :
             .setSubText(summary)
             .setStyle(inbox)
             .setNumber(count)
-            .setColor(color)
+            .setColor(ACCENT_COLOR)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setVisibility(NotificationCompat.VISIBILITY_SECRET)
@@ -242,12 +239,12 @@ class FlutwirePlugin :
             .setShowWhen(false)
             .addAction(0, clearLabel, clear)
 
-        openIntent()?.let { builder.setContentIntent(PendingIntent.getActivity(
-            context,
-            REQUEST_OPEN,
-            it,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )) }
+        val open = openIntent()
+        if (open != null) {
+            builder.setContentIntent(
+                PendingIntent.getActivity(context, REQUEST_OPEN, open, PENDING_FLAGS),
+            )
+        }
 
         try {
             manager.notify(NOTIFICATION_ID, builder.build())
@@ -338,7 +335,9 @@ class FlutwirePlugin :
         private const val REQUEST_OPEN = 1
         private const val REQUEST_CLEAR = 2
         private const val REQUEST_PERMISSION = 8731
-        private const val DEFAULT_COLOR = 0xFFF0803A.toInt()
+        private const val ACCENT_COLOR = 0xFFF0803A.toInt()
+        private const val PENDING_FLAGS =
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
 
         const val ACTION_OPEN = "it.nacodestudios.flutwire.OPEN"
         const val ACTION_CLEAR = "it.nacodestudios.flutwire.CLEAR"

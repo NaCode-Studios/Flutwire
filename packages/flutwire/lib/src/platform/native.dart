@@ -131,14 +131,12 @@ class FlutwireNative {
     required String summary,
     required int count,
     required String clearLabel,
-    int? color,
   }) => _invoke<void>('showSummary', {
     'title': title,
     'lines': lines,
     'summary': summary,
     'count': count,
     'clearLabel': clearLabel,
-    'color': color,
   });
 
   /// Withdraws the notification.
