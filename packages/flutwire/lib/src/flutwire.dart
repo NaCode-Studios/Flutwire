@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'capture/recorder.dart';
 import 'config.dart';
+import 'diagnostics.dart';
 import 'model/call.dart';
 import 'model/headers.dart';
 import 'runtime.dart';
@@ -51,8 +52,12 @@ abstract final class Flutwire {
         config,
         navigatorKey: navigatorKey,
       );
-    } on Object catch (error) {
-      debugPrint('Flutwire: could not start, so it stays off: $error');
+    } on Object catch (error, stack) {
+      reportProblem(
+        'Could not start, so Flutwire stays off.',
+        error: error,
+        stack: stack,
+      );
     }
   }
 

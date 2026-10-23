@@ -12,6 +12,7 @@ import 'json_model.dart';
 import 'json_tree_layout.dart';
 import 'metrics.dart';
 import 'search.dart';
+import 'search_follow.dart';
 
 enum _NodeAction { copyValue, copyPath }
 
@@ -42,10 +43,8 @@ class _JsonTreeState extends State<JsonTree> with BodyMetricsState<JsonTree> {
   final ScrollController _vertical = ScrollController();
   late JsonTreeLayout _layout;
 
-  Map<int, List<int>> _matchesByNode = const {};
-  List<BodyMatch>? _mapFor;
-  List<BodyMatch>? _revealedFor;
-  int _revealedIndex = -2;
+  final MatchGroups _marks = MatchGroups((match) => match.unit >> 1);
+  final CurrentMatchTracker _tracker = CurrentMatchTracker();
   Offset _lastTap = Offset.zero;
 
   JsonTreeController get _tree => widget.controller;
@@ -85,49 +84,23 @@ class _JsonTreeState extends State<JsonTree> with BodyMetricsState<JsonTree> {
     setState(_layout.invalidate);
   }
 
-  void _syncMarks() {
-    final matches = widget.search.matches;
-    if (identical(matches, _mapFor)) return;
-    _mapFor = matches;
-    final map = <int, List<int>>{};
-    for (var i = 0; i < matches.length; i++) {
-      (map[matches[i].unit >> 1] ??= <int>[]).add(i);
-    }
-    _matchesByNode = map;
-  }
-
-  List<MatchMark> _marksOf(int node, {required bool value, int shift = 0}) {
-    final indices = _matchesByNode[node];
-    if (indices == null) return const [];
-    final search = widget.search;
-    final length = search.matchLength;
-    return [
-      for (final i in indices)
-        if (search.matches[i].unit.isOdd == value)
-          (
-            start: search.matches[i].start + shift,
-            end: search.matches[i].start + shift + length,
-            current: i == search.current,
-          ),
-    ];
-  }
+  List<MatchMark> _marksOf(int node, {required bool value, int shift = 0}) =>
+      _marks.marks(
+        widget.search,
+        node,
+        where: (match) => match.unit.isOdd == value,
+        shift: shift,
+      );
 
   void _onSearch() {
     final search = widget.search;
     if (!identical(search.source, _tree)) return;
-    if (!identical(_revealedFor, search.matches)) {
-      _revealedFor = search.matches;
-      _revealedIndex = -2;
+    if (_tracker.sawNewResults(search)) {
       // New results: open the way to every one of them, so that none is hidden
       // inside a closed branch.
       _tree.reveal(search.matches.map((match) => match.unit >> 1));
     }
-    if (search.current < 0) {
-      _revealedIndex = -1;
-    } else if (_revealedIndex != search.current) {
-      _revealedIndex = search.current;
-      _revealCurrent();
-    }
+    if (_tracker.arrived(search) != null) _revealCurrent();
   }
 
   void _revealCurrent() {
@@ -444,7 +417,7 @@ class _JsonTreeState extends State<JsonTree> with BodyMetricsState<JsonTree> {
         return ListenableBuilder(
           listenable: widget.search,
           builder: (context, _) {
-            _syncMarks();
+            _marks.sync(widget.search.matches);
             return ListView.builder(
               controller: _vertical,
               itemExtent: _layout.rowHeight,

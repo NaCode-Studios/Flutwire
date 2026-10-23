@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 import '../config.dart';
+import '../diagnostics.dart';
 import '../model/call.dart';
 import 'preferences_io.dart';
 import 'store.dart';
@@ -141,8 +142,15 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
   }
 
   void _enqueue(Future<void> Function() task) {
-    _queue = _queue.then((_) => task()).catchError((Object error) {
-      debugPrint('Flutwire: could not update the history on disk: $error');
+    _queue = _queue.then((_) => task()).catchError((
+      Object error,
+      StackTrace stack,
+    ) {
+      reportProblem(
+        'Could not update the history on disk.',
+        error: error,
+        stack: stack,
+      );
     });
   }
 

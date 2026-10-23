@@ -1,8 +1,7 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
-
 import '../config.dart';
+import '../diagnostics.dart';
 import 'disk_store.dart';
 import 'store.dart';
 
@@ -29,8 +28,12 @@ Future<FlutwireStore> openStore(
         ? Directory(base)
         : Directory('$base/flutwire');
     return await DiskFlutwireStore.open(root, config);
-  } on Object catch (error) {
-    debugPrint('Flutwire: keeping the history in memory only: $error');
+  } on Object catch (error, stack) {
+    reportProblem(
+      'Could not open the history on disk, so it is kept in memory only.',
+      error: error,
+      stack: stack,
+    );
     return memory();
   }
 }

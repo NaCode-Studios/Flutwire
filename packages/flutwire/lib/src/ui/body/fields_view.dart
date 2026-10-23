@@ -9,6 +9,7 @@ import 'metrics.dart';
 import 'quiet_note.dart';
 import 'reveal.dart';
 import 'search.dart';
+import 'search_follow.dart';
 
 /// The fields of a form body, and the text a search runs through.
 ///
@@ -55,10 +56,8 @@ class _FieldsViewState extends State<FieldsView> {
   late final RowRevealer _revealer = RowRevealer(_scroll);
   final Set<int> _opened = {};
 
-  Map<int, List<int>> _byRow = const {};
-  List<BodyMatch>? _mapFor;
-  List<BodyMatch>? _revealedFor;
-  int _revealedIndex = -2;
+  final MatchGroups _marks = MatchGroups((match) => match.unit >> 1);
+  final CurrentMatchTracker _tracker = CurrentMatchTracker();
 
   @override
   void initState() {
@@ -85,18 +84,8 @@ class _FieldsViewState extends State<FieldsView> {
   void _onSearch() {
     final search = widget.search;
     if (!identical(search.source, widget.model)) return;
-    if (search.current < 0) {
-      _revealedFor = search.matches;
-      _revealedIndex = -1;
-      return;
-    }
-    if (identical(_revealedFor, search.matches) &&
-        _revealedIndex == search.current) {
-      return;
-    }
-    _revealedFor = search.matches;
-    _revealedIndex = search.current;
-    final match = search.matches[search.current];
+    final match = _tracker.advance(search);
+    if (match == null) return;
     final row = match.unit >> 1;
     setState(() {
       // A match in the part of a long value that is cut away opens the value.
@@ -112,31 +101,11 @@ class _FieldsViewState extends State<FieldsView> {
     );
   }
 
-  void _syncMarks() {
-    final matches = widget.search.matches;
-    if (identical(matches, _mapFor)) return;
-    _mapFor = matches;
-    final map = <int, List<int>>{};
-    for (var i = 0; i < matches.length; i++) {
-      (map[matches[i].unit >> 1] ??= <int>[]).add(i);
-    }
-    _byRow = map;
-  }
-
-  List<MatchMark> _marksOf(int row, {required bool value}) {
-    final indices = _byRow[row];
-    if (indices == null) return const [];
-    final search = widget.search;
-    return [
-      for (final i in indices)
-        if (search.matches[i].unit.isOdd == value)
-          (
-            start: search.matches[i].start,
-            end: search.matches[i].start + search.matchLength,
-            current: i == search.current,
-          ),
-    ];
-  }
+  List<MatchMark> _marksOf(int row, {required bool value}) => _marks.marks(
+    widget.search,
+    row,
+    where: (match) => match.unit.isOdd == value,
+  );
 
   Widget _buildRow(BuildContext context, int index, double width) {
     final tokens = context.fw;
@@ -239,7 +208,7 @@ class _FieldsViewState extends State<FieldsView> {
       builder: (context, box) => ListenableBuilder(
         listenable: widget.search,
         builder: (context, _) {
-          _syncMarks();
+          _marks.sync(widget.search.matches);
           return ListView.builder(
             controller: _scroll,
             itemCount: fields.length,

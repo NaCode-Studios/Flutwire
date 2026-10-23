@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import 'capture/recorder.dart';
 import 'config.dart';
+import 'diagnostics.dart';
 import 'model/body.dart';
 import 'model/call.dart';
 import 'model/headers.dart';
@@ -95,8 +96,10 @@ final class FlutwireEngine implements FlutwireRecorderHost {
     internalErrorCount++;
     if (_reportedInternalError) return;
     _reportedInternalError = true;
-    debugPrint(
-      'Flutwire: a call could not be recorded and was skipped: $error',
+    reportProblem(
+      'A call could not be recorded and was skipped.',
+      error: error,
+      stack: stack,
     );
   }
 
