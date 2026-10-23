@@ -1,0 +1,32 @@
+# Keep only the ecosystems this repository actually contains — Dependabot warns
+# on a directory with no manifest, and a config full of warnings gets ignored.
+#
+#   pub    Dart / Flutter        gradle  Kotlin / JVM
+#   pip    Python                npm     JavaScript / TypeScript
+#   cargo  Rust                  gomod   Go
+#
+# github-actions always stays: every repository here has workflows.
+version: 2
+updates:
+  # ── replace with the ecosystem of this library ──
+  - package-ecosystem: pub
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # Batch routine minor/patch bumps into a single PR to cut noise. Majors
+      # stay separate on purpose — they are the ones worth reading.
+      minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # GitHub Actions used by the workflows.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns: ["*"]
