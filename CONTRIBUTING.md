@@ -13,6 +13,10 @@ Flutwire is pre-alpha and the architecture is still moving. If you are thinking 
 | `packages/flutwire_cloud_functions` | Firebase callable functions, which go through the native SDK and never reach `dart:io` |
 | `docs/brand` | The brand kit |
 
+## How the code fits together
+
+`Flutwire` is a thin facade. `Flutwire.init` builds a `FlutwireRuntime`, which wires the engine that records, the store that keeps, the notifier and the native bridge, and which is the one implementation of `FlutwireSession`. The inspector never reads `Flutwire` or the runtime: its screens work on the session they find in `FlutwireScope`, which is why they are tested against a fake. A capture adapter asks `Flutwire.begin` for a recorder and reports into it. The public API is what `lib/flutwire.dart` exports, and everything under `lib/src` is internal.
+
 ## Ground rules
 
 Recording never changes the traffic. The capture layer observes bytes and hands them on untouched, in the same order and at the same pace. A failure inside Flutwire is caught and counted, and is never thrown into the request the app made.

@@ -147,7 +147,7 @@ void main() {
     test('by method, with every other method grouped', () {
       controller.toggleMethod('POST');
       expect(ids(), [6, 1]);
-      controller.toggleMethod(other);
+      controller.toggleMethod(otherMethods);
       expect(ids(), [6, 3, 1]);
     });
 

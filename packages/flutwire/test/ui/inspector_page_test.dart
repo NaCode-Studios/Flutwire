@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutwire/flutwire.dart';
 import 'package:flutwire/src/ui/inspector/inspector_page.dart';
-import 'package:flutwire/src/ui/widgets/chip.dart';
+import 'package:flutwire/src/ui/widgets/toggle_chip.dart';
 
+import 'body/helpers.dart' show spyOnClipboard;
 import 'calls.dart';
+import 'fake_session.dart';
 
 List<FlutwireCall> sample() => [
   makeCall(
@@ -32,22 +34,22 @@ List<FlutwireCall> sample() => [
   ),
 ];
 
-Future<void> open(WidgetTester tester, {Size? size}) async {
+Future<FakeSession> open(
+  WidgetTester tester, {
+  Size? size,
+  List<FlutwireCall>? calls,
+}) async {
   setScreen(tester, size ?? const Size(420, 900));
-  await startFlutwire(tester, calls: sample());
-  await tester.pumpWidget(inspectorApp(const InspectorPage()));
+  final session = FakeSession(calls: calls ?? sample());
+  await tester.pumpWidget(inspectorApp(session, const InspectorPage()));
   await settle(tester);
+  return session;
 }
 
 void main() {
-  tearDown(stopFlutwire);
-
   group('the list', () {
     testWidgets('says there is nothing yet', (tester) async {
-      setScreen(tester, const Size(420, 900));
-      await startFlutwire(tester);
-      await tester.pumpWidget(inspectorApp(const InspectorPage()));
-      await settle(tester);
+      await open(tester, calls: const []);
 
       expect(find.text('Network activity'), findsOneWidget);
       expect(find.text('Nothing recorded yet'), findsOneWidget);
@@ -167,7 +169,7 @@ void main() {
     testWidgets('a method chip narrows the list', (tester) async {
       await open(tester);
 
-      await tester.tap(find.widgetWithText(FwChip, 'DELETE'));
+      await tester.tap(find.widgetWithText(ToggleChip, 'DELETE'));
       await settle(tester);
 
       expect(find.text('/files/7'), findsOneWidget);
@@ -178,7 +180,7 @@ void main() {
       await open(tester);
 
       // The chip row scrolls sideways; the 5xx chip starts off screen.
-      final chip = find.widgetWithText(FwChip, '5xx');
+      final chip = find.widgetWithText(ToggleChip, '5xx');
       await tester.scrollUntilVisible(
         chip,
         150,
@@ -245,26 +247,26 @@ void main() {
     });
 
     testWidgets('pinning keeps the call pinned in the history', (tester) async {
-      await open(tester);
+      final session = await open(tester);
       await tester.longPress(find.text('/login'));
       await settle(tester);
 
       await tester.tap(find.byTooltip('Pin'));
       await settle(tester);
 
-      expect(Flutwire.store!.find(4)!.pinned, isTrue);
+      expect(session.store.find(4)!.pinned, isTrue);
     });
   });
 
   group('the menu and the recording row', () {
     testWidgets('pausing from the row stops the recording', (tester) async {
-      await open(tester);
+      final session = await open(tester);
       expect(find.text('RECORDING'), findsOneWidget);
 
       await tester.tap(find.text('RECORDING'));
       await settle(tester);
 
-      expect(Flutwire.isPaused, isTrue);
+      expect(session.paused.value, isTrue);
       expect(find.text('PAUSED'), findsOneWidget);
     });
 
@@ -294,6 +296,35 @@ void main() {
       final slowest = tester.getTopLeft(find.text('/items/9')).dy;
       final newest = tester.getTopLeft(find.text('/login')).dy;
       expect(slowest, lessThan(newest));
+    });
+
+    testWidgets('export all writes the whole history out', (tester) async {
+      final clipboard = spyOnClipboard(tester);
+      await open(tester);
+
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await settle(tester);
+      await tester.tap(find.text('Export all: cURL'));
+      await settle(tester);
+
+      expect(clipboard.last, contains("curl -X POST 'https://api.test/login'"));
+      expect(
+        clipboard.last,
+        contains("curl -X DELETE 'https://cdn.test/files/7'"),
+      );
+    });
+
+    testWidgets('selected calls can be shared', (tester) async {
+      final clipboard = spyOnClipboard(tester);
+      await open(tester);
+      await tester.longPress(find.text('/login'));
+      await settle(tester);
+
+      await tester.tap(find.byTooltip('Share'));
+      await settle(tester);
+
+      expect(clipboard.last, contains('/login'));
+      expect(clipboard.last, isNot(contains('/items/9')));
     });
 
     testWidgets('settings open as a sheet', (tester) async {

@@ -4,9 +4,9 @@ import '../scope.dart';
 import '../theme/tokens.dart';
 
 /// A small toggle in the mono face, used for filters.
-class FwChip extends StatelessWidget {
+class ToggleChip extends StatelessWidget {
   /// Creates a chip.
-  const FwChip({
+  const ToggleChip({
     super.key,
     required this.label,
     required this.selected,

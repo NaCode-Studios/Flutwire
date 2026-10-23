@@ -3,15 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../export/export.dart';
-import '../../flutwire.dart';
 import '../../model/call.dart';
 import '../../model/cookies.dart';
 import '../../model/headers.dart';
+import '../../store/store.dart';
 import '../../util/format.dart';
 import '../actions.dart';
 import '../scope.dart';
 import '../widgets/method_chip.dart';
-import '../widgets/segmented.dart';
+import '../widgets/segmented_control.dart';
 import '../widgets/status_pill.dart';
 import '../widgets/wire_rule.dart';
 import 'body_pane.dart';
@@ -48,6 +48,7 @@ class CallDetailPage extends StatefulWidget {
 }
 
 class _CallDetailPageState extends State<CallDetailPage> {
+  late final FlutwireStore _store;
   FlutwireCall? _call;
   bool _gone = false;
   _Tab _tab = _Tab.overview;
@@ -59,19 +60,20 @@ class _CallDetailPageState extends State<CallDetailPage> {
   @override
   void initState() {
     super.initState();
-    Flutwire.calls.addListener(_historyChanged);
+    _store = context.session.store;
+    _store.calls.addListener(_historyChanged);
     unawaited(_load());
   }
 
   @override
   void dispose() {
-    Flutwire.calls.removeListener(_historyChanged);
+    _store.calls.removeListener(_historyChanged);
     _refresh?.cancel();
     super.dispose();
   }
 
   void _historyChanged() {
-    final latest = Flutwire.store?.find(widget.callId);
+    final latest = _store.find(widget.callId);
     if (latest == null) {
       if (mounted && _call != null) setState(() => _gone = true);
       return;
@@ -83,9 +85,8 @@ class _CallDetailPageState extends State<CallDetailPage> {
   }
 
   Future<void> _load() async {
-    final store = Flutwire.store;
-    final summary = store?.find(widget.callId);
-    final full = await store?.load(widget.callId);
+    final summary = _store.find(widget.callId);
+    final full = await _store.load(widget.callId);
     if (!mounted) return;
     setState(() {
       _lastSeen = summary;
@@ -95,7 +96,7 @@ class _CallDetailPageState extends State<CallDetailPage> {
   }
 
   Future<void> _togglePin(FlutwireCall call) async {
-    await Flutwire.store?.setPinned([call.id], pinned: !call.pinned);
+    await _store.setPinned([call.id], pinned: !call.pinned);
     await _load();
   }
 
@@ -129,7 +130,7 @@ class _CallDetailPageState extends State<CallDetailPage> {
                 _Header(call: call),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
-                  child: FwSegmented<_Tab>(
+                  child: SegmentedControl<_Tab>(
                     options: {
                       _Tab.overview: s.tabOverview,
                       _Tab.request: s.tabRequest,
@@ -156,33 +157,31 @@ class _CallDetailPageState extends State<CallDetailPage> {
         ),
         onPressed: () => _togglePin(call),
       ),
-      PopupMenuButton<_Action>(
+      // Each entry carries what it does, so the menu is one list.
+      PopupMenuButton<VoidCallback>(
         tooltip: s.share,
         icon: const Icon(Icons.more_vert_rounded),
-        onSelected: (action) async {
-          switch (action) {
-            case _Action.copyUrl:
-              await copyText(context, call.uri.toString());
-            case _Action.copyCurl:
-              await copyCurl(context, call);
-            case _Action.text:
-              await shareCalls(context, [call], FlutwireExportFormat.text);
-            case _Action.curl:
-              await shareCalls(context, [call], FlutwireExportFormat.curl);
-            case _Action.har:
-              await shareCalls(context, [call], FlutwireExportFormat.har);
-            case _Action.json:
-              await shareCalls(context, [call], FlutwireExportFormat.json);
-          }
-        },
-        itemBuilder: (context) => [
-          PopupMenuItem(value: _Action.copyUrl, child: Text(s.copyUrl)),
-          PopupMenuItem(value: _Action.copyCurl, child: Text(s.copyCurl)),
+        onSelected: (action) => action(),
+        itemBuilder: (menu) => [
+          PopupMenuItem(
+            value: () => unawaited(copyText(context, call.uri.toString())),
+            child: Text(s.copyUrl),
+          ),
+          PopupMenuItem(
+            value: () => unawaited(copyCurl(context, call)),
+            child: Text(s.copyCurl),
+          ),
           const PopupMenuDivider(),
-          PopupMenuItem(value: _Action.text, child: Text(s.shareAsText)),
-          PopupMenuItem(value: _Action.curl, child: Text(s.shareAsCurl)),
-          PopupMenuItem(value: _Action.har, child: Text(s.shareAsHar)),
-          PopupMenuItem(value: _Action.json, child: Text(s.shareAsJson)),
+          for (final (format, label) in [
+            (FlutwireExportFormat.text, s.shareAsText),
+            (FlutwireExportFormat.curl, s.shareAsCurl),
+            (FlutwireExportFormat.har, s.shareAsHar),
+            (FlutwireExportFormat.json, s.shareAsJson),
+          ])
+            PopupMenuItem(
+              value: () => unawaited(shareCalls(context, [call], format)),
+              child: Text(label),
+            ),
         ],
       ),
     ];
@@ -253,8 +252,6 @@ class _CallDetailPageState extends State<CallDetailPage> {
   ];
 }
 
-enum _Action { copyUrl, copyCurl, text, curl, har, json }
-
 /// A row of sub-tabs above a full-height pane.
 class _Side extends StatelessWidget {
   const _Side({
@@ -276,7 +273,7 @@ class _Side extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          child: FwSegmented<_Part>(
+          child: SegmentedControl<_Part>(
             options: parts,
             value: current,
             onChanged: onChanged,

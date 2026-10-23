@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 
 /// What a recorded body looks like, which decides how the inspector shows it.
@@ -44,17 +45,16 @@ final class FlutwireBody {
   FlutwireBody({required this.bytes, int? totalBytes, this.contentType})
     : totalBytes = totalBytes ?? bytes.length,
       loaded = true,
-      _keptBytes = bytes.length;
+      keptBytes = bytes.length;
 
   /// A body whose bytes live on disk and have not been read yet. It keeps the
   /// size and the media type so a list row can still describe it.
   FlutwireBody.unloaded({
     required this.totalBytes,
     this.contentType,
-    int keptBytes = 0,
+    this.keptBytes = 0,
   }) : bytes = _none,
-       loaded = false,
-       _keptBytes = keptBytes;
+       loaded = false;
 
   /// Restores the description written by [toJson], without the bytes.
   factory FlutwireBody.fromJson(Map<String, Object?> json) =>
@@ -68,6 +68,14 @@ final class FlutwireBody {
   factory FlutwireBody.empty() => FlutwireBody(bytes: _none);
 
   static final Uint8List _none = Uint8List(0);
+  static final RegExp _charsetParameter = RegExp(
+    r'charset\s*=\s*"?([^";\s]+)',
+    caseSensitive: false,
+  );
+  static final RegExp _boundaryParameter = RegExp(
+    r'boundary\s*=\s*"?([^";]+)"?',
+    caseSensitive: false,
+  );
 
   /// The bytes that were kept, at most the configured limit.
   final Uint8List bytes;
@@ -82,10 +90,8 @@ final class FlutwireBody {
   /// not, until the full call is loaded.
   final bool loaded;
 
-  final int _keptBytes;
-
   /// How many bytes were kept, whether or not they are loaded now.
-  int get keptBytes => _keptBytes;
+  final int keptBytes;
 
   /// Whether nothing was sent.
   bool get isEmpty => totalBytes == 0;
@@ -106,22 +112,14 @@ final class FlutwireBody {
   String? get charset {
     final raw = contentType;
     if (raw == null) return null;
-    final match = RegExp(
-      r'charset\s*=\s*"?([^";\s]+)',
-      caseSensitive: false,
-    ).firstMatch(raw);
-    return match?.group(1)?.toLowerCase();
+    return _charsetParameter.firstMatch(raw)?.group(1)?.toLowerCase();
   }
 
   /// The multipart boundary parameter, or null.
   String? get boundary {
     final raw = contentType;
     if (raw == null) return null;
-    final match = RegExp(
-      r'boundary\s*=\s*"?([^";]+)"?',
-      caseSensitive: false,
-    ).firstMatch(raw);
-    return match?.group(1);
+    return _boundaryParameter.firstMatch(raw)?.group(1);
   }
 
   /// How this body should be shown.

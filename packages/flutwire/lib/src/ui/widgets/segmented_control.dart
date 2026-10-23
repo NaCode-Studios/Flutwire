@@ -4,9 +4,9 @@ import '../scope.dart';
 import '../theme/tokens.dart';
 
 /// A row of mutually exclusive options that reads as one control.
-class FwSegmented<T> extends StatelessWidget {
+class SegmentedControl<T> extends StatelessWidget {
   /// Creates a control from [options].
-  const FwSegmented({
+  const SegmentedControl({
     super.key,
     required this.options,
     required this.value,

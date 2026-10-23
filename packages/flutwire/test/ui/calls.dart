@@ -4,9 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutwire/flutwire.dart';
+import 'package:flutwire/src/session.dart';
 import 'package:flutwire/src/ui/shell.dart';
-
-const nativeChannel = MethodChannel('it.nacodestudios.flutwire/native');
 
 FlutwireBody jsonBody(String text) => FlutwireBody(
   bytes: Uint8List.fromList(utf8.encode(text)),
@@ -62,44 +61,9 @@ FlutwireCall makeCall(
   );
 }
 
-/// Starts Flutwire the way an app does, with the native half absent.
-Future<void> startFlutwire(
-  WidgetTester tester, {
-  List<FlutwireCall> calls = const [],
-}) async {
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(nativeChannel, (_) async => null);
-  await tester.runAsync(
-    () => Flutwire.init(
-      config: const FlutwireConfig(
-        enabled: true,
-        captureDartIo: false,
-        persist: false,
-        shortcut: false,
-        locale: Locale('en'),
-        themeMode: ThemeMode.dark,
-        notification: FlutwireNotificationConfig(enabled: false),
-      ),
-    ),
-  );
-  final store = Flutwire.store! as MemoryFlutwireStore;
-  // Oldest first, so the newest ends up on top.
-  for (final call in calls.reversed) {
-    store.put(call);
-  }
-  store.flush();
-}
-
-Future<void> stopFlutwire() async {
-  await Flutwire.reset();
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(nativeChannel, null);
-}
-
-/// An app with [home] dressed as the inspector.
-Widget inspectorApp(Widget home) => MaterialApp(
-  navigatorKey: Flutwire.navigatorKey,
-  home: FlutwireShell(child: home),
+/// An app with [home] dressed as the inspector, working on [session].
+Widget inspectorApp(FlutwireSession session, Widget home) => MaterialApp(
+  home: FlutwireShell(session: session, child: home),
 );
 
 /// The inspector pulses while it records, so `pumpAndSettle` never settles:

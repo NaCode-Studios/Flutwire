@@ -48,7 +48,8 @@ abstract interface class FlutwireStore {
 /// A store that keeps the history in memory only.
 ///
 /// It enforces the call limit and the memory budget by dropping the oldest
-/// calls that are not pinned. [DiskFlutwireStore] builds on it.
+/// calls that are not pinned. The store that keeps the history on disk builds
+/// on it.
 class MemoryFlutwireStore implements FlutwireStore {
   /// Creates an empty store.
   MemoryFlutwireStore({
@@ -113,6 +114,11 @@ class MemoryFlutwireStore implements FlutwireStore {
 
   @override
   ValueListenable<List<FlutwireCall>> get calls => _notifier;
+
+  /// Every call held now, in no particular order. Unlike [calls] it is never
+  /// a notification behind.
+  @protected
+  Iterable<FlutwireCall> get held => _byId.values;
 
   /// The number of calls held.
   int get length => _byId.length;

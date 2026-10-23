@@ -6,7 +6,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutwire/flutwire_io.dart';
+import 'package:flutwire/src/capture/wire/wire_io.dart';
 import 'package:flutwire/src/config.dart';
 import 'package:flutwire/src/engine.dart';
 import 'package:flutwire/src/model/call.dart';
@@ -53,13 +53,13 @@ Future<void> handle(HttpRequest req) async {
       }
     } else if (path == '/ws') {
       final ws = await WebSocketTransformer.upgrade(req);
-      ws.listen((m) => ws.add('echo:$m'));
+      ws.listen((m) => ws.add('echo:$m'), onDone: ws.close);
       return;
     } else {
       req.response.statusCode = 404;
     }
     await req.response.close();
-  } catch (_) {
+  } on Object {
     // The client walked away mid-body, which one of the tests does on purpose.
   }
 }
@@ -280,7 +280,7 @@ void main() {
 
   test('a paused engine records nothing but the traffic still flows', () async {
     start();
-    engine.isPaused = true;
+    engine.paused.value = true;
     final client = http.Client();
     final reply = await client.get(Uri.parse('$base/json'));
     client.close();

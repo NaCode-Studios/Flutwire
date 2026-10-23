@@ -45,6 +45,8 @@ curl -X POST 'https://api.example.com/v1/orders' \
 
 Flutwire reads traffic and never changes it. It does not proxy other apps, and it cannot see what never passes through Dart: Firestore, Auth and Storage speak their own protocols through native SDKs. Authorization and cookie values are masked when a call is recorded, so they never reach memory, disk, a notification or an export.
 
+In a release build `Flutwire.init` does nothing: no call is recorded, no file is written and no notification is posted. The plugin's native code still ships in the app, like any other plugin's, and on Android its manifest adds the notification permission to the merged one.
+
 > **Status — `0.0`, pre-alpha.** Flutwire is not published yet and the API will move. The plan is on [the project board](https://github.com/orgs/NaCode-Studios/projects/13).
 
 ## Why Flutwire
@@ -102,8 +104,9 @@ flutter pub get
 
 ```bash
 flutter analyze --fatal-infos
-(cd packages/flutwire && flutter test)
 ```
+
+Each package has its own suite: run `flutter test` inside `packages/flutwire`, `packages/flutwire_dio`, `packages/flutwire_http` and `packages/flutwire_cloud_functions`.
 
 The Android and Apple halves are compiled by building the example app from `packages/flutwire/example`: `flutter build apk --debug`, `flutter build ios --simulator --no-codesign` and `flutter build macos --debug`.
 

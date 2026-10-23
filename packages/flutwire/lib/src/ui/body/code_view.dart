@@ -8,6 +8,7 @@ import 'code_layout.dart';
 import 'highlight.dart';
 import 'metrics.dart';
 import 'search.dart';
+import 'search_follow.dart';
 
 /// Text as rows of fixed height, drawn lazily.
 ///
@@ -67,8 +68,7 @@ class _CodeViewState extends State<CodeView> with BodyMetricsState<CodeView> {
   int _lineCount = 0;
   double _gutter = 0;
 
-  List<BodyMatch>? _revealedFor;
-  int _revealedIndex = -2;
+  final CurrentMatchTracker _tracker = CurrentMatchTracker();
 
   @override
   void initState() {
@@ -144,18 +144,7 @@ class _CodeViewState extends State<CodeView> with BodyMetricsState<CodeView> {
   }
 
   void _onSearch() {
-    final search = widget.search;
-    if (search.current < 0) {
-      _revealedFor = search.matches;
-      _revealedIndex = -1;
-      return;
-    }
-    if (identical(_revealedFor, search.matches) &&
-        _revealedIndex == search.current) {
-      return;
-    }
-    _revealedFor = search.matches;
-    _revealedIndex = search.current;
+    if (_tracker.advance(widget.search) == null) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _revealCurrent();
     });

@@ -5,22 +5,24 @@ import 'package:flutwire/flutwire.dart';
 import 'package:flutwire/src/ui/detail/call_detail_page.dart';
 
 import 'calls.dart';
+import 'fake_session.dart';
 
-Future<void> open(
+Future<FakeSession> open(
   WidgetTester tester,
   FlutwireCall call, {
   List<FlutwireCall> more = const [],
   Size size = const Size(420, 900),
 }) async {
   setScreen(tester, size);
-  await startFlutwire(tester, calls: [call, ...more]);
-  await tester.pumpWidget(inspectorApp(CallDetailPage(callId: call.id)));
+  final session = FakeSession(calls: [call, ...more]);
+  await tester.pumpWidget(
+    inspectorApp(session, CallDetailPage(callId: call.id)),
+  );
   await settle(tester);
+  return session;
 }
 
 void main() {
-  tearDown(stopFlutwire);
-
   testWidgets('the overview says what was asked and what came back', (
     tester,
   ) async {
@@ -114,8 +116,9 @@ void main() {
 
   testWidgets('a call that is not in the history says so', (tester) async {
     setScreen(tester, const Size(420, 900));
-    await startFlutwire(tester);
-    await tester.pumpWidget(inspectorApp(const CallDetailPage(callId: 99)));
+    await tester.pumpWidget(
+      inspectorApp(FakeSession(), const CallDetailPage(callId: 99)),
+    );
     await settle(tester);
 
     expect(find.text('This call is no longer in the history'), findsOneWidget);
@@ -124,11 +127,11 @@ void main() {
   testWidgets('a call that leaves the history while it is open says so', (
     tester,
   ) async {
-    await open(tester, makeCall(1));
+    final session = await open(tester, makeCall(1));
     expect(find.text('This call is no longer in the history'), findsNothing);
 
-    await tester.runAsync(() => Flutwire.store!.remove([1]));
-    (Flutwire.store! as MemoryFlutwireStore).flush();
+    await tester.runAsync(() => session.store.remove([1]));
+    session.flush();
     await settle(tester, 1000);
 
     expect(find.text('This call is no longer in the history'), findsOneWidget);
@@ -137,16 +140,16 @@ void main() {
   testWidgets('the pin in the bar pins the call, and again unpins it', (
     tester,
   ) async {
-    await open(tester, makeCall(1));
-    expect(Flutwire.store!.find(1)!.pinned, isFalse);
+    final session = await open(tester, makeCall(1));
+    expect(session.store.find(1)!.pinned, isFalse);
 
     await tester.tap(find.byTooltip('Pin'));
     await settle(tester, 1000);
-    expect(Flutwire.store!.find(1)!.pinned, isTrue);
+    expect(session.store.find(1)!.pinned, isTrue);
 
     await tester.tap(find.byTooltip('Unpin'));
     await settle(tester, 1000);
-    expect(Flutwire.store!.find(1)!.pinned, isFalse);
+    expect(session.store.find(1)!.pinned, isFalse);
   });
 
   group('the menu', () {
@@ -195,11 +198,90 @@ void main() {
     });
   });
 
+  group('sharing', () {
+    String? copied;
+
+    setUp(() {
+      copied = null;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+            if (call.method == 'Clipboard.setData') {
+              copied = (call.arguments as Map)['text'] as String?;
+            }
+            return null;
+          });
+    });
+
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null);
+    });
+
+    testWidgets('a call as text lands on the clipboard without a share sheet', (
+      tester,
+    ) async {
+      await open(tester, makeCall(1, url: 'https://api.test/clubs'));
+
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await settle(tester);
+      await tester.tap(find.text('Share as text'));
+      await settle(tester);
+
+      expect(copied, contains('https://api.test/clubs'));
+      expect(find.text('Copied'), findsOneWidget);
+    });
+
+    testWidgets('a call as HAR is written out whole', (tester) async {
+      await open(tester, makeCall(1, url: 'https://api.test/clubs'));
+
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await settle(tester);
+      await tester.tap(find.text('Share as HAR'));
+      await settle(tester);
+
+      expect(copied, contains('"log"'));
+      expect(copied, contains('https://api.test/clubs'));
+    });
+
+    testWidgets('a body is saved as a file, and says when it cannot be', (
+      tester,
+    ) async {
+      await open(tester, makeCall(1, responseBody: '{"club":"Orion"}'));
+      await tester.tap(find.text('Response'));
+      await settle(tester);
+
+      await tester.tap(find.byTooltip('Save'));
+      await settle(tester);
+      await tester.tap(find.text('Save body to a file'));
+      await settle(tester);
+
+      expect(find.text('Could not share this file'), findsOneWidget);
+    });
+
+    testWidgets('the formatted body is kept on the clipboard instead', (
+      tester,
+    ) async {
+      await open(tester, makeCall(1, responseBody: '{"club":"Orion"}'));
+      await tester.tap(find.text('Response'));
+      await settle(tester);
+
+      await tester.tap(find.byTooltip('Save'));
+      await settle(tester);
+      await tester.tap(find.text('Save formatted'));
+      await settle(tester);
+
+      expect(copied, '{\n  "club": "Orion"\n}');
+      expect(find.text('Copied'), findsOneWidget);
+    });
+  });
+
   testWidgets('beside the list it shows no back arrow', (tester) async {
     setScreen(tester, const Size(1200, 800));
-    await startFlutwire(tester, calls: [makeCall(1)]);
     await tester.pumpWidget(
-      inspectorApp(const CallDetailPage(callId: 1, embedded: true)),
+      inspectorApp(
+        FakeSession(calls: [makeCall(1)]),
+        const CallDetailPage(callId: 1, embedded: true),
+      ),
     );
     await settle(tester);
 

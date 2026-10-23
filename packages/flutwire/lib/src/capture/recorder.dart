@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show internal;
+
 import '../config.dart';
 import '../model/body.dart';
 import '../model/call.dart';
@@ -37,6 +39,7 @@ final class FlutwireCallRecorder {
   ///
   /// Adapters get theirs from `Flutwire.begin`; this constructor is for the
   /// engine and for tests.
+  @internal
   FlutwireCallRecorder(this._host, FlutwireCall call)
     : _call = call,
       _req = _BodyBuffer(_host.config.maxBodyBytes),
@@ -48,6 +51,7 @@ final class FlutwireCallRecorder {
   final _BodyBuffer _req;
   final _BodyBuffer _res;
   FlutwireCall _call;
+  final Completer<void> _done = Completer<void>();
   bool _requestFinal = false;
   bool _finished = false;
   String? _contentType;
@@ -62,6 +66,9 @@ final class FlutwireCallRecorder {
 
   /// Whether the call has ended. Later reports are ignored.
   bool get isFinished => _finished;
+
+  /// Completes when the call has ended, however it ended.
+  Future<void> get done => _done.future;
 
   /// Adds a chunk of the request body.
   void requestBody(List<int> chunk) => _guard(() {
@@ -162,15 +169,15 @@ final class FlutwireCallRecorder {
           },
           onDone: () {
             complete();
-            out.close();
+            unawaited(out.close());
           },
         );
       },
       onPause: () => subscription?.pause(),
       onResume: () => subscription?.resume(),
-      onCancel: () {
+      onCancel: () async {
         cancel();
-        return subscription?.cancel();
+        await subscription?.cancel();
       },
     );
     return out.stream;
@@ -206,6 +213,7 @@ final class FlutwireCallRecorder {
       response: res?.copyWith(body: _responseBody(res.headers.contentType)),
     );
     _publish(finished: true);
+    _done.complete();
   });
 
   void _finishRequest() {
@@ -257,10 +265,10 @@ final class FlutwireCallRecorder {
   void _guard(void Function() body) {
     try {
       body();
-    } catch (error, stack) {
+    } on Object catch (error, stack) {
       try {
         _host.internalError(error, stack);
-      } catch (_) {
+      } on Object {
         // Reporting is best effort too: the app's request comes first.
       }
     }

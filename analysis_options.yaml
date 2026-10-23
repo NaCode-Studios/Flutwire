@@ -12,8 +12,29 @@ analyzer:
 linter:
   rules:
     - always_declare_return_types
+    - avoid_catches_without_on_clauses
+    - avoid_dynamic_calls
+    - avoid_positional_boolean_parameters
     - avoid_print
+    - avoid_void_async
+    - cancel_subscriptions
+    - close_sinks
     - directives_ordering
+    - discarded_futures
+    - no_runtimeType_toString
+    - noop_primitive_operations
+    - only_throw_errors
+    - prefer_final_fields
+    - prefer_final_in_for_each
     - prefer_final_locals
+    - prefer_foreach
     - public_member_api_docs
+    - sort_child_properties_last
+    - sort_pub_dependencies
+    - type_annotate_public_apis
     - unawaited_futures
+    - unnecessary_await_in_return
+    - unnecessary_breaks
+    - use_enums
+    - use_if_null_to_convert_nulls_to_bools
+    - use_string_buffers

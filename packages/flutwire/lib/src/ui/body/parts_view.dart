@@ -9,6 +9,7 @@ import 'metrics.dart';
 import 'quiet_note.dart';
 import 'reveal.dart';
 import 'search.dart';
+import 'search_follow.dart';
 
 /// The parts of a multipart body, read once, and the text a search runs
 /// through.
@@ -78,10 +79,8 @@ class _PartsViewState extends State<PartsView> {
   late final RowRevealer _revealer = RowRevealer(_scroll);
   final Set<int> _opened = {};
 
-  Map<int, List<int>> _byPart = const {};
-  List<BodyMatch>? _mapFor;
-  List<BodyMatch>? _revealedFor;
-  int _revealedIndex = -2;
+  final MatchGroups _marks = MatchGroups((match) => match.unit ~/ 3);
+  final CurrentMatchTracker _tracker = CurrentMatchTracker();
 
   @override
   void initState() {
@@ -108,18 +107,8 @@ class _PartsViewState extends State<PartsView> {
   void _onSearch() {
     final search = widget.search;
     if (!identical(search.source, widget.model)) return;
-    if (search.current < 0) {
-      _revealedFor = search.matches;
-      _revealedIndex = -1;
-      return;
-    }
-    if (identical(_revealedFor, search.matches) &&
-        _revealedIndex == search.current) {
-      return;
-    }
-    _revealedFor = search.matches;
-    _revealedIndex = search.current;
-    final match = search.matches[search.current];
+    final match = _tracker.advance(search);
+    if (match == null) return;
     final part = match.unit ~/ 3;
     setState(() {
       if (match.unit % 3 == 2 &&
@@ -135,33 +124,13 @@ class _PartsViewState extends State<PartsView> {
     );
   }
 
-  void _syncMarks() {
-    final matches = widget.search.matches;
-    if (identical(matches, _mapFor)) return;
-    _mapFor = matches;
-    final map = <int, List<int>>{};
-    for (var i = 0; i < matches.length; i++) {
-      (map[matches[i].unit ~/ 3] ??= <int>[]).add(i);
-    }
-    _byPart = map;
-  }
-
   /// The marks of part [part]'s field number [field]: 0 name, 1 file name,
   /// 2 text.
-  List<MatchMark> _marksOf(int part, int field) {
-    final indices = _byPart[part];
-    if (indices == null) return const [];
-    final search = widget.search;
-    return [
-      for (final i in indices)
-        if (search.matches[i].unit % 3 == field)
-          (
-            start: search.matches[i].start,
-            end: search.matches[i].start + search.matchLength,
-            current: i == search.current,
-          ),
-    ];
-  }
+  List<MatchMark> _marksOf(int part, int field) => _marks.marks(
+    widget.search,
+    part,
+    where: (match) => match.unit % 3 == field,
+  );
 
   Widget _spans(
     String text,
@@ -339,7 +308,7 @@ class _PartsViewState extends State<PartsView> {
     return ListenableBuilder(
       listenable: widget.search,
       builder: (context, _) {
-        _syncMarks();
+        _marks.sync(widget.search.matches);
         return ListView.builder(
           controller: _scroll,
           itemCount: parts.length + 1,

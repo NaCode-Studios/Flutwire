@@ -221,8 +221,15 @@ final class FlutwireConfig {
   final ThemeMode themeMode;
 
   /// Whether this configuration records in the current build mode.
-  bool get isActive {
-    if (kReleaseMode) return allowInRelease && (enabled ?? true);
-    return enabled ?? kDebugMode;
+  bool get isActive => activeIn(release: kReleaseMode, debug: kDebugMode);
+
+  /// Whether this configuration records in a build of the given mode: a
+  /// release build records only when [allowInRelease] says so, a debug build
+  /// records unless [enabled] is false, and a profile build only when
+  /// [enabled] is true.
+  @visibleForTesting
+  bool activeIn({required bool release, required bool debug}) {
+    if (release) return allowInRelease && (enabled ?? true);
+    return enabled ?? debug;
   }
 }

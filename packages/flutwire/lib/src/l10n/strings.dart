@@ -1,28 +1,11 @@
-import 'dart:ui' show Locale;
-
-import 'strings_en.dart';
-import 'strings_it.dart';
-
 /// Every piece of text Flutwire shows, in one language.
 ///
-/// To add a language, extend this class and pass an instance through
-/// [FlutwireStrings.register]. English and Italian ship with the package.
+/// English and Italian ship with the package, and `stringsFor` picks one for a
+/// locale. A new language is a subclass of this one and a line in that
+/// function.
 abstract class FlutwireStrings {
   /// Creates a set of strings.
   const FlutwireStrings();
-
-  static final Map<String, FlutwireStrings> _registered = {
-    'en': const FlutwireStringsEn(),
-    'it': const FlutwireStringsIt(),
-  };
-
-  /// Makes [strings] the text for [languageCode], replacing any earlier set.
-  static void register(String languageCode, FlutwireStrings strings) =>
-      _registered[languageCode] = strings;
-
-  /// The strings for [locale], or English when the language is not known.
-  static FlutwireStrings of(Locale? locale) =>
-      _registered[locale?.languageCode] ?? const FlutwireStringsEn();
 
   /// The name of the notification channel on Android.
   String get channelName;

@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutwire/src/capture/recorder.dart';
 import 'package:flutwire/src/capture/redaction.dart';
 import 'package:flutwire/src/config.dart';
 import 'package:flutwire/src/engine.dart';
@@ -197,6 +199,44 @@ void main() {
     expect(call.state, FlutwireCallState.failed);
   });
 
+  group('done', () {
+    FlutwireCallRecorder start() => make().engine.begin(
+      method: 'GET',
+      uri: Uri.parse('https://api.test/'),
+      source: FlutwireSource.io,
+    )!;
+
+    test('completes when the call completes', () async {
+      final rec = start();
+      var done = false;
+      unawaited(rec.done.then((_) => done = true));
+      await Future<void>.delayed(Duration.zero);
+      expect(done, isFalse);
+
+      rec.complete();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(done, isTrue);
+    });
+
+    test('completes when the call fails or is cancelled', () async {
+      final failed = start()..fail(StateError('down'));
+      final cancelled = start()..cancel();
+
+      await expectLater(failed.done, completes);
+      await expectLater(cancelled.done, completes);
+    });
+
+    test('completes once, however many times the call ends', () async {
+      final rec = start()
+        ..complete()
+        ..fail(StateError('late'))
+        ..cancel();
+
+      await expectLater(rec.done, completes);
+    });
+  });
+
   test('cancel is its own state', () {
     final t = make();
     final rec = t.engine.begin(
@@ -282,12 +322,12 @@ void main() {
     test('pausing stops recording and resuming restarts it', () {
       final t = make();
       Uri uri() => Uri.parse('https://x.test/');
-      t.engine.isPaused = true;
+      t.engine.paused.value = true;
       expect(
         t.engine.begin(method: 'GET', uri: uri(), source: FlutwireSource.io),
         isNull,
       );
-      t.engine.isPaused = false;
+      t.engine.paused.value = false;
       expect(
         t.engine.begin(method: 'GET', uri: uri(), source: FlutwireSource.io),
         isNotNull,
