@@ -108,3 +108,33 @@ FlutwireCookie? parseSetCookie(String header) {
     secure: secure,
   );
 }
+
+/// The value of a `Cookie` request header with every cookie value replaced by
+/// [mask] and the names kept: `a=1; b=2` becomes `a=<mask>; b=<mask>`.
+///
+/// A piece with no `=` has no name to keep, so the whole of it is replaced.
+String maskCookieHeader(String header, String mask) => header
+    .split(';')
+    .map((piece) {
+      if (piece.trim().isEmpty) return piece;
+      final eq = piece.indexOf('=');
+      if (eq > 0) return '${piece.substring(0, eq)}=$mask';
+      final indent = piece.length - piece.trimLeft().length;
+      return '${piece.substring(0, indent)}$mask';
+    })
+    .join(';');
+
+/// The value of a `Set-Cookie` response header with the cookie's value replaced
+/// by [mask]. The name and the attributes (`Path`, `Domain`, `Expires`,
+/// `SameSite`, `HttpOnly`, `Secure`) are kept, because they say how the cookie
+/// behaves and hold nothing secret.
+///
+/// A header with no cookie name is replaced as a whole.
+String maskSetCookie(String header, String mask) {
+  final semicolon = header.indexOf(';');
+  final pair = semicolon < 0 ? header : header.substring(0, semicolon);
+  final attributes = semicolon < 0 ? '' : header.substring(semicolon);
+  final eq = pair.indexOf('=');
+  if (eq <= 0) return mask;
+  return '${pair.substring(0, eq)}=$mask$attributes';
+}

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import '../model/body.dart';
+import '../model/cookies.dart';
 import '../model/headers.dart';
 
 /// What to hide from a call before it is stored, shown or shared.
@@ -31,7 +32,9 @@ final class FlutwireRedaction {
     'set-cookie',
   };
 
-  /// Header fields whose values are replaced by [mask].
+  /// Header fields whose values are replaced by [mask]. For `cookie` and
+  /// `set-cookie` only the cookie values are replaced and the names and
+  /// attributes stay.
   final Set<String> headers;
 
   /// Query parameters whose values are replaced by [mask] in the URL.
@@ -45,8 +48,29 @@ final class FlutwireRedaction {
   final String mask;
 
   /// A copy of [source] with the configured headers hidden.
-  FlutwireHeaders applyToHeaders(FlutwireHeaders source) =>
-      source.redact(headers, mask: mask);
+  ///
+  /// A hidden header is replaced by [mask], except `Cookie` and `Set-Cookie`:
+  /// there only the values of the cookies are replaced, so the inspector can
+  /// still list their names and attributes.
+  FlutwireHeaders applyToHeaders(FlutwireHeaders source) {
+    if (headers.isEmpty || source.isEmpty) return source;
+    final hidden = {for (final name in headers) name.toLowerCase()};
+    return FlutwireHeaders([
+      for (final field in source.entries)
+        MapEntry(
+          field.key,
+          hidden.contains(field.key.toLowerCase())
+              ? _hide(field.key.toLowerCase(), field.value)
+              : field.value,
+        ),
+    ]);
+  }
+
+  String _hide(String name, String value) => switch (name) {
+    'cookie' => maskCookieHeader(value, mask),
+    'set-cookie' => maskSetCookie(value, mask),
+    _ => mask,
+  };
 
   /// A copy of [uri] with the configured query values hidden.
   Uri applyToUri(Uri uri) {

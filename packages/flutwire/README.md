@@ -52,7 +52,7 @@ await Flutwire.init(
 );
 ```
 
-Authorization and cookie headers are masked by default. A masked value is replaced when the call is recorded, so it never reaches memory, disk, a notification or an export. The other options are documented on `FlutwireConfig`: how much of a body is kept, where the history is stored, what the notification lists, the language, the look, and decoders for formats the inspector does not read, such as Protobuf.
+Authorization headers and the values of cookies are masked by default; the names and attributes of cookies stay readable. A masked value is replaced when the call is recorded, so it never reaches memory, disk, a notification or an export. The other options are documented on `FlutwireConfig`: how much of a body is kept, where the history is stored, what the notification lists, the language, the look, and decoders for formats the inspector does not read, such as Protobuf.
 
 ## Clients that bypass `dart:io`
 

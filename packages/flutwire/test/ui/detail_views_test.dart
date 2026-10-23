@@ -43,6 +43,28 @@ void main() {
       expect(find.text('dark'), findsOneWidget);
     });
 
+    testWidgets('shows a hidden value as hidden, not as the mask', (
+      tester,
+    ) async {
+      await pumpFlutwire(
+        tester,
+        const CookiesView(
+          cookies: [
+            FlutwireCookie(
+              name: 'session',
+              value: '[redacted]',
+              httpOnly: true,
+            ),
+          ],
+        ),
+      );
+
+      expect(find.text('session'), findsOneWidget);
+      expect(find.text('Hidden'), findsOneWidget);
+      expect(find.text('[redacted]'), findsNothing);
+      expect(find.text('HttpOnly'), findsOneWidget);
+    });
+
     testWidgets('copies a cookie as name=value when it is tapped', (
       tester,
     ) async {

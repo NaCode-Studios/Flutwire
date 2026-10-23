@@ -60,15 +60,6 @@ void main() {
       expect(fromMap.contains('x-null'), isFalse);
     });
 
-    test('redacts by name and leaves the rest alone', () {
-      final redacted = FlutwireHeaders.fromMap({
-        'Authorization': 'Bearer secret',
-        'Accept': 'application/json',
-      }).redact({'authorization'}, mask: '**');
-      expect(redacted.first('Authorization'), '**');
-      expect(redacted.first('Accept'), 'application/json');
-    });
-
     test('round-trips through JSON', () {
       expect(FlutwireHeaders.fromJson(headers.toJson()), headers);
     });

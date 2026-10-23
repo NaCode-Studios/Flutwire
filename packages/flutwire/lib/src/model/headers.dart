@@ -106,18 +106,6 @@ final class FlutwireHeaders {
     return raw == null ? null : int.tryParse(raw.trim());
   }
 
-  /// A copy in which every value of the fields in [names] is replaced by
-  /// [mask]. Names are matched without regard to case.
-  FlutwireHeaders redact(Set<String> names, {String mask = '••••••'}) {
-    if (names.isEmpty || isEmpty) return this;
-    final lower = {for (final n in names) n.toLowerCase()};
-    return FlutwireHeaders([
-      for (final e in _values.entries)
-        for (final v in e.value)
-          MapEntry(_display[e.key]!, lower.contains(e.key) ? mask : v),
-    ]);
-  }
-
   /// A JSON-encodable list of `[name, value]` pairs.
   List<List<String>> toJson() => [
     for (final e in entries) [e.key, e.value],

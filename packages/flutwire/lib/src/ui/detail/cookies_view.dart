@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../model/cookies.dart';
 import '../actions.dart';
 import '../scope.dart';
+import '../widgets/hidden_value.dart';
 
 /// The cookies a call sent or set, with their attributes.
 class CookiesView extends StatelessWidget {
@@ -16,6 +17,7 @@ class CookiesView extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.fw;
     final s = context.strings;
+    final mask = context.session.config.redaction.mask;
     if (cookies.isEmpty) {
       return Center(
         child: Text(s.noCookies, style: t.body(color: t.faint)),
@@ -50,7 +52,10 @@ class CookiesView extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(cookie.value, style: t.mono(size: 12.5, color: t.ink)),
+                  if (cookie.value == mask)
+                    HiddenValue(label: s.redacted)
+                  else
+                    Text(cookie.value, style: t.mono(size: 12.5, color: t.ink)),
                   if (cookie.attributes.isNotEmpty) ...[
                     const SizedBox(height: 10),
                     Wrap(

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutwire/src/capture/redaction.dart';
+import 'package:flutwire/src/model/cookies.dart';
 import 'package:flutwire/src/model/headers.dart';
 
 Uint8List bytes(String s) => Uint8List.fromList(utf8.encode(s));
@@ -20,9 +21,95 @@ void main() {
         }),
       );
       expect(out.first('authorization'), '[redacted]');
-      expect(out.first('cookie'), '[redacted]');
-      expect(out.first('set-cookie'), '[redacted]');
+      expect(out.first('cookie'), 'sid=[redacted]');
+      expect(out.first('set-cookie'), 'sid=[redacted]');
       expect(out.first('accept'), 'application/json');
+    });
+
+    group('cookies', () {
+      FlutwireHeaders hidden(Map<String, String> fields) =>
+          const FlutwireRedaction().applyToHeaders(
+            FlutwireHeaders.fromMap(fields),
+          );
+
+      test('keep their names and lose their values in a request', () {
+        final out = hidden({'Cookie': 'session=abc123; theme=dark'});
+
+        expect(out.first('cookie'), 'session=[redacted]; theme=[redacted]');
+      });
+
+      test(
+        'keep their name and attributes and lose their value in a response',
+        () {
+          final out = hidden({
+            'Set-Cookie':
+                'session=abc123; Path=/; Expires=Wed, 21 Oct 2026 07:28:00 GMT; '
+                'HttpOnly; Secure; SameSite=Lax',
+          });
+
+          expect(
+            out.first('set-cookie'),
+            'session=[redacted]; Path=/; Expires=Wed, 21 Oct 2026 07:28:00 GMT; '
+            'HttpOnly; Secure; SameSite=Lax',
+          );
+        },
+      );
+
+      test('are each hidden when the header repeats', () {
+        final out = FlutwireRedaction().applyToHeaders(
+          FlutwireHeaders([
+            const MapEntry('Set-Cookie', 'a=1; Path=/'),
+            const MapEntry('Set-Cookie', 'b=2; HttpOnly'),
+          ]),
+        );
+
+        expect(out['set-cookie'], [
+          'a=[redacted]; Path=/',
+          'b=[redacted]; HttpOnly',
+        ]);
+      });
+
+      test('are hidden as a whole when there is no name to keep', () {
+        final out = hidden({
+          'Cookie': 'abc123',
+          'Set-Cookie': '=abc123; Path=/',
+        });
+
+        expect(out.first('cookie'), '[redacted]');
+        expect(out.first('set-cookie'), '[redacted]');
+      });
+
+      test('use the mask the policy is given', () {
+        final out = const FlutwireRedaction(
+          mask: '***',
+        ).applyToHeaders(FlutwireHeaders.fromMap({'Cookie': 'a=1'}));
+
+        expect(out.first('cookie'), 'a=***');
+      });
+
+      test('stay as they are when the policy does not list them', () {
+        final out = const FlutwireRedaction(
+          headers: {'authorization'},
+        ).applyToHeaders(FlutwireHeaders.fromMap({'Cookie': 'a=1'}));
+
+        expect(out.first('cookie'), 'a=1');
+      });
+
+      test('are still listed by the cookie parsers afterwards', () {
+        final out = hidden({
+          'Cookie': 'session=abc123',
+          'Set-Cookie': 'session=abc123; HttpOnly',
+        });
+
+        final sent = parseCookieHeader(out.first('cookie')!).single;
+        final set = parseSetCookie(out.first('set-cookie')!)!;
+
+        expect((sent.name, sent.value), ('session', '[redacted]'));
+        expect(
+          (set.name, set.value, set.httpOnly),
+          ('session', '[redacted]', true),
+        );
+      });
     });
 
     test('none hides nothing', () {
