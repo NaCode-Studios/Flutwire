@@ -114,6 +114,11 @@ class MemoryFlutwireStore implements FlutwireStore {
   @override
   ValueListenable<List<FlutwireCall>> get calls => _notifier;
 
+  /// Every call held now, in no particular order. Unlike [calls] it is never
+  /// a notification behind.
+  @protected
+  Iterable<FlutwireCall> get held => _byId.values;
+
   /// The number of calls held.
   int get length => _byId.length;
 

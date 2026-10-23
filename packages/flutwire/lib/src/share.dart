@@ -64,22 +64,17 @@ final class FlutwireSharing {
         text.length > _textLimit ||
         format == FlutwireExportFormat.har ||
         format == FlutwireExportFormat.json;
-    if (!asFile) {
-      if (await native.share(text: text, subject: subject, origin: origin)) {
-        return true;
-      }
-    } else {
-      final path = await _writeFile(text, format.extension, 'flutwire');
-      if (path != null &&
-          await native.share(
-            filePath: path,
-            mimeType: format.mimeType,
+    final shared = asFile
+        ? await _shareFile(
+            _bytesOf(text),
+            'flutwire-${DateTime.now().millisecondsSinceEpoch}'
+            '.${format.extension}',
+            format.mimeType,
             subject: subject,
             origin: origin,
-          )) {
-        return true;
-      }
-    }
+          )
+        : await native.share(text: text, subject: subject, origin: origin);
+    if (shared) return true;
     await Clipboard.setData(ClipboardData(text: text));
     return false;
   }
@@ -92,6 +87,21 @@ final class FlutwireSharing {
     String fileName,
     String mimeType, {
     Rect? origin,
+  }) =>
+      _shareFile(bytes, fileName, mimeType, subject: fileName, origin: origin);
+
+  /// Shares [text] as a file called [fileName].
+  Future<bool> shareText(String text, String fileName, {Rect? origin}) =>
+      shareBytes(_bytesOf(text), fileName, 'text/plain', origin: origin);
+
+  /// Writes [bytes] to the temporary folder as [fileName] and offers the file
+  /// to the share sheet. False when there is no folder to write to or no sheet.
+  Future<bool> _shareFile(
+    Uint8List bytes,
+    String fileName,
+    String mimeType, {
+    required String subject,
+    Rect? origin,
   }) async {
     final folder = temporaryPath;
     if (folder == null) return false;
@@ -100,37 +110,11 @@ final class FlutwireSharing {
     return native.share(
       filePath: path,
       mimeType: mimeType,
-      subject: fileName,
+      subject: subject,
       origin: origin,
     );
   }
 
-  /// Shares [text] as a file called [fileName].
-  Future<bool> shareText(String text, String fileName, {Rect? origin}) async {
-    final folder = temporaryPath;
-    if (folder == null) return false;
-    final path = await writeFile(
-      folder,
-      fileName,
-      Uint8List.fromList(utf8.encode(text)),
-    );
-    if (path == null) return false;
-    return native.share(
-      filePath: path,
-      mimeType: 'text/plain',
-      subject: fileName,
-      origin: origin,
-    );
-  }
-
-  Future<String?> _writeFile(String text, String extension, String base) {
-    final folder = temporaryPath;
-    if (folder == null) return Future.value();
-    final stamp = DateTime.now().millisecondsSinceEpoch;
-    return writeFile(
-      folder,
-      '$base-$stamp.$extension',
-      Uint8List.fromList(utf8.encode(text)),
-    );
-  }
+  static Uint8List _bytesOf(String text) =>
+      Uint8List.fromList(utf8.encode(text));
 }

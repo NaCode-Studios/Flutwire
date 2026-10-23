@@ -32,26 +32,24 @@ enum FlutwireExportFormat {
   final String label;
 
   /// Writes [calls] in this format. The calls must have their bodies loaded.
+  ///
+  /// Text keeps the order it is given, which is how the inspector lists them.
+  /// Every other format is a replayable sequence, so it runs oldest first.
   String render(Iterable<FlutwireCall> calls, {String version = '0'}) {
-    final list = calls.toList();
-    switch (this) {
-      case FlutwireExportFormat.text:
-        return callsToText(list);
-      case FlutwireExportFormat.curl:
-        final ordered = [...list]..sort((a, b) => a.id.compareTo(b.id));
-        return ordered.map(toCurl).join('\n\n');
-      case FlutwireExportFormat.har:
-        final ordered = [...list]..sort((a, b) => a.id.compareTo(b.id));
-        return const JsonEncoder.withIndent(
-          '  ',
-        ).convert(toHar(ordered, version: version));
-      case FlutwireExportFormat.json:
-        final ordered = [...list]..sort((a, b) => a.id.compareTo(b.id));
-        return const JsonEncoder.withIndent('  ').convert({
-          'flutwire': 1,
-          'calls': [for (final c in ordered) callToJson(c)],
-        });
-    }
+    final listed = calls.toList();
+    final oldestFirst = [...listed]..sort((a, b) => a.id.compareTo(b.id));
+    const indented = JsonEncoder.withIndent('  ');
+    return switch (this) {
+      FlutwireExportFormat.text => callsToText(listed),
+      FlutwireExportFormat.curl => oldestFirst.map(toCurl).join('\n\n'),
+      FlutwireExportFormat.har => indented.convert(
+        toHar(oldestFirst, version: version),
+      ),
+      FlutwireExportFormat.json => indented.convert({
+        'flutwire': 1,
+        'calls': [for (final call in oldestFirst) callToJson(call)],
+      }),
+    };
   }
 }
 

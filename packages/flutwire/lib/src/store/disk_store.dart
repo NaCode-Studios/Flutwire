@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 
 import '../config.dart';
@@ -93,20 +94,9 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
   FlutwireCall? releaseBodies(FlutwireCall call) {
     if (!_persisted.contains(call.id)) return null;
     final response = call.response;
-    return FlutwireCall(
-      id: call.id,
-      method: call.method,
-      uri: call.uri,
-      source: call.source,
-      state: call.state,
-      startedAt: call.startedAt,
-      firstByteAt: call.firstByteAt,
-      endedAt: call.endedAt,
+    return call.copyWith(
       request: call.request.copyWith(body: call.request.body.unload()),
       response: response?.copyWith(body: response.body.unload()),
-      error: call.error,
-      graphql: call.graphql,
-      pinned: call.pinned,
     );
   }
 
@@ -143,9 +133,11 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
   }
 
   Future<Uint8List> _read(String name) async {
-    final file = File('${_bodies.path}/$name');
-    if (!await file.exists()) return Uint8List(0);
-    return file.readAsBytes();
+    try {
+      return await File('${_bodies.path}/$name').readAsBytes();
+    } on PathNotFoundException {
+      return Uint8List(0);
+    }
   }
 
   void _enqueue(Future<void> Function() task) {
@@ -182,8 +174,11 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
         '${_bodies.path}/$id.req',
         '${_bodies.path}/$id.res',
       ]) {
-        final file = File(path);
-        if (await file.exists()) await file.delete();
+        try {
+          await File(path).delete();
+        } on PathNotFoundException {
+          // Already gone, which is what was asked for.
+        }
       }
     }
   }
@@ -223,7 +218,7 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
     }
     _persisted.addAll(known);
     seed(loaded);
-    await _sweep(force: true);
+    await _sweep();
   }
 
   Future<void> _maybeSweep() async {
@@ -231,31 +226,26 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
     if (last != null && _now().difference(last) < const Duration(minutes: 10)) {
       return;
     }
-    await _sweep(force: true);
+    await _sweep();
   }
 
   /// Applies the retention period and the disk budget. Pinned calls stay.
-  Future<void> _sweep({required bool force}) async {
+  Future<void> _sweep() async {
     _lastSweep = _now();
-    final doomed = <int>[];
     final period = _config.retention.period;
-    final all = calls.value.isEmpty ? _snapshot() : calls.value;
-    if (period != null) {
-      final cutoff = _now().subtract(period);
-      for (final call in all) {
-        if (!call.pinned && call.startedAt.isBefore(cutoff)) {
-          doomed.add(call.id);
-        }
+    final cutoff = period == null ? null : _now().subtract(period);
+    final doomed = <int>{};
+    final survivors = <FlutwireCall>[];
+    for (final call in held) {
+      if (cutoff != null && !call.pinned && call.startedAt.isBefore(cutoff)) {
+        doomed.add(call.id);
+      } else {
+        survivors.add(call);
       }
     }
-    var disk = 0;
-    final survivors = [
-      for (final call in all)
-        if (!doomed.contains(call.id)) call,
-    ]..sort((a, b) => a.id.compareTo(b.id));
-    for (final call in survivors) {
-      disk += _diskBytes(call);
-    }
+    // Over budget, the oldest calls go first.
+    survivors.sort((a, b) => a.id.compareTo(b.id));
+    var disk = survivors.fold(0, (sum, call) => sum + _diskBytes(call));
     for (final call in survivors) {
       if (disk <= _config.maxDiskBytes) break;
       if (call.pinned) continue;
@@ -263,11 +253,6 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
       disk -= _diskBytes(call);
     }
     if (doomed.isNotEmpty) await remove(doomed);
-  }
-
-  List<FlutwireCall> _snapshot() {
-    flush();
-    return calls.value;
   }
 
   static int _diskBytes(FlutwireCall call) =>
