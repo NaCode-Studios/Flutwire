@@ -40,5 +40,7 @@ flutter:
         pluginClass: FlutwirePlugin
       ios:
         pluginClass: FlutwirePlugin
+        sharedDarwinSource: true
       macos:
         pluginClass: FlutwirePlugin
+        sharedDarwinSource: true

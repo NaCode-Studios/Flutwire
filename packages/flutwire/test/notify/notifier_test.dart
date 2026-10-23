@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -233,6 +235,78 @@ void main() {
     await settle();
     expect(only('requestPermission'), hasLength(1));
     expect(only('showSummary'), isNotEmpty);
+  });
+
+  test('shows the latest calls, not the ones from before the prompt', () async {
+    permission = 'notDetermined';
+    final answer = Completer<void>();
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (c) async {
+          sent.add(c);
+          switch (c.method) {
+            case 'permission':
+              return permission;
+            case 'requestPermission':
+              await answer.future; // the system dialog is on screen
+              permission = 'granted';
+              return permission;
+          }
+          return null;
+        });
+    build().start();
+    store
+      ..put(call(1, status: null, state: FlutwireCallState.pending))
+      ..flush();
+    await settle();
+    expect(only('requestPermission'), hasLength(1));
+
+    // While the dialog is up, the first call finishes and two more arrive.
+    store
+      ..put(call(1))
+      ..put(call(2, path: '/two'))
+      ..put(call(3, path: '/three'))
+      ..flush();
+    await settle();
+    expect(only('showSummary'), isEmpty);
+
+    answer.complete();
+    await settle(300);
+    final args = only('showSummary').last.arguments as Map<Object?, Object?>;
+    expect(args['count'], 3);
+    expect((args['lines']! as List<Object?>).first, contains('/three'));
+    expect(args['lines'], isNot(contains(startsWith('···'))));
+  });
+
+  test('never runs two updates at once', () async {
+    var inFlight = 0;
+    var worst = 0;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (c) async {
+          sent.add(c);
+          if (c.method == 'permission') return 'granted';
+          if (c.method == 'showSummary') {
+            inFlight++;
+            if (inFlight > worst) worst = inFlight;
+            await Future<void>.delayed(const Duration(milliseconds: 30));
+            inFlight--;
+          }
+          return null;
+        });
+    build(
+      config: const FlutwireNotificationConfig(
+        throttle: Duration(milliseconds: 5),
+      ),
+    ).start();
+    for (var i = 1; i <= 20; i++) {
+      store
+        ..put(call(i))
+        ..flush();
+      await Future<void>.delayed(const Duration(milliseconds: 8));
+    }
+    await settle(400);
+    expect(worst, 1);
+    final args = only('showSummary').last.arguments as Map<Object?, Object?>;
+    expect(args['count'], 20);
   });
 
   test('does not ask when told not to, and posts nothing', () async {

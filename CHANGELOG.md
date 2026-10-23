@@ -21,6 +21,8 @@ board can be cross-checked against what actually shipped.
 
 - A notification in the shade on Android that lists the latest calls, shows how many there are and how many went wrong, and has a Clear button. Tapping it opens the inspector, also when the app was not running. It asks for the notification permission when there is something to show, withdraws itself while the inspector is on screen, and needs no setup in the app (M8)
 
+- The same notification on iOS and macOS. It lists the latest calls in the notification centre without a banner or a sound, updates in place, has a Clear action, and opens the inspector when tapped, also after the app was killed. It hands every other notification to the delegate the app already had (M9)
+
 ### Internal
 
 - Dart workspace, strict analysis and CI over the Dart code and the Android and Apple builds (M1)

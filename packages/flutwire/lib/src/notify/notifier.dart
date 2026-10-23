@@ -41,6 +41,8 @@ final class FlutwireNotifier with WidgetsBindingObserver {
       ValueNotifier(FlutwireNotificationPermission.notDetermined);
   Timer? _quiet;
   bool _dirty = false;
+  bool _running = false;
+  bool _rerun = false;
   bool _started = false;
   bool _disposed = false;
   bool _askedOnce = false;
@@ -96,7 +98,7 @@ final class FlutwireNotifier with WidgetsBindingObserver {
       _dirty = true;
       return;
     }
-    unawaited(_update());
+    _kick();
     _quiet = Timer(_config.throttle, () {
       _quiet = null;
       if (_dirty) {
@@ -106,13 +108,33 @@ final class FlutwireNotifier with WidgetsBindingObserver {
     });
   }
 
+  /// Runs updates one at a time. Asking for permission can take as long as the
+  /// user likes, and the history keeps changing meanwhile, so a change that
+  /// arrives during an update schedules another once it is over.
+  void _kick() {
+    if (_running) {
+      _rerun = true;
+      return;
+    }
+    _running = true;
+    unawaited(_loop());
+  }
+
+  Future<void> _loop() async {
+    try {
+      do {
+        _rerun = false;
+        await _update();
+      } while (_rerun && !_disposed);
+    } finally {
+      _running = false;
+    }
+  }
+
   Future<void> _update() async {
     if (_disposed || !_config.enabled) return;
-    final calls = _store.calls.value;
-    final hidden =
-        calls.isEmpty ||
-        (_config.hideWhileInspectorOpen && _inspectorOpen.value);
-    if (hidden) {
+    if (_store.calls.value.isEmpty ||
+        (_config.hideWhileInspectorOpen && _inspectorOpen.value)) {
       await _withdraw();
       return;
     }
@@ -120,6 +142,9 @@ final class FlutwireNotifier with WidgetsBindingObserver {
       await _withdraw();
       return;
     }
+    // Read only now: the history may have moved on while permission was asked.
+    final calls = _store.calls.value;
+    if (calls.isEmpty) return;
     final strings = FlutwireStrings.of(_locale());
     final shown = calls.take(_config.lines).map(callLine).toList();
     final failed = calls.where((c) => c.isError).length;
