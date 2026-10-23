@@ -4,4 +4,11 @@
 /// and opens them from a notification in the shade.
 library;
 
+export 'src/capture/recorder.dart';
+export 'src/capture/redaction.dart';
+export 'src/config.dart';
+export 'src/engine.dart';
+export 'src/model/body.dart';
+export 'src/model/call.dart';
 export 'src/model/headers.dart';
+export 'src/store/store.dart';

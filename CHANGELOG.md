@@ -9,6 +9,11 @@ board can be cross-checked against what actually shipped.
 
 ## [Unreleased]
 
+### Added
+
+- A call model with headers, bodies cut at a configurable limit with the real size kept, GraphQL operation detection, and redaction of header values, query values and body fields (M3)
+- An in-memory history that keeps the newest calls inside a call count and a memory budget, and that pinned calls outlive (M3)
+
 ### Internal
 
 - Dart workspace, strict analysis and CI over the Dart code and the Android and Apple builds (M1)
