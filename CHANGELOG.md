@@ -16,6 +16,9 @@ board can be cross-checked against what actually shipped.
 
 - Recording of every call made through `dart:io`, with no per-client setup: `package:http`, Dio's default adapter, Chopper, `Image.network` and anything else that builds an `HttpClient`, including redirects, failures, cancelled reads and multipart uploads (M4)
 
+- A history kept on disk, so it survives a restart: one folder per app, a summary file and body files per call, bodies read back when a call is opened and released when memory runs short, retention of one hour, one day, one week or forever, a cap on the number of calls and on disk use, and pinned calls that nothing removes (M6)
+- Export of calls as cURL, HAR 1.2, plain text and Flutwire JSON. A cURL command says when the body was cut or is binary instead of sending something different, and a multipart upload becomes `-F` fields (M7)
+
 ### Internal
 
 - Dart workspace, strict analysis and CI over the Dart code and the Android and Apple builds (M1)

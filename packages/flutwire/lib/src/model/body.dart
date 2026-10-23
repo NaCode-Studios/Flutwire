@@ -43,19 +43,25 @@ final class FlutwireBody {
   /// [totalBytes] defaults to the length of [bytes], meaning nothing was cut.
   FlutwireBody({required this.bytes, int? totalBytes, this.contentType})
     : totalBytes = totalBytes ?? bytes.length,
-      loaded = true;
+      loaded = true,
+      _keptBytes = bytes.length;
 
   /// A body whose bytes live on disk and have not been read yet. It keeps the
   /// size and the media type so a list row can still describe it.
-  FlutwireBody.unloaded({required this.totalBytes, this.contentType})
-    : bytes = _none,
-      loaded = false;
+  FlutwireBody.unloaded({
+    required this.totalBytes,
+    this.contentType,
+    int keptBytes = 0,
+  }) : bytes = _none,
+       loaded = false,
+       _keptBytes = keptBytes;
 
   /// Restores the description written by [toJson], without the bytes.
   factory FlutwireBody.fromJson(Map<String, Object?> json) =>
       FlutwireBody.unloaded(
         totalBytes: (json['total'] as num?)?.toInt() ?? 0,
         contentType: json['type'] as String?,
+        keptBytes: (json['kept'] as num?)?.toInt() ?? 0,
       );
 
   /// A body that was never sent.
@@ -75,6 +81,11 @@ final class FlutwireBody {
   /// Whether [bytes] holds the recorded bytes. A summary read from disk does
   /// not, until the full call is loaded.
   final bool loaded;
+
+  final int _keptBytes;
+
+  /// How many bytes were kept, whether or not they are loaded now.
+  int get keptBytes => _keptBytes;
 
   /// Whether nothing was sent.
   bool get isEmpty => totalBytes == 0;
@@ -236,13 +247,24 @@ final class FlutwireBody {
   }
 
   /// A description without the bytes, for the summary kept on disk.
-  Map<String, Object?> toJson() => {'total': totalBytes, 'type': contentType};
+  Map<String, Object?> toJson() => {
+    'total': totalBytes,
+    'kept': keptBytes,
+    'type': contentType,
+  };
 
   /// A copy that carries [bytes] in place of the placeholder.
   FlutwireBody withBytes(Uint8List bytes) => FlutwireBody(
     bytes: bytes,
     totalBytes: totalBytes,
     contentType: contentType,
+  );
+
+  /// A copy that keeps the description and lets go of the bytes.
+  FlutwireBody unload() => FlutwireBody.unloaded(
+    totalBytes: totalBytes,
+    contentType: contentType,
+    keptBytes: keptBytes,
   );
 
   @override

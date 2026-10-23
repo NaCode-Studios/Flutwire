@@ -81,6 +81,27 @@ class MemoryFlutwireStore implements FlutwireStore {
   @protected
   void onRemoved(Iterable<FlutwireCall> calls) {}
 
+  /// Lets go of the bodies of [call] to free memory and returns what to keep
+  /// in its place, or null if the call cannot be kept without them, in which
+  /// case it is dropped. A store that has the bodies somewhere else, such as
+  /// on disk, overrides this.
+  @protected
+  FlutwireCall? releaseBodies(FlutwireCall call) => null;
+
+  /// Adds [calls] that already exist elsewhere, such as ones read from disk,
+  /// without telling [onPut] about them.
+  @protected
+  void seed(Iterable<FlutwireCall> calls) {
+    for (final call in calls) {
+      final previous = _byId[call.id];
+      if (previous != null) _bytes -= _sizeOf(previous);
+      _byId[call.id] = call;
+      _bytes += _sizeOf(call);
+    }
+    _enforceLimits(keep: -1);
+    _markDirty();
+  }
+
   @override
   ValueListenable<List<FlutwireCall>> get calls => _notifier;
 
@@ -187,12 +208,30 @@ class MemoryFlutwireStore implements FlutwireStore {
     if (_byId.length <= maxCalls && _bytes <= maxBytes) return;
     final oldestFirst = _byId.values.toList()
       ..sort((a, b) => a.id.compareTo(b.id));
+    // The call count is a hard limit: the oldest calls that are not pinned go.
     for (final call in oldestFirst) {
-      if (_byId.length <= maxCalls && _bytes <= maxBytes) break;
+      if (_byId.length <= maxCalls) break;
       if (call.pinned || call.id == keep) continue;
       _byId.remove(call.id);
       _bytes -= _sizeOf(call);
       onEvicted(call);
+    }
+    // Memory is softer: bodies are released first, and a call goes only if it
+    // cannot live without them.
+    for (final call in oldestFirst) {
+      if (_bytes <= maxBytes) break;
+      if (call.id == keep || !_byId.containsKey(call.id)) continue;
+      if (_sizeOf(call) == 0) continue;
+      final replacement = releaseBodies(call);
+      if (replacement != null) {
+        _bytes -= _sizeOf(call);
+        _byId[call.id] = replacement;
+        _bytes += _sizeOf(replacement);
+      } else if (!call.pinned) {
+        _byId.remove(call.id);
+        _bytes -= _sizeOf(call);
+        onEvicted(call);
+      }
     }
   }
 
