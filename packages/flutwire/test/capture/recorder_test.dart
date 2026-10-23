@@ -322,12 +322,12 @@ void main() {
     test('pausing stops recording and resuming restarts it', () {
       final t = make();
       Uri uri() => Uri.parse('https://x.test/');
-      t.engine.isPaused = true;
+      t.engine.paused.value = true;
       expect(
         t.engine.begin(method: 'GET', uri: uri(), source: FlutwireSource.io),
         isNull,
       );
-      t.engine.isPaused = false;
+      t.engine.paused.value = false;
       expect(
         t.engine.begin(method: 'GET', uri: uri(), source: FlutwireSource.io),
         isNotNull,

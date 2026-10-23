@@ -73,7 +73,7 @@ abstract final class Flutwire {
   /// Whether recording is paused. Calls made while paused are not recorded.
   static bool get isPaused => _runtime.value?.paused.value ?? false;
 
-  static set isPaused(bool value) => _runtime.value?.setPaused(value);
+  static set isPaused(bool value) => _runtime.value?.paused.value = value;
 
   /// Whether the `dart:io` capture is installed. Client adapters check it to
   /// avoid recording a call twice.

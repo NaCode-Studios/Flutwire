@@ -123,11 +123,11 @@ void main() {
         source: FlutwireSource.custom,
       );
 
-      runtime.setPaused(true);
+      runtime.paused.value = true;
       expect(runtime.paused.value, isTrue);
       expect(begin(), isNull);
 
-      runtime.setPaused(false);
+      runtime.paused.value = false;
       expect(runtime.paused.value, isFalse);
       expect(begin(), isNotNull);
       (runtime.store as MemoryFlutwireStore).flush();
@@ -251,7 +251,9 @@ void main() {
       tester,
     ) async {
       final first = await start(tester, onDisk(ThemeMode.dark));
-      await tester.runAsync(() async => first.setThemeMode(ThemeMode.light));
+      await tester.runAsync(
+        () async => first.themeMode.value = ThemeMode.light,
+      );
       await restart(tester, first);
 
       final second = await start(tester, onDisk(ThemeMode.dark));
@@ -262,7 +264,7 @@ void main() {
     testWidgets('survives clearing the history', (tester) async {
       final first = await start(tester, onDisk());
       await tester.runAsync(() async {
-        first.setThemeMode(ThemeMode.dark);
+        first.themeMode.value = ThemeMode.dark;
         await first.clear(keepPinned: false);
       });
       await restart(tester, first);

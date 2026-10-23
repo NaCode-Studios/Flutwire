@@ -274,12 +274,12 @@ class _InspectorPageState extends State<InspectorPage> {
             pinned: true,
             delegate: PinnedBar(
               height: FilterBar.height + 2,
-              builder: (context, overlaps) => DecoratedBox(
+              builder: (context, {required overlapsContent}) => DecoratedBox(
                 decoration: BoxDecoration(
                   color: t.ground,
                   border: Border(
                     bottom: BorderSide(
-                      color: overlaps ? t.line : Colors.transparent,
+                      color: overlapsContent ? t.line : Colors.transparent,
                     ),
                   ),
                 ),

@@ -9,7 +9,8 @@ class PinnedBar extends SliverPersistentHeaderDelegate {
   final double height;
 
   /// Draws the bar. [overlapsContent] is true once the list scrolls under it.
-  final Widget Function(BuildContext context, bool overlapsContent) builder;
+  final Widget Function(BuildContext context, {required bool overlapsContent})
+  builder;
 
   @override
   double get minExtent => height;
@@ -22,7 +23,7 @@ class PinnedBar extends SliverPersistentHeaderDelegate {
     BuildContext context,
     double shrinkOffset,
     bool overlapsContent,
-  ) => builder(context, overlapsContent);
+  ) => builder(context, overlapsContent: overlapsContent);
 
   // The builder closes over the page's state, so there is no cheaper way to
   // know whether what it draws has changed.

@@ -83,7 +83,7 @@ class InspectorAppBar extends StatelessWidget implements PreferredSizeWidget {
           onSelected: (action) => action(),
           itemBuilder: (context) => [
             PopupMenuItem(
-              value: () => session.setPaused(!session.paused.value),
+              value: () => session.paused.value = !session.paused.value,
               child: Text(
                 session.paused.value ? s.resumeRecording : s.pauseRecording,
               ),

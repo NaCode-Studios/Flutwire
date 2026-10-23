@@ -33,8 +33,10 @@ final class FlutwireRuntime implements FlutwireSession {
   }) : _native = native,
        _notifier = notifier,
        _launcher = launcher,
-       _themeMode = ValueNotifier(themeMode),
-       _uninstallWire = uninstallWire;
+       themeMode = ValueNotifier(themeMode),
+       _uninstallWire = uninstallWire {
+    this.themeMode.addListener(_rememberThemeMode);
+  }
 
   static const String _themeKey = 'themeMode';
 
@@ -111,7 +113,6 @@ final class FlutwireRuntime implements FlutwireSession {
   final FlutwireNative _native;
   final FlutwireNotifier _notifier;
   final InspectorLauncher _launcher;
-  final ValueNotifier<ThemeMode> _themeMode;
   final void Function()? _uninstallWire;
   StreamSubscription<String>? _actions;
   bool _disposed = false;
@@ -129,19 +130,13 @@ final class FlutwireRuntime implements FlutwireSession {
   final FlutwireSharing sharing;
 
   @override
-  ValueListenable<bool> get paused => engine.pausedListenable;
+  ValueNotifier<bool> get paused => engine.paused;
 
   @override
-  void setPaused(bool paused) => engine.isPaused = paused;
+  final ValueNotifier<ThemeMode> themeMode;
 
-  @override
-  ValueListenable<ThemeMode> get themeMode => _themeMode;
-
-  @override
-  void setThemeMode(ThemeMode mode) {
-    _themeMode.value = mode;
-    unawaited(store.preferences.write(_themeKey, mode.name));
-  }
+  void _rememberThemeMode() =>
+      unawaited(store.preferences.write(_themeKey, themeMode.value.name));
 
   @override
   ValueListenable<FlutwireNotificationPermission> get notificationPermission =>
@@ -184,6 +179,6 @@ final class FlutwireRuntime implements FlutwireSession {
     await _native.dispose();
     await engine.dispose();
     _launcher.dispose();
-    _themeMode.dispose();
+    themeMode.dispose();
   }
 }

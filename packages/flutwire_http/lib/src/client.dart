@@ -4,7 +4,7 @@ import 'package:flutwire/flutwire.dart';
 import 'package:http/http.dart';
 
 /// A `package:http` client that records its calls in Flutwire, then lets
-/// [inner] do the work.
+/// [_inner] do the work.
 ///
 /// ```dart
 /// final client = FlutwireClient(Client());
@@ -19,9 +19,9 @@ import 'package:http/http.dart';
 /// reproduced byte for byte, because its body can only be read once, by the
 /// client that sends it.
 class FlutwireClient extends BaseClient {
-  /// Wraps [inner], or a new [Client] when none is given.
-  FlutwireClient([Client? inner, this.force = false])
-    : _inner = inner ?? Client();
+  /// Wraps [_inner]. Pass [force] to record even when the `dart:io` capture
+  /// is installed, for a client that does not go through `dart:io`.
+  FlutwireClient(this._inner, {this.force = false});
 
   final Client _inner;
 

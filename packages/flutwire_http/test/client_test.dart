@@ -133,7 +133,7 @@ void main() {
 
     test('records anyway when forced', () async {
       await start(captureDartIo: true);
-      final client = FlutwireClient(mock((r, b) => ok('{}')), true);
+      final client = FlutwireClient(mock((r, b) => ok('{}')), force: true);
       await client.get(Uri.parse('https://api.test/'));
       expect(recorded(), hasLength(1));
     });

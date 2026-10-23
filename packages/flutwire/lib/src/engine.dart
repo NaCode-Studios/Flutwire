@@ -34,7 +34,6 @@ final class FlutwireEngine implements FlutwireRecorderHost {
   final FlutwireStore store;
 
   final DateTime Function() _clock;
-  final ValueNotifier<bool> _paused = ValueNotifier(false);
   int _lastId = 0;
   bool _reportedInternalError = false;
 
@@ -48,12 +47,7 @@ final class FlutwireEngine implements FlutwireRecorderHost {
   int internalErrorCount = 0;
 
   /// Whether recording is paused. Calls made while paused are not recorded.
-  bool get isPaused => _paused.value;
-
-  set isPaused(bool value) => _paused.value = value;
-
-  /// Notifies when recording is paused or resumed.
-  ValueListenable<bool> get pausedListenable => _paused;
+  final ValueNotifier<bool> paused = ValueNotifier(false);
 
   @override
   DateTime now() => _clock();
@@ -67,7 +61,7 @@ final class FlutwireEngine implements FlutwireRecorderHost {
     FlutwireHeaders requestHeaders = FlutwireHeaders.empty,
   }) {
     try {
-      if (!config.isActive || _paused.value) return null;
+      if (!config.isActive || paused.value) return null;
       final upper = method.toUpperCase();
       for (final rule in config.ignore) {
         if (rule.matches(upper, uri)) return null;
@@ -87,7 +81,7 @@ final class FlutwireEngine implements FlutwireRecorderHost {
           ),
         ),
       );
-    } catch (error, stack) {
+    } on Object catch (error, stack) {
       internalError(error, stack);
       return null;
     }
@@ -108,7 +102,7 @@ final class FlutwireEngine implements FlutwireRecorderHost {
 
   /// Releases the store and the listeners.
   Future<void> dispose() async {
-    _paused.dispose();
+    paused.dispose();
     await store.dispose();
   }
 

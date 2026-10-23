@@ -169,15 +169,15 @@ final class FlutwireCallRecorder {
           },
           onDone: () {
             complete();
-            out.close();
+            unawaited(out.close());
           },
         );
       },
       onPause: () => subscription?.pause(),
       onResume: () => subscription?.resume(),
-      onCancel: () {
+      onCancel: () async {
         cancel();
-        return subscription?.cancel();
+        await subscription?.cancel();
       },
     );
     return out.stream;
@@ -265,10 +265,10 @@ final class FlutwireCallRecorder {
   void _guard(void Function() body) {
     try {
       body();
-    } catch (error, stack) {
+    } on Object catch (error, stack) {
       try {
         _host.internalError(error, stack);
-      } catch (_) {
+      } on Object {
         // Reporting is best effort too: the app's request comes first.
       }
     }

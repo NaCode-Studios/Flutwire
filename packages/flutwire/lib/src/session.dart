@@ -22,17 +22,11 @@ abstract interface class FlutwireSession {
   /// Writes calls out of the app.
   FlutwireSharing get sharing;
 
-  /// Whether recording is paused.
-  ValueListenable<bool> get paused;
+  /// Whether recording is paused. Setting it pauses or resumes.
+  ValueNotifier<bool> get paused;
 
-  /// Pauses recording, or resumes it.
-  void setPaused(bool paused);
-
-  /// The look of the inspector.
-  ValueListenable<ThemeMode> get themeMode;
-
-  /// Picks the look of the inspector and remembers it.
-  void setThemeMode(ThemeMode mode);
+  /// The look of the inspector. Setting it picks another, which is remembered.
+  ValueNotifier<ThemeMode> get themeMode;
 
   /// Whether the user has allowed the notification, as far as is known.
   ValueListenable<FlutwireNotificationPermission> get notificationPermission;

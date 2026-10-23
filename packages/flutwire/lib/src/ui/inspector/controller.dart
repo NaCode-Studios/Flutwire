@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../../model/call.dart';
@@ -182,7 +184,7 @@ class InspectorController extends ChangeNotifier {
     _bodyMatches.removeWhere((id) => !ids.contains(id));
     _scanned.removeWhere((id) => !ids.contains(id));
     // Calls that arrived or finished since the last pass still have to be read.
-    _scanBodies(_searchToken);
+    unawaited(_scanBodies(_searchToken));
     _changed();
   }
 
@@ -204,7 +206,7 @@ class InspectorController extends ChangeNotifier {
     _bodyMatches.clear();
     _scanned.clear();
     _scanning = false;
-    _scanBodies(_searchToken);
+    unawaited(_scanBodies(_searchToken));
   }
 
   Future<void> _scanBodies(int token) async {

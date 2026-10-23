@@ -27,12 +27,10 @@ class FakeSession implements FlutwireSession {
     ThemeMode themeMode = ThemeMode.dark,
     FlutwireNotificationPermission permission =
         FlutwireNotificationPermission.unsupported,
-  }) : _themeMode = ValueNotifier(themeMode),
+  }) : themeMode = ValueNotifier(themeMode),
        _permission = ValueNotifier(permission) {
     // Oldest first, so the newest ends up on top.
-    for (final call in calls.reversed) {
-      store.put(call);
-    }
+    calls.reversed.forEach(store.put);
     store.flush();
   }
 
@@ -50,8 +48,6 @@ class FakeSession implements FlutwireSession {
     version: 'test',
   );
 
-  final ValueNotifier<bool> _paused = ValueNotifier(false);
-  final ValueNotifier<ThemeMode> _themeMode;
   final ValueNotifier<FlutwireNotificationPermission> _permission;
   final ValueNotifier<bool> _inspectorOpen = ValueNotifier(false);
 
@@ -65,16 +61,10 @@ class FakeSession implements FlutwireSession {
   int settingsOpened = 0;
 
   @override
-  ValueListenable<bool> get paused => _paused;
+  final ValueNotifier<bool> paused = ValueNotifier(false);
 
   @override
-  void setPaused(bool paused) => _paused.value = paused;
-
-  @override
-  ValueListenable<ThemeMode> get themeMode => _themeMode;
-
-  @override
-  void setThemeMode(ThemeMode mode) => _themeMode.value = mode;
+  final ValueNotifier<ThemeMode> themeMode;
 
   @override
   ValueListenable<FlutwireNotificationPermission> get notificationPermission =>

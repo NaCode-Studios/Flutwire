@@ -121,7 +121,8 @@ void main() {
                   of: find.text(label),
                   matching: find.byWidgetPredicate(
                     (widget) =>
-                        widget is Semantics && widget.properties.button == true,
+                        widget is Semantics &&
+                        (widget.properties.button ?? false),
                   ),
                 )
                 .first,

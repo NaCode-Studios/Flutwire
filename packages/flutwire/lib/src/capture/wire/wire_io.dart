@@ -453,7 +453,7 @@ FlutwireCertificate? _certificateOf(X509Certificate? certificate) {
           .map((b) => b.toRadixString(16).padLeft(2, '0'))
           .join(),
     );
-  } catch (_) {
+  } on Object {
     return null;
   }
 }

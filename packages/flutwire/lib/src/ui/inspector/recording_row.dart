@@ -33,7 +33,7 @@ class RecordingRow extends StatelessWidget {
             children: [
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: () => session.setPaused(!paused),
+                onTap: () => session.paused.value = !paused,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
