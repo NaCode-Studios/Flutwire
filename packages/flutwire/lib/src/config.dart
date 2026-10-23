@@ -1,3 +1,5 @@
+import 'dart:ui' show Locale;
+
 import 'package:flutter/foundation.dart';
 
 import 'capture/redaction.dart';
@@ -132,6 +134,7 @@ final class FlutwireConfig {
     this.decoders = const [],
     this.notification = const FlutwireNotificationConfig(),
     this.shortcut = true,
+    this.locale,
   });
 
   /// Whether recording is on. Null means on in debug builds and off in
@@ -187,6 +190,10 @@ final class FlutwireConfig {
 
   /// Whether to add an "Open Flutwire" shortcut to the app icon.
   final bool shortcut;
+
+  /// The language of the notification and the inspector. Null follows the
+  /// device.
+  final Locale? locale;
 
   /// Whether this configuration records in the current build mode.
   bool get isActive {

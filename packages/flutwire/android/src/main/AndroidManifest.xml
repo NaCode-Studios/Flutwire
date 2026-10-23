@@ -1,3 +1,28 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-  package="it.nacodestudios.flutwire">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Required from Android 13 to post the notification. The app does not
+         need to declare it: the manifest merger adds it. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application>
+
+        <!-- Receives the Clear button of the notification, even if the app is
+             not running. -->
+        <receiver
+            android:name=".FlutwireReceiver"
+            android:exported="false" />
+
+        <!-- Lets the share sheet read the export files Flutwire writes. Its own
+             authority keeps it from colliding with a provider the app declares. -->
+        <provider
+            android:name=".FlutwireFileProvider"
+            android:authorities="${applicationId}.flutwire.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/flutwire_file_paths" />
+        </provider>
+
+    </application>
 </manifest>
