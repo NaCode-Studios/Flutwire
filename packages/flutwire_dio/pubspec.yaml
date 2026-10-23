@@ -21,7 +21,7 @@ environment:
 resolution: workspace
 
 dependencies:
-  dio: ^5.0.0
+  dio: ^5.2.0
   flutter:
     sdk: flutter
   flutwire: ^0.1.0
