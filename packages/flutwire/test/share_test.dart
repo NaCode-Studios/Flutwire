@@ -11,7 +11,7 @@ import 'ui/calls.dart';
 const _channel = MethodChannel('flutwire.test/share');
 
 /// A store that hands out the full call, as one kept on disk does.
-class _FullStore extends MemoryFlutwireStore {
+final class _FullStore extends MemoryFlutwireStore {
   _FullStore(this.full);
 
   final FlutwireCall full;

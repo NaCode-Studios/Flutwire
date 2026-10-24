@@ -42,9 +42,16 @@ flutter analyze --fatal-infos
 (cd packages/flutwire_cloud_functions && flutter test)
 ```
 
-The Android and Apple halves are compiled by building the example app: `flutter build apk --debug`, `flutter build ios --simulator --no-codesign` and `flutter build macos --debug`, each from `packages/flutwire/example`.
+The Android and Apple halves are compiled by building the example app: `flutter build apk --debug`, `flutter build ios --simulator --no-codesign` and `flutter build macos --debug`, each from `packages/flutwire/example`. The web has no native half, and `flutter build web` from the same folder is what compiles the example for it.
 
-How the JSON tree behaves on a big response is measured on a device, in profile mode, by `integration_test/json_tree_performance_test.dart` in the example app. Its first lines say how to run it. CI does not run it, because it needs a device.
+The public API is checked against the latest release on pub.dev, and a breaking change needs a new major version in the pubspec. To see what a change does to it:
+
+```bash
+dart pub global activate dart_apitool 0.23.2
+dart-apitool diff --old pub://flutwire/<latest> --new packages/flutwire --version-check-mode onlyBreakingChanges
+```
+
+How the JSON tree behaves on a big response is measured on a device, in profile mode, by `integration_test/json_tree_performance_test.dart` in the example app, and `integration_test/features_smoke_test.dart` runs the comparison, the statistics and the dock on the platform it is started on. Their first lines say how to run them. CI runs neither, because they need a device.
 
 ## Commits and branches
 

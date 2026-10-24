@@ -5,7 +5,8 @@ import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutwire/flutwire.dart';
 import 'package:flutwire_dio/flutwire_dio.dart';
@@ -41,6 +42,15 @@ class ExampleApp extends StatelessWidget {
     );
   }
 }
+
+/// Whether the platform has a notification that opens the inspector.
+bool get _hasNotification =>
+    !kIsWeb &&
+    const {
+      TargetPlatform.android,
+      TargetPlatform.iOS,
+      TargetPlatform.macOS,
+    }.contains(defaultTargetPlatform);
 
 /// One button of the demo: a label and the call it makes.
 class Probe {
@@ -404,11 +414,15 @@ class Home extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text('Flutwire example')),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Flutwire.open(context),
-        icon: const Icon(Icons.cable_rounded),
-        label: const Text('Open the inspector'),
-      ),
+      // Where there is no notification Flutwire floats a button of its own in
+      // this corner, so the example adds none.
+      floatingActionButton: _hasNotification
+          ? FloatingActionButton.extended(
+              onPressed: () => Flutwire.open(context),
+              icon: const Icon(Icons.cable_rounded),
+              label: const Text('Open the inspector'),
+            )
+          : null,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
         children: [

@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package check.v1;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+enum Level {
+  LEVEL_UNSPECIFIED = 0;
+  LEVEL_LOW = 1;
+  LEVEL_HIGH = 2;
+  LEVEL_NEGATIVE = -1;
+}
+
+message Scalars {
+  double d = 1;
+  float f = 2;
+  int32 i32 = 3;
+  int64 i64 = 4;
+  uint32 u32 = 5;
+  uint64 u64 = 6;
+  sint32 s32 = 7;
+  sint64 s64 = 8;
+  fixed32 fx32 = 9;
+  fixed64 fx64 = 10;
+  sfixed32 sf32 = 11;
+  sfixed64 sf64 = 12;
+  bool b = 13;
+  string s = 14;
+  bytes raw = 15;
+}
+
+message Address {
+  string city = 1;
+  string street = 2;
+}
+
+message Club {
+  enum Kind {
+    KIND_UNKNOWN = 0;
+    KIND_SOCIAL = 1;
+    KIND_TEAM = 2;
+  }
+
+  message Member {
+    string handle = 1;
+    bool admin = 2;
+  }
+
+  string name = 1;
+  Level level = 2;
+  repeated string tags = 3;
+  repeated int32 scores = 4;
+  repeated double ratios = 5;
+  map<string, int32> counts = 6;
+  map<int32, Member> members = 7;
+  Address address = 8;
+  repeated Address branches = 9;
+  oneof contact {
+    string email = 10;
+    int64 phone = 11;
+    Address office = 12;
+  }
+  optional int32 rank = 13;
+  google.protobuf.Timestamp founded = 14;
+  google.protobuf.Duration season = 15;
+  repeated Level levels = 16;
+  Kind kind = 17;
+  Scalars scalars = 18;
+}
+
+message GetClubRequest {
+  string name = 1;
+}
+
+message ListClubsRequest {
+  int32 limit = 1;
+}
+
+service Clubs {
+  rpc Get(GetClubRequest) returns (Club);
+  rpc List(ListClubsRequest) returns (stream Club);
+}

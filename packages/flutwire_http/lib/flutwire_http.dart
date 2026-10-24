@@ -7,4 +7,4 @@
 /// `ChopperClient(client: FlutwireClient(http.Client()))` covers it too.
 library;
 
-export 'src/client.dart';
+export 'src/client.dart' show FlutwireClient;

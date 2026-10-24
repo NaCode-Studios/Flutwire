@@ -279,7 +279,7 @@ final class FlutwireEngine implements FlutwireRecorderHost {
 }
 
 /// The store of an engine that forwards what it records: it keeps nothing.
-final class _ForwardedStore implements FlutwireStore {
+final class _ForwardedStore extends FlutwireStore {
   final ValueNotifier<List<FlutwireCall>> _calls = ValueNotifier(const []);
 
   @override

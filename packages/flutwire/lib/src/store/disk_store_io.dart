@@ -17,12 +17,18 @@ import 'store.dart';
 /// Layout, under the folder it is given:
 ///
 /// ```
+/// layout              the number of this layout, which is [currentLayout]
 /// calls/<id>.json     the summary of a call: headers, status, timings
 /// bodies/<id>.req     the request body bytes that were kept
 /// bodies/<id>.res     the response body bytes that were kept
 /// messages/<id>.jsonl the messages of a WebSocket or an event stream, a line each
 /// preferences.json    what the user picked in the settings
 /// ```
+///
+/// A folder with no `layout` file is new, or was written by a release from
+/// before the file existed, whose layout is the first. A folder whose layout is
+/// newer than this release knows is not opened at all, so that a release never
+/// reads another's files wrongly or sweeps away what it cannot read.
 ///
 /// A call is written when it ends, bodies and messages first and summary last,
 /// through a temporary file, so a summary on disk always has its bodies and a
@@ -45,14 +51,21 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
          preferences: _preferences,
        );
 
+  /// The layout this release writes, and the newest one it reads.
+  static const int currentLayout = 1;
+
   /// Opens the history stored under [root], creating it if needed, and applies
   /// the retention policy and the limits to what it finds.
+  ///
+  /// Throws a [FormatException] when the folder has a layout this release does
+  /// not know, and leaves what is in it as it is.
   static Future<DiskFlutwireStore> open(
     Directory root,
     FlutwireConfig config, {
     DateTime Function()? clock,
     Duration notifyInterval = const Duration(milliseconds: 120),
   }) async {
+    await _checkLayout(root);
     final store = DiskFlutwireStore._(
       root,
       config,
@@ -79,6 +92,31 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
 
   /// Completes when every write and delete asked for so far has finished.
   Future<void> get settled => _queue;
+
+  /// Records the layout in a folder that has none, and refuses a folder whose
+  /// layout is one this release cannot read.
+  static Future<void> _checkLayout(Directory root) async {
+    await root.create(recursive: true);
+    final file = File('${root.path}/layout');
+    final String text;
+    try {
+      text = (await file.readAsString()).trim();
+    } on PathNotFoundException {
+      // Through a temporary file, so that a crash cannot leave a marker with
+      // nothing in it, which would shut the history out for good.
+      final temporary = File('${root.path}/layout.tmp');
+      await temporary.writeAsString('$currentLayout\n', flush: true);
+      await temporary.rename(file.path);
+      return;
+    }
+    final found = int.tryParse(text);
+    if (found == null || found < 1 || found > currentLayout) {
+      throw FormatException(
+        'The history in ${root.path} has the layout "$text", and this '
+        'release reads layout $currentLayout. It was left as it is.',
+      );
+    }
+  }
 
   @override
   void onPut(FlutwireCall call) {

@@ -95,6 +95,34 @@ jobs:
             echo "::endgroup::"
           done
 
+  # A version number is a promise about the public API, and nothing else checks
+  # it. Each package is compared with its latest release on pub.dev, and the job
+  # fails when the API breaks and the pubspec has not moved to a version that
+  # allows it: from 1.0 a removed or changed member needs the next major.
+  # STABILITY.md says what each kind of change means.
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: dart pub global activate dart_apitool 0.23.2
+      - name: Compare each package with its latest release
+        run: |
+          export PATH="$PATH:$HOME/.pub-cache/bin"
+          status=0
+          for pkg in flutwire flutwire_dio flutwire_http flutwire_cloud_functions; do
+            latest=$(curl -fsS "https://pub.dev/api/packages/$pkg" | jq -r .latest.version)
+            echo "::group::$pkg against $latest"
+            dart-apitool diff --old "pub://$pkg/$latest" --new "packages/$pkg" \
+              --version-check-mode onlyBreakingChanges || status=1
+            echo "::endgroup::"
+          done
+          exit $status
+
   # The plugin has native halves that `flutter analyze` never reads. Building
   # the example app is what compiles them, so a Kotlin or Swift error fails
   # here and not on a stranger's machine.
@@ -112,6 +140,20 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter build apk --debug
+        working-directory: packages/flutwire/example
+
+  # The web has no dart:io, so it is where the adapters do the recording and
+  # where the example is compiled by a different compiler than anywhere else.
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter build web
         working-directory: packages/flutwire/example
 
   # The Swift halves can only be compiled on a Mac.

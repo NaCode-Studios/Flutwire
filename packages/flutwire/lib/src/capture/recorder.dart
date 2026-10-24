@@ -206,14 +206,6 @@ final class FlutwireCallRecorder {
     _publishMessages(force: false);
   });
 
-  /// Passes [source], the bytes of the request body, through unchanged while
-  /// recording them. Use it for a body that is only available as a stream.
-  Stream<List<int>> observeRequest(Stream<List<int>> source) =>
-      source.map((chunk) {
-        requestBody(chunk);
-        return chunk;
-      });
-
   /// Passes [source], the bytes of the response body, through unchanged while
   /// recording them, and ends the call when the stream ends, fails, or is
   /// cancelled by the app.

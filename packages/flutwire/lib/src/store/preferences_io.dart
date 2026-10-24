@@ -8,7 +8,7 @@ import 'preferences.dart';
 /// The file is rewritten whole through a temporary one, so a crash leaves
 /// either the old preferences or the new ones, and a file that cannot be read
 /// is treated as empty rather than as an error.
-final class FileFlutwirePreferences implements FlutwirePreferences {
+final class FileFlutwirePreferences extends FlutwirePreferences {
   FileFlutwirePreferences._(this._file, this._values);
 
   /// Reads the preferences under [root], or starts empty.

@@ -211,12 +211,26 @@ final class ProtoValues {
   static Object? _fixed(ProtoType type, Uint8List bytes) {
     final view = ByteData.sublistView(bytes);
     return switch (type) {
-      ProtoType.float => view.getFloat32(0, Endian.little),
+      ProtoType.float => _shortest(view.getFloat32(0, Endian.little)),
       ProtoType.double => view.getFloat64(0, Endian.little),
       ProtoType.sfixed32 => view.getInt32(0, Endian.little),
       ProtoType.sfixed64 => signedFixed64(bytes),
       _ => unsignedFixed(bytes),
     };
+  }
+
+  /// The shortest decimal that reads back as the same `float`, which is how
+  /// JSON writes one: 0.1 for the float nearest to a tenth, not the 17 digits
+  /// of the double it widens to.
+  static double _shortest(double value) {
+    if (!value.isFinite || value == 0) return value;
+    final probe = ByteData(4);
+    for (var digits = 1; digits <= 9; digits++) {
+      final candidate = double.parse(value.toStringAsPrecision(digits));
+      probe.setFloat32(0, candidate);
+      if (probe.getFloat32(0) == value) return candidate;
+    }
+    return value;
   }
 
   /// A field read with no help from a schema.

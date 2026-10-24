@@ -7,6 +7,7 @@ import 'package:flutwire/src/config.dart';
 import 'package:flutwire/src/model/body.dart';
 import 'package:flutwire/src/model/call.dart';
 import 'package:flutwire/src/model/headers.dart';
+import 'package:flutwire/src/model/message.dart';
 import 'package:flutwire/src/store/disk_store_io.dart';
 import 'package:flutwire/src/store/open_store.dart';
 import 'package:flutwire/src/store/store.dart';
@@ -264,5 +265,126 @@ void main() {
     );
     expect(store, isNot(isA<DiskFlutwireStore>()));
     await store.dispose();
+  });
+
+  group('the layout of the folder', () {
+    File marker() => File('${root.path}/layout');
+
+    void copyFixture(String name) {
+      final from = Directory('test/fixtures/$name').absolute;
+      for (final entity in from.listSync(recursive: true)) {
+        final relative = entity.path.substring(from.path.length);
+        if (entity is Directory) {
+          Directory('${root.path}$relative').createSync(recursive: true);
+        } else if (entity is File) {
+          File('${root.path}$relative')
+            ..createSync(recursive: true)
+            ..writeAsBytesSync(entity.readAsBytesSync());
+        }
+      }
+    }
+
+    Map<String, String> snapshot() => {
+      for (final file in root.listSync(recursive: true).whereType<File>())
+        file.path.substring(root.path.length): base64Encode(
+          file.readAsBytesSync(),
+        ),
+    };
+
+    test('a new folder records its layout and keeps it', () async {
+      var store = await open();
+      store.put(call(1));
+      await store.settled;
+      await store.dispose();
+      expect(marker().readAsStringSync().trim(), '1');
+      store = await open();
+      store.flush();
+      expect(ids(store), [1]);
+      await store.dispose();
+    });
+
+    test('a history written by 0.2.0 is read and gets its layout', () async {
+      copyFixture('history_0_2_0');
+      expect(marker().existsSync(), isFalse);
+      final store = await open();
+      store.flush();
+      expect(ids(store), [6, 5, 4, 3, 2, 1]);
+      expect(marker().readAsStringSync().trim(), '1');
+      expect(store.preferences.read('themeMode'), 'dark');
+      expect(store.preferences.read('dockSide'), 'right');
+
+      final order = (await store.load(1))!;
+      expect(order.pinned, isTrue);
+      expect(order.request.body.text, '{"items":[{"sku":"A-12","qty":2}]}');
+      expect(order.response!.statusCode, 201);
+      expect(order.response!.body.text, '{"id":"o-77","total":42}');
+      expect(order.response!.remoteAddress, '203.0.113.7');
+
+      final club = (await store.load(2))!;
+      expect(club.source, FlutwireSource.dio);
+      expect(club.response!.body.text, 'no such club');
+      expect(club.response!.compression, 'gzip');
+      expect(club.response!.redirects.single.statusCode, 301);
+      expect(club.response!.certificate!.subject, 'CN=api.example.com');
+
+      final failed = (await store.load(3))!;
+      expect(failed.state, FlutwireCallState.failed);
+      expect(failed.error!.message, 'Connection reset by peer');
+      expect(failed.graphql!.operationName, 'Clubs');
+      expect(failed.request.body.text, contains('query Clubs'));
+
+      final socket = (await store.load(4))!;
+      expect(socket.messages!.kind, FlutwireConversationKind.webSocket);
+      expect(socket.messages!.total, 3);
+      expect(socket.messages!.items.map((m) => m.kind), [
+        FlutwireMessageKind.text,
+        FlutwireMessageKind.binary,
+        FlutwireMessageKind.close,
+      ]);
+      expect(socket.messages!.items.first.text, '{"hello":"server"}');
+      expect(socket.messages!.items.first.sent, isTrue);
+
+      final again = (await store.load(5))!;
+      expect(again.resentFrom, 1);
+      expect(again.intercept, FlutwireIntercept.edited);
+
+      // A summary from 0.1.0 has no field for any of the above.
+      final health = (await store.load(6))!;
+      expect(health.response!.statusCode, 200);
+      expect(health.response!.body.text, 'ok');
+      expect(health.resentFrom, isNull);
+      expect(health.intercept, isNull);
+      expect(health.messages, isNull);
+      await store.dispose();
+    });
+
+    test('a folder of a newer layout is left as it is', () async {
+      copyFixture('history_0_2_0');
+      marker().writeAsStringSync('2\n');
+      File('${root.path}/calls/7.json').writeAsStringSync('{"v":2,"x":[]}');
+      File('${root.path}/bodies/7.res').writeAsStringSync('from the future');
+      final before = snapshot();
+
+      await expectLater(open(), throwsFormatException);
+      expect(snapshot(), before);
+
+      final store = await openStore(
+        FlutwireConfig(enabled: true, storagePath: root.path),
+      );
+      expect(store, isNot(isA<DiskFlutwireStore>()));
+      expect(ids(store as MemoryFlutwireStore), isEmpty);
+      await store.dispose();
+      expect(snapshot(), before);
+    });
+
+    for (final text in ['', 'two', '0', '-1', '1.5']) {
+      test('a layout of "$text" is left as it is', () async {
+        copyFixture('history_0_2_0');
+        marker().writeAsStringSync(text);
+        final before = snapshot();
+        await expectLater(open(), throwsFormatException);
+        expect(snapshot(), before);
+      });
+    }
   });
 }

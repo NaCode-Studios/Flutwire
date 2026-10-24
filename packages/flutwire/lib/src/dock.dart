@@ -49,6 +49,11 @@ final class FlutwireDock extends ChangeNotifier {
   /// room.
   static const double wideFrom = 900;
 
+  /// The narrowest screen with room for the panel and the app side by side.
+  /// Narrower than this the panel goes at the bottom whatever side was chosen,
+  /// because beside the app it would leave neither of them a usable width.
+  static const double besideFrom = 600;
+
   final FlutwirePreferences? _preferences;
   FlutwireDockSide? _side;
   FlutwireDockSide _resolved = FlutwireDockSide.bottom;
@@ -56,6 +61,7 @@ final class FlutwireDock extends ChangeNotifier {
   bool _prefersDock;
   bool _isOpen = false;
   int _hosts = 0;
+  double _screenWidth = double.infinity;
 
   /// Whether the panel is on screen.
   bool get isOpen => _isOpen;
@@ -77,9 +83,16 @@ final class FlutwireDock extends ChangeNotifier {
   /// The side the panel was last laid out on.
   FlutwireDockSide get side => _resolved;
 
+  /// Whether the last screen the panel was laid out on has room for it beside
+  /// the app.
+  bool get canSitBeside => _screenWidth >= besideFrom;
+
   /// The side for a screen of [size]: the one the user chose, or by the shape of
-  /// the screen.
+  /// the screen, and always the bottom when the screen is too narrow for the
+  /// panel to sit beside the app.
   FlutwireDockSide sideFor(Size size) {
+    _screenWidth = size.width;
+    if (!canSitBeside) return _resolved = FlutwireDockSide.bottom;
     return _resolved =
         _side ??
         (size.width >= wideFrom
@@ -122,8 +135,10 @@ final class FlutwireDock extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Moves the panel to the other side of the app.
+  /// Moves the panel to the other side of the app. Does nothing where the
+  /// screen has no room for it beside the app.
   void swapSide() {
+    if (_resolved == FlutwireDockSide.bottom && !canSitBeside) return;
     _side = _resolved == FlutwireDockSide.right
         ? FlutwireDockSide.bottom
         : FlutwireDockSide.right;
