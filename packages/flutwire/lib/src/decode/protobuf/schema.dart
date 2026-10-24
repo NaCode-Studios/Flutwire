@@ -263,7 +263,7 @@ final class ProtoSchema {
     final values = <int, String>{};
     for (final value in _nested(enumeration, 2)) {
       final name = _string(value, 1);
-      final number = _int(value, 2);
+      final number = _int32(value, 2);
       if (name != null && number != null) {
         values.putIfAbsent(number, () => name);
       }
@@ -293,6 +293,17 @@ final class ProtoSchema {
     final name = _string(fields, number);
     if (name == null) return null;
     return name.startsWith('.') ? name.substring(1) : name;
+  }
+
+  /// A varint field that holds an `int32`. A negative one is written as ten
+  /// bytes, which no positive `int` holds, so it is read through [signed32].
+  static int? _int32(List<WireField> fields, int number) {
+    for (final f in fields) {
+      if (f.number == number && f.type == WireType.varint) {
+        return signed32(f.value);
+      }
+    }
+    return null;
   }
 
   static int? _int(List<WireField> fields, int number) {

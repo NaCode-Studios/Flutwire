@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+package check.legacy;
+
+message Old {
+  required string name = 1;
+  optional int32 age = 2 [default = 7];
+  repeated int32 loose = 3;
+  repeated int32 tight = 4 [packed = true];
+  optional bytes blob = 5;
+}
