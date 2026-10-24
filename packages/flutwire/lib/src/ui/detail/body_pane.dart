@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../decode/built_in.dart';
 import '../../model/body.dart';
 import '../../model/call.dart';
 import '../actions.dart';
@@ -45,7 +46,7 @@ class BodyPane extends StatelessWidget {
       call: call,
       body: body,
       isRequest: isRequest,
-      decoders: session.config.decoders,
+      decoders: [...session.config.decoders, ...builtInDecoders],
       actions: FlutwireBodyActions(
         onSaveBytes: (bytes, fileName, mimeType) async {
           final shared = await session.sharing.shareBytes(
