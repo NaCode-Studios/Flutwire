@@ -4,7 +4,7 @@
 /// history does, and clearing the history never touches them. A preference is
 /// never worth failing for: a store that cannot write one keeps it for the
 /// session and says nothing.
-abstract interface class FlutwirePreferences {
+abstract base class FlutwirePreferences {
   /// What was last written under [key], or null if nothing was.
   String? read(String key);
 
@@ -13,7 +13,7 @@ abstract interface class FlutwirePreferences {
 }
 
 /// Preferences that last as long as the process.
-final class MemoryFlutwirePreferences implements FlutwirePreferences {
+final class MemoryFlutwirePreferences extends FlutwirePreferences {
   /// Creates preferences holding [initial].
   MemoryFlutwirePreferences([Map<String, String> initial = const {}])
     : _values = {...initial};

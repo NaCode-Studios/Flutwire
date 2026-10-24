@@ -14,7 +14,7 @@ external _Storage get _localStorage;
 /// Preferences kept in the browser's `localStorage`, under a prefix of their
 /// own. Where the browser refuses storage, such as in a private window, they
 /// last for the session.
-final class WebFlutwirePreferences implements FlutwirePreferences {
+final class WebFlutwirePreferences extends FlutwirePreferences {
   /// Creates preferences backed by `localStorage`.
   WebFlutwirePreferences();
 

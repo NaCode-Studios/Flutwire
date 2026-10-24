@@ -18,7 +18,7 @@ import 'package:http/http.dart';
 /// A [MultipartRequest] is described by its fields and files rather than
 /// reproduced byte for byte, because its body can only be read once, by the
 /// client that sends it.
-class FlutwireClient extends BaseClient {
+final class FlutwireClient extends BaseClient {
   /// Wraps [_inner]. Pass [force] to record even when the `dart:io` capture
   /// is installed, for a client that does not go through `dart:io`.
   FlutwireClient(this._inner, {this.force = false});

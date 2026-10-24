@@ -6,4 +6,4 @@
 /// own.
 library;
 
-export 'src/interceptor.dart';
+export 'src/interceptor.dart' show FlutwireDioInterceptor;

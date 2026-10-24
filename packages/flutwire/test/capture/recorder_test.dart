@@ -386,7 +386,7 @@ void main() {
   });
 }
 
-class _ExplodingStore extends MemoryFlutwireStore {
+final class _ExplodingStore extends MemoryFlutwireStore {
   @override
   void put(FlutwireCall call) => throw StateError('disk full');
 }

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import '../model/body.dart';
 import '../model/call.dart';
+import '../version.dart';
 import 'curl.dart';
 import 'har.dart';
 import 'text.dart';
@@ -34,8 +35,13 @@ enum FlutwireExportFormat {
   /// Writes [calls] in this format. The calls must have their bodies loaded.
   ///
   /// Text keeps the order it is given, which is how the inspector lists them.
-  /// Every other format is a replayable sequence, so it runs oldest first.
-  String render(Iterable<FlutwireCall> calls, {String version = '0'}) {
+  /// Every other format is a replayable sequence, so it runs oldest first. The
+  /// HAR names [version], which is this package's own unless told otherwise,
+  /// as the version of its creator.
+  String render(
+    Iterable<FlutwireCall> calls, {
+    String version = flutwireVersion,
+  }) {
     final listed = calls.toList();
     final oldestFirst = [...listed]..sort((a, b) => a.id.compareTo(b.id));
     const indented = JsonEncoder.withIndent('  ');

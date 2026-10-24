@@ -8,9 +8,9 @@ import 'preferences.dart';
 /// Where recorded calls are kept.
 ///
 /// The inspector and the notification read from a store, and the recorders
-/// write to it. A store is a plain object, so tests and apps can substitute
-/// their own.
-abstract interface class FlutwireStore {
+/// write to it. Flutwire makes the store itself and an app reads the history
+/// through `Flutwire.store`, so this type is not something to implement.
+abstract base class FlutwireStore {
   /// The history, newest first.
   ///
   /// A new list is published when the history changes, and changes that arrive
@@ -50,7 +50,7 @@ abstract interface class FlutwireStore {
 /// It enforces the call limit and the memory budget by dropping the oldest
 /// calls that are not pinned. The store that keeps the history on disk builds
 /// on it.
-class MemoryFlutwireStore implements FlutwireStore {
+base class MemoryFlutwireStore extends FlutwireStore {
   /// Creates an empty store.
   MemoryFlutwireStore({
     this.maxCalls = 500,
