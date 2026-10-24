@@ -27,6 +27,7 @@ final class FlutwireDioInterceptor extends Interceptor {
   final bool force;
 
   static const String _key = 'flutwire.recorder';
+  static const String _watchKey = 'flutwire.standDown';
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
@@ -43,6 +44,15 @@ final class FlutwireDioInterceptor extends Interceptor {
         if (body != null) recorder.requestBody(body);
         recorder.requestSent();
       }
+    } else {
+      // The capture is meant to record this call. If the adapter does not go
+      // through dart:io it never will, and Flutwire says so at the end.
+      final watch = Flutwire.watchStandDown(
+        method: options.method,
+        uri: options.uri,
+        client: 'Dio',
+      );
+      if (watch != null) options.extra[_watchKey] = watch;
     }
     handler.next(options);
   }
@@ -52,6 +62,7 @@ final class FlutwireDioInterceptor extends Interceptor {
     Response<dynamic> response,
     ResponseInterceptorHandler handler,
   ) {
+    _finishWatch(response.requestOptions);
     final recorder = _take(response.requestOptions);
     if (recorder != null) {
       _recordResponse(recorder, response);
@@ -62,6 +73,7 @@ final class FlutwireDioInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
+    _finishWatch(err.requestOptions);
     final recorder = _take(err.requestOptions);
     if (recorder != null) {
       final response = err.response;
@@ -80,6 +92,11 @@ final class FlutwireDioInterceptor extends Interceptor {
   FlutwireCallRecorder? _take(RequestOptions options) {
     final value = options.extra[_key];
     return value is FlutwireCallRecorder ? value : null;
+  }
+
+  void _finishWatch(RequestOptions options) {
+    final watch = options.extra.remove(_watchKey);
+    if (watch is FlutwireStandDown) watch.finish();
   }
 
   void _recordResponse(FlutwireCallRecorder recorder, Response<dynamic> r) {

@@ -16,7 +16,7 @@ final client = FlutwireClient(http.Client());
 
 Chopper uses an `http` client, so `ChopperClient(client: FlutwireClient(http.Client()))` covers it too.
 
-Where the `dart:io` capture is installed, which is the default outside the web, the client stands down: the capture already sees the call with the bytes that went over the wire, and recording it twice would only fill the list. A client whose transport does not use `dart:io` needs `FlutwireClient(inner, force: true)`, because the capture cannot see it.
+Where the `dart:io` capture is installed, which is the default outside the web, the client stands down: the capture already sees the call with the bytes that went over the wire, and recording it twice would only fill the list. A client whose transport does not use `dart:io` needs `FlutwireClient(inner, force: true)`, because the capture cannot see it. If the client stands down for a call the capture never saw, the inspector names the client above the list.
 
 ## What it records
 

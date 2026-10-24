@@ -16,7 +16,7 @@ final dio = Dio()..interceptors.add(FlutwireDioInterceptor());
 
 Add it last, so that it sees the headers the other interceptors added.
 
-Where the `dart:io` capture is installed, which is the default outside the web, the interceptor stands down: the capture already sees the call with the bytes that went over the wire, and recording it twice would only fill the list. Pass `force: true` to record anyway.
+Where the `dart:io` capture is installed, which is the default outside the web, the interceptor stands down: the capture already sees the call with the bytes that went over the wire, and recording it twice would only fill the list. Pass `force: true` to record anyway. When the interceptor stands down and the capture never sees the call, as with an adapter that has a transport of its own, the inspector names Dio above the list.
 
 ## What it records
 
