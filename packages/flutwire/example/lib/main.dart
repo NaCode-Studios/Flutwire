@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -178,6 +179,10 @@ final List<(String, List<Probe>)> groups = [
     ],
   ),
   (
+    'Streams',
+    [Probe('WebSocket', _webSocket), Probe('Event stream', _eventStream)],
+  ),
+  (
     'Trouble',
     [
       Probe(
@@ -209,6 +214,55 @@ final List<(String, List<Probe>)> groups = [
     ],
   ),
 ];
+
+/// Opens a WebSocket to an echo server, sends a text and a binary message, and
+/// closes it, so the inspector has a conversation to list. `dart:io` makes one
+/// client for every WebSocket the first time it opens one, so this works
+/// because `Flutwire.init` ran before that.
+Future<void> _webSocket() async {
+  if (kIsWeb) return;
+  try {
+    final socket = await WebSocket.connect('wss://echo.websocket.org');
+    final closed = Completer<void>();
+    socket.listen(
+      (_) {},
+      onDone: closed.complete,
+      onError: (Object _) => closed.complete(),
+    );
+    socket
+      ..add('hello')
+      ..add(jsonEncode({'subscribe': 'prices'}))
+      ..add(Uint8List.fromList([1, 2, 3]));
+    await Future<void>.delayed(const Duration(seconds: 2));
+    await socket.close(1000, 'done');
+    await closed.future.timeout(const Duration(seconds: 5));
+  } on Object {
+    // The inspector shows what went wrong.
+  }
+}
+
+/// Reads a few chunks of a public event stream and walks away, so the
+/// inspector lists the events that arrived and the call ends as cancelled.
+Future<void> _eventStream() async {
+  if (kIsWeb) return;
+  final io = HttpClient();
+  try {
+    final request = await io.getUrl(
+      Uri.parse('https://stream.wikimedia.org/v2/stream/recentchange'),
+    );
+    request.headers.set('accept', 'text/event-stream');
+    final response = await request.close();
+    await response
+        .transform(utf8.decoder)
+        .take(6)
+        .drain<void>()
+        .timeout(const Duration(seconds: 10));
+  } on Object {
+    // The inspector shows what went wrong.
+  } finally {
+    io.close(force: true);
+  }
+}
 
 /// What Flutwire cannot see, so that the inspector has something to say about
 /// it. These are left out of "Run everything": replacing the capture stops the
