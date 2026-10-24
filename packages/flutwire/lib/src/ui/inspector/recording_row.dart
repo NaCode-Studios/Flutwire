@@ -29,67 +29,96 @@ class RecordingRow extends StatelessWidget {
         final dot = paused ? t.warning : FlutwireTokens.copper;
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 8, 0),
-          child: Row(
-            children: [
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => session.paused.value = !paused,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Pulse(
-                      active: !paused,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: dot,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: dot.withValues(alpha: 0.5),
-                              blurRadius: 6,
+          // What gives way when the inspector is in a narrow panel is the
+          // word on the left, which is cut short. The order on the right keeps
+          // the room it needs, up to the larger part of the row.
+          child: LayoutBuilder(
+            builder: (context, box) => Row(
+              children: [
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => session.paused.value = !paused,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Pulse(
+                            active: !paused,
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: dot,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: dot.withValues(alpha: 0.5),
+                                    blurRadius: 6,
+                                  ),
+                                ],
+                              ),
                             ),
-                          ],
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              (paused ? s.paused : s.recording).toUpperCase(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: t.label(
+                                color: paused ? t.warning : t.muted,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: box.maxWidth * 0.6),
+                  child: PopupMenuButton<InspectorSort>(
+                    tooltip: s.sortBy,
+                    initialValue: sort,
+                    onSelected: onSort,
+                    itemBuilder: (context) => [
+                      for (final order in InspectorSort.values)
+                        PopupMenuItem(
+                          value: order,
+                          child: Text(_label(s, order)),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      (paused ? s.paused : s.recording).toUpperCase(),
-                      style: t.label(color: paused ? t.warning : t.muted),
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              PopupMenuButton<InspectorSort>(
-                tooltip: s.sortBy,
-                initialValue: sort,
-                onSelected: onSort,
-                itemBuilder: (context) => [
-                  for (final order in InspectorSort.values)
-                    PopupMenuItem(value: order, child: Text(_label(s, order))),
-                ],
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _label(s, sort),
-                        style: t.body(size: 12, color: t.muted),
-                      ),
-                      const SizedBox(width: 2),
-                      Icon(Icons.expand_more_rounded, size: 18, color: t.muted),
                     ],
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              _label(s, sort),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: t.body(size: 12, color: t.muted),
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Icon(
+                            Icons.expand_more_rounded,
+                            size: 18,
+                            color: t.muted,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

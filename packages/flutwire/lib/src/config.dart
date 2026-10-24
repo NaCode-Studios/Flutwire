@@ -136,6 +136,7 @@ final class FlutwireConfig {
     this.enabled,
     this.allowInRelease = false,
     this.captureDartIo = true,
+    this.interception = false,
     this.maxBodyBytes = 250000,
     this.maxCalls = 500,
     this.maxMemoryBytes = 32 * 1024 * 1024,
@@ -165,6 +166,15 @@ final class FlutwireConfig {
   /// client built on `HttpClient` without any per-client setup. It has no
   /// effect on the web.
   final bool captureDartIo;
+
+  /// Whether the inspector may change what the app sends and receives: mock
+  /// rules that answer a request with a stored response, and breakpoints that
+  /// hold a request until it has been looked at and changed.
+  ///
+  /// Everything else Flutwire does only reads traffic, so this is off until the
+  /// app turns it on. It works through the `dart:io` capture, so it needs
+  /// [captureDartIo] and has no effect on the web.
+  final bool interception;
 
   /// How many bytes of a body are kept, per request and per response. The
   /// real size is always recorded.

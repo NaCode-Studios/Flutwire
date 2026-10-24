@@ -7,7 +7,9 @@ import 'capture/wire/send_again.dart';
 import 'capture/wire/wire.dart';
 import 'config.dart';
 import 'coverage.dart';
+import 'dock.dart';
 import 'engine.dart';
+import 'intercept/interception.dart';
 import 'isolate_bridge.dart';
 import 'l10n/lookup.dart';
 import 'notify/notifier.dart';
@@ -31,6 +33,7 @@ final class FlutwireRuntime implements FlutwireSession {
     required FlutwireNative native,
     required FlutwireNotifier notifier,
     required InspectorLauncher launcher,
+    required this.dock,
     required this.sharing,
     required ThemeMode themeMode,
     required void Function()? uninstallWire,
@@ -69,8 +72,18 @@ final class FlutwireRuntime implements FlutwireSession {
       config,
       defaultPath: () async => info?.storagePath,
     );
-    final engine = FlutwireEngine(config: config, store: store);
+    // Changing traffic goes through the dart:io capture and nothing else, so
+    // there is nothing to turn on without it.
+    final interception = config.interception && config.captureDartIo && !kIsWeb
+        ? FlutwireInterception(store.preferences)
+        : null;
+    final engine = FlutwireEngine(
+      config: config,
+      store: store,
+      interception: interception,
+    );
     final launcher = InspectorLauncher(navigatorKey);
+    final dock = FlutwireDock(store.preferences);
     final notifier = FlutwireNotifier(
       native: native,
       store: store,
@@ -83,6 +96,7 @@ final class FlutwireRuntime implements FlutwireSession {
       native: native,
       notifier: notifier,
       launcher: launcher,
+      dock: dock,
       sharing: FlutwireSharing(
         native: native,
         store: store,
@@ -101,14 +115,13 @@ final class FlutwireRuntime implements FlutwireSession {
         known: info?.permission ?? FlutwireNotificationPermission.unsupported,
       );
     }
+    // A request that is held holds up the app, so the inspector comes forward.
+    interception?.breakpoints.onHeld = (_) =>
+        unawaited(runtime.openInspector());
+    launcher.isOpen.addListener(runtime._syncInspectorOpen);
+    dock.addListener(runtime._syncInspectorOpen);
     runtime._actions = native.actions.listen(runtime._onAction);
-    runtime._isolates = FlutwireIsolateBridge.listen(
-      (subject) => engine.coverage.report(
-        FlutwireGap.otherIsolate,
-        subject,
-        engine.now(),
-      ),
-    );
+    runtime._isolates = FlutwireIsolateBridge.listen(engine);
     switch (await native.consumeInitialAction()) {
       case 'open':
         launcher.openWhenReady(runtime);
@@ -172,7 +185,18 @@ final class FlutwireRuntime implements FlutwireSession {
   Future<int?> resend(FlutwireResend request) => sendAgain(engine, request);
 
   @override
-  ValueListenable<bool> get inspectorOpen => _launcher.isOpen;
+  FlutwireInterception? get interception => engine.interception;
+
+  @override
+  final FlutwireDock dock;
+
+  final ValueNotifier<bool> _inspectorOpen = ValueNotifier(false);
+
+  @override
+  ValueListenable<bool> get inspectorOpen => _inspectorOpen;
+
+  void _syncInspectorOpen() =>
+      _inspectorOpen.value = _launcher.isOpen.value || dock.isOpen;
 
   @override
   Future<void> openInspector([BuildContext? context]) {
@@ -199,6 +223,8 @@ final class FlutwireRuntime implements FlutwireSession {
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
+    _launcher.isOpen.removeListener(_syncInspectorOpen);
+    dock.removeListener(_syncInspectorOpen);
     _uninstallWire?.call();
     _isolates?.close();
     await _actions?.cancel();
@@ -206,6 +232,8 @@ final class FlutwireRuntime implements FlutwireSession {
     await _native.dispose();
     await engine.dispose();
     _launcher.dispose();
+    dock.dispose();
+    _inspectorOpen.dispose();
     themeMode.dispose();
   }
 }

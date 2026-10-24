@@ -1,4 +1,8 @@
+import 'dart:async';
+import 'dart:isolate';
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' as foundation show compute;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show RootIsolateToken;
 
@@ -6,7 +10,7 @@ import 'capture/recorder.dart';
 import 'config.dart';
 import 'coverage.dart';
 import 'diagnostics.dart';
-import 'engine.dart' show FlutwireStandDown;
+import 'engine.dart' show FlutwireEngine, FlutwireStandDown;
 import 'isolate_bridge.dart';
 import 'model/call.dart';
 import 'model/headers.dart';
@@ -34,6 +38,11 @@ abstract final class Flutwire {
   static final ValueNotifier<List<FlutwireCoverageNote>> _noNotes =
       ValueNotifier(const []);
   static Future<void>? _starting;
+
+  /// The engine that records in this isolate: the app's, or the one an isolate
+  /// other than the main one got by attaching.
+  static FlutwireEngine? get _engine =>
+      _runtime.value?.engine ?? FlutwireIsolateLink.engine;
 
   /// Give this to the app's navigator so the inspector opens above the app's
   /// own routes. It is optional: without it Flutwire finds the root navigator
@@ -88,14 +97,17 @@ abstract final class Flutwire {
 
   /// Whether the `dart:io` capture is installed. Client adapters check it to
   /// avoid recording a call twice.
-  static bool get wireCaptureActive =>
-      _runtime.value?.engine.wireCaptureActive ?? false;
+  static bool get wireCaptureActive => _engine?.wireCaptureActive ?? false;
 
   /// For `MaterialApp.builder` and `WidgetsApp.builder`: floats a small button
   /// above the app that opens the inspector, and listens for Ctrl or Cmd with
   /// Shift and L. It is meant for the web, Windows and Linux, where there is no
   /// notification to open the inspector from, and it shows only there unless
   /// [FlutwireConfig.floatingButton] says otherwise.
+  ///
+  /// It is also what lets the inspector be docked: put in a panel beside the
+  /// app, under it or to its right, which can be dragged to any size, so that
+  /// the app and its traffic are in view together.
   ///
   /// ```dart
   /// MaterialApp(builder: Flutwire.builder, ...)
@@ -114,19 +126,81 @@ abstract final class Flutwire {
     required FlutwireSource source,
     FlutwireHeaders requestHeaders = FlutwireHeaders.empty,
   }) {
-    final runtime = _runtime.value;
-    if (runtime == null) {
+    final engine = _engine;
+    if (engine == null) {
       // An adapter running where nothing records: in a release build, or in an
-      // isolate other than the one the app runs in. Only the second is news.
+      // isolate other than the one the app runs in that did not attach to
+      // Flutwire. Only the second is news.
       if (!isRootIsolate()) FlutwireIsolateBridge.tell(source);
       return null;
     }
-    return runtime.engine.begin(
+    return engine.begin(
       method: method,
       uri: uri,
       source: source,
       requestHeaders: requestHeaders,
     );
+  }
+
+  /// Records the calls made in this isolate in the history of the app.
+  ///
+  /// Overrides belong to one isolate, so a call made with `Isolate.run` or
+  /// `compute` is not seen unless that isolate attaches. Call it first thing in
+  /// an isolate you spawn yourself, and [detach] when the isolate is done with
+  /// the network. For `Isolate.run` and `compute` use [run] and [compute]
+  /// instead, which do both.
+  ///
+  /// Does nothing in the main isolate, and where the app's Flutwire is not
+  /// recording. It never throws.
+  static Future<void> attach() async {
+    if (isRootIsolate()) return;
+    await FlutwireIsolateLink.attach();
+  }
+
+  /// Stops recording this isolate's calls, which [attach] started. Calls still
+  /// in flight keep reporting.
+  static Future<void> detach() => FlutwireIsolateLink.detach();
+
+  /// Runs [computation] in a new isolate, as `Isolate.run` does, and records
+  /// the calls it makes in the history of the app.
+  ///
+  /// ```dart
+  /// final todos = await Flutwire.run(() => fetchTodos());
+  /// ```
+  ///
+  /// Without Flutwire running it is `Isolate.run`. On the web, where there are
+  /// no isolates, it runs [computation] where it is.
+  static Future<R> run<R>(
+    FutureOr<R> Function() computation, {
+    String? debugName,
+  }) {
+    if (kIsWeb) return Future<R>.sync(computation);
+    return Isolate.run<R>(() => _attached(computation), debugName: debugName);
+  }
+
+  /// Runs [callback] with [message] in a new isolate, as `compute` does, and
+  /// records the calls it makes in the history of the app.
+  ///
+  /// ```dart
+  /// final todos = await Flutwire.compute(fetchTodos, 'https://example.com');
+  /// ```
+  static Future<R> compute<M, R>(
+    FutureOr<R> Function(M message) callback,
+    M message, {
+    String? debugLabel,
+  }) => foundation.compute<M, R>(
+    (M m) => _attached(() => callback(m)),
+    message,
+    debugLabel: debugLabel,
+  );
+
+  static Future<R> _attached<R>(FutureOr<R> Function() computation) async {
+    await attach();
+    try {
+      return await computation();
+    } finally {
+      await detach();
+    }
   }
 
   /// Whether this code runs in the isolate the app runs in. Replaced in tests,
@@ -147,11 +221,7 @@ abstract final class Flutwire {
     required String method,
     required Uri uri,
     required String client,
-  }) => _runtime.value?.engine.watchStandDown(
-    method: method,
-    uri: uri,
-    client: client,
-  );
+  }) => _engine?.watchStandDown(method: method, uri: uri, client: client);
 
   /// What Flutwire has noticed about its own blind spots. Empty while nothing
   /// is wrong, which is also what it is while Flutwire is not recording.

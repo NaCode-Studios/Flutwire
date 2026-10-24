@@ -4,9 +4,14 @@ import 'package:flutter/material.dart';
 
 import '../../model/call.dart';
 import '../../session.dart';
+import '../compare/compare_page.dart';
 import '../detail/call_detail_page.dart';
+import '../intercept/held.dart';
+import '../intercept/intercept_banner.dart';
+import '../intercept/rules_page.dart';
 import '../scope.dart';
 import '../shell.dart';
+import '../stats/statistics_page.dart';
 import '../theme/tokens.dart';
 import '../widgets/call_tile.dart';
 import '../widgets/empty_state.dart';
@@ -21,8 +26,12 @@ import 'recording_row.dart';
 /// The inspector: the history as a list, with search, filters, order and a
 /// selection. On a wide screen the call that is open sits beside the list.
 class InspectorPage extends StatefulWidget {
-  /// Creates the inspector.
-  const InspectorPage({super.key});
+  /// Creates the inspector. [docked] says it sits in the panel beside the app,
+  /// which gives its top bar the actions of the panel.
+  const InspectorPage({super.key, this.docked = false});
+
+  /// Whether the inspector is in the panel beside the app.
+  final bool docked;
 
   @override
   State<InspectorPage> createState() => _InspectorPageState();
@@ -54,6 +63,9 @@ class _InspectorPageState extends State<InspectorPage> {
       _session.store.calls,
       loadCall: _session.store.load,
     );
+    _session.interception?.breakpoints.addListener(_heldChanged);
+    // What is already held when the inspector comes up is looked at too.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _heldChanged());
     // Relative times ("12s", "4m") move on by themselves.
     _clock = Timer.periodic(const Duration(seconds: 5), (_) {
       if (mounted) setState(() => _now = DateTime.now());
@@ -62,6 +74,7 @@ class _InspectorPageState extends State<InspectorPage> {
 
   @override
   void dispose() {
+    _session.interception?.breakpoints.removeListener(_heldChanged);
     _clock?.cancel();
     _debounce?.cancel();
     _controller.dispose();
@@ -104,15 +117,7 @@ class _InspectorPageState extends State<InspectorPage> {
       setState(() => _openId = call.id);
       return;
     }
-    unawaited(
-      Navigator.of(context).push(
-        shellRoute(
-          _session,
-          name: 'flutwire/call',
-          child: CallDetailPage(callId: call.id),
-        ),
-      ),
-    );
+    unawaited(Navigator.of(context).push(callRoute(_session, call.id)));
   }
 
   Future<void> _confirmClear() async {
@@ -163,6 +168,59 @@ class _InspectorPageState extends State<InspectorPage> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Moves from the full screen into the panel beside the app.
+  void _dock() {
+    Navigator.of(context).pop();
+    _session.dock.open();
+  }
+
+  /// Moves from the panel to the full screen.
+  void _undock() {
+    _session.dock.leave();
+    unawaited(_session.openInspector());
+  }
+
+  void _openRules() {
+    unawaited(Navigator.of(context).push(rulesRoute(_session)));
+  }
+
+  /// A request held at a breakpoint is what the app is waiting for, so its
+  /// editor opens by itself, once, for each one the inspector learns of.
+  void _heldChanged() {
+    if (!mounted) return;
+    final breakpoints = _session.interception?.breakpoints;
+    if (breakpoints == null) return;
+    for (final held in breakpoints.held) {
+      if (breakpoints.claim(held.id)) {
+        unawaited(Navigator.of(context).push(heldRoute(_session, held)));
+        return;
+      }
+    }
+  }
+
+  void _openStatistics() {
+    unawaited(
+      Navigator.of(context).push(
+        shellRoute(
+          _session,
+          name: 'flutwire/statistics',
+          child: const StatisticsPage(),
+        ),
+      ),
+    );
+  }
+
+  /// Opens the two selected calls side by side, the older one on the left.
+  void _compareSelected() {
+    final ids = _controller.selection.toList()..sort();
+    if (ids.length != 2) return;
+    unawaited(
+      Navigator.of(
+        context,
+      ).push(compareRoute(_session, leftId: ids.first, rightId: ids.last)),
     );
   }
 
@@ -221,13 +279,19 @@ class _InspectorPageState extends State<InspectorPage> {
               controller: _controller,
               onTogglePin: () => unawaited(_togglePinSelected()),
               onDelete: () => unawaited(_confirmDeleteSelected()),
+              onCompare: _compareSelected,
             )
           : InspectorAppBar(
               controller: _controller,
               wide: wide,
               searching: _searching,
               onToggleSearch: _toggleSearch,
+              onOpenStatistics: _openStatistics,
+              onOpenRules: _openRules,
               onClearHistory: () => unawaited(_confirmClear()),
+              docked: widget.docked,
+              onDock: _dock,
+              onUndock: _undock,
             ),
       // The recording row and the numbers scroll away with the list, so a phone
       // keeps its height for the calls. The filters stay.
@@ -241,6 +305,7 @@ class _InspectorPageState extends State<InspectorPage> {
             ),
           ),
           const SliverToBoxAdapter(child: CoverageBanner()),
+          const SliverToBoxAdapter(child: InterceptBanner()),
           SliverToBoxAdapter(child: MetricStrip(calls: visible)),
           SliverToBoxAdapter(
             child: AnimatedSize(

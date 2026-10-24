@@ -107,7 +107,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Una chiamata da un altro isolate'), findsOneWidget);
-    expect(find.textContaining("Fai la chiamata nell'isolate"), findsOneWidget);
+    expect(find.textContaining('Eseguilo con Flutwire.run'), findsOneWidget);
     expect(find.text('VISTO 2 VOLTE'), findsOneWidget);
   });
 

@@ -10,8 +10,14 @@ import '../scope.dart';
 /// anything that went wrong.
 class OverviewTab extends StatelessWidget {
   /// Creates the tab for [call]. [onOpenCall] opens another call of the
-  /// history, which the call it repeats is.
-  const OverviewTab({super.key, required this.call, this.onOpenCall});
+  /// history, which the call it repeats is, and [onCompare] opens it beside
+  /// this one.
+  const OverviewTab({
+    super.key,
+    required this.call,
+    this.onOpenCall,
+    this.onCompare,
+  });
 
   /// The call to describe.
   final FlutwireCall call;
@@ -19,17 +25,24 @@ class OverviewTab extends StatelessWidget {
   /// Opens the call with the given id.
   final ValueChanged<int>? onOpenCall;
 
-  /// The line that names the call this one repeats, and opens it while it is
-  /// still in the history.
-  _Fact _repeated(BuildContext context, int from) {
+  /// Compares the call with the given id with this one.
+  final ValueChanged<int>? onCompare;
+
+  /// The lines that name the call this one repeats, and open it, or compare
+  /// with it, while it is still in the history.
+  List<_Fact> _repeated(BuildContext context, int from) {
     final s = context.strings;
     final original = context.session.store.find(from);
-    if (original == null) return _Fact(s.resentFrom, s.resentFromGone);
-    return _Fact(
-      s.resentFrom,
-      '${original.method}  ${original.host}${original.pathAndQuery}',
-      onTap: onOpenCall == null ? null : () => onOpenCall!(from),
-    );
+    if (original == null) return [_Fact(s.resentFrom, s.resentFromGone)];
+    return [
+      _Fact(
+        s.resentFrom,
+        '${original.method}  ${original.host}${original.pathAndQuery}',
+        onTap: onOpenCall == null ? null : () => onOpenCall!(from),
+      ),
+      if (onCompare != null)
+        _Fact(s.compare, s.compareWithOriginal, onTap: () => onCompare!(from)),
+    ];
   }
 
   @override
@@ -41,7 +54,13 @@ class OverviewTab extends StatelessWidget {
     final redirects = response?.redirects ?? const <FlutwireRedirect>[];
 
     final request = <_Fact>[
-      if (call.resentFrom case final from?) _repeated(context, from),
+      if (call.resentFrom case final from?) ..._repeated(context, from),
+      if (call.intercept case final how?)
+        _Fact(s.interceptFact, switch (how) {
+          FlutwireIntercept.mocked => s.interceptedMocked,
+          FlutwireIntercept.edited => s.interceptedEdited,
+          FlutwireIntercept.held => s.interceptedHeld,
+        }, color: t.warning),
       _Fact(s.url, call.uri.toString()),
       _Fact(s.method, call.method),
       _Fact(s.started, formatDateTime(call.startedAt)),

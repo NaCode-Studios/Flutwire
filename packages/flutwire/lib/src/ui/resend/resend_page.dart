@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
+import '../../intercept/breakpoints.dart';
 import '../../model/body.dart';
 import '../../model/call.dart';
 import '../../resend.dart';
@@ -11,61 +12,30 @@ import '../../util/format.dart';
 import '../actions.dart';
 import '../detail/call_detail_page.dart';
 import '../scope.dart';
-import '../shell.dart';
 import '../theme/tokens.dart';
 import '../widgets/method_chip.dart';
+import '../widgets/request_fields.dart';
 
-/// The methods the picker offers, besides the one the call used.
-const List<String> _methods = [
-  'GET',
-  'POST',
-  'PUT',
-  'PATCH',
-  'DELETE',
-  'HEAD',
-  'OPTIONS',
-];
-
-/// How the body of the call is offered for editing.
-enum _BodyMode {
-  /// Text, edited in place. An empty body is text with nothing in it.
-  text,
-
-  /// Bytes that are not text, which can only be sent as they were recorded.
-  recorded,
-}
-
-/// A header field is narrow, and its name is a long word in a monospaced face.
-const EdgeInsets _fieldPadding = EdgeInsets.symmetric(
-  horizontal: 10,
-  vertical: 12,
-);
-
-class _HeaderRow {
-  _HeaderRow(String name, String value)
-    : name = TextEditingController(text: name),
-      value = TextEditingController(text: value);
-
-  final TextEditingController name;
-  final TextEditingController value;
-
-  void dispose() {
-    name.dispose();
-    value.dispose();
-  }
-}
-
-/// A recorded call opened for changes, to be sent again.
+/// A request opened for changes: a recorded call to be sent again, or a request
+/// that a breakpoint holds before it leaves.
 ///
-/// It starts as the call was: the same method, address, header fields and body.
+/// A call starts as it was: the same method, address, header fields and body.
 /// A value the redaction hid is flagged and not sent, because Flutwire never
 /// held it. What is sent is recorded as a new call that names this one.
+///
+/// A held request starts as the app made it, with the real values, because it
+/// has not been recorded and nothing was hidden. Sending lets it go on as it is
+/// now written, and stopping makes the app's call fail.
 class ResendPage extends StatefulWidget {
-  /// Opens [call], which must have its bodies loaded.
-  const ResendPage({super.key, required this.call});
+  /// Opens [call], which must have its bodies loaded. With [held], the page is
+  /// the editor of that held request and [call] describes it.
+  const ResendPage({super.key, required this.call, this.held});
 
   /// The call to repeat.
   final FlutwireCall call;
+
+  /// The request this page lets go, when it is one that a breakpoint holds.
+  final FlutwireHeldRequest? held;
 
   @override
   State<ResendPage> createState() => _ResendPageState();
@@ -74,8 +44,8 @@ class ResendPage extends StatefulWidget {
 class _ResendPageState extends State<ResendPage> {
   late final TextEditingController _url;
   late final TextEditingController _body;
-  late final _BodyMode _mode;
-  final List<_HeaderRow> _headers = [];
+  late final BodyEditMode _mode;
+  final List<HeaderRowControllers> _headers = [];
   late String _method;
   bool _sendRecordedBody = true;
   bool _sending = false;
@@ -83,16 +53,27 @@ class _ResendPageState extends State<ResendPage> {
 
   FlutwireBody get _recorded => widget.call.request.body;
 
+  /// What the redaction left in place of a secret. A held request has none.
+  String get _mask =>
+      widget.held == null ? context.session.config.redaction.mask : '';
+
+  FlutwireBreakpoints? _breakpoints;
+  bool _leaving = false;
+
   @override
   void initState() {
     super.initState();
     final call = widget.call;
+    if (widget.held != null) {
+      _breakpoints = context.session.interception?.breakpoints
+        ?..addListener(_heldChanged);
+    }
     _method = call.method;
     _url = TextEditingController(text: call.uri.toString())
       ..addListener(_changed);
-    _mode = _modeOf(_recorded);
+    _mode = BodyEditMode.of(_recorded);
     _body = TextEditingController(
-      text: _mode == _BodyMode.text ? _recorded.text ?? '' : '',
+      text: _mode == BodyEditMode.text ? _recorded.text ?? '' : '',
     );
     for (final field in call.request.headers.entries) {
       if (clientManagedHeaders.contains(field.key.toLowerCase())) continue;
@@ -102,6 +83,7 @@ class _ResendPageState extends State<ResendPage> {
 
   @override
   void dispose() {
+    _breakpoints?.removeListener(_heldChanged);
     _url.dispose();
     _body.dispose();
     for (final row in _headers) {
@@ -110,24 +92,10 @@ class _ResendPageState extends State<ResendPage> {
     super.dispose();
   }
 
-  static _BodyMode _modeOf(FlutwireBody body) {
-    if (!body.loaded) return _BodyMode.recorded;
-    return switch (body.kind) {
-      FlutwireBodyKind.empty ||
-      FlutwireBodyKind.json ||
-      FlutwireBodyKind.xml ||
-      FlutwireBodyKind.html ||
-      FlutwireBodyKind.text ||
-      FlutwireBodyKind.form => _BodyMode.text,
-      FlutwireBodyKind.multipart ||
-      FlutwireBodyKind.image ||
-      FlutwireBodyKind.binary => _BodyMode.recorded,
-    };
-  }
-
-  _HeaderRow _row(String name, String value) => _HeaderRow(name, value)
-    ..name.addListener(_changed)
-    ..value.addListener(_changed);
+  HeaderRowControllers _row(String name, String value) =>
+      HeaderRowControllers(name, value)
+        ..name.addListener(_changed)
+        ..value.addListener(_changed);
 
   void _changed() {
     if (mounted) setState(() {});
@@ -135,7 +103,7 @@ class _ResendPageState extends State<ResendPage> {
 
   void _addHeader() => setState(() => _headers.add(_row('', '')));
 
-  void _removeHeader(_HeaderRow row) {
+  void _removeHeader(HeaderRowControllers row) {
     setState(() => _headers.remove(row));
     row.dispose();
   }
@@ -161,10 +129,12 @@ class _ResendPageState extends State<ResendPage> {
   }
 
   bool get _canSendRecordedBody =>
-      _mode == _BodyMode.recorded && _recorded.loaded && !_recorded.truncated;
+      _mode == BodyEditMode.recorded &&
+      _recorded.loaded &&
+      !_recorded.truncated;
 
   Uint8List? get _bodyBytes {
-    if (_mode == _BodyMode.text) {
+    if (_mode == BodyEditMode.text) {
       final text = _body.text;
       return text.isEmpty ? null : Uint8List.fromList(utf8.encode(text));
     }
@@ -181,14 +151,65 @@ class _ResendPageState extends State<ResendPage> {
     headers: [
       for (final row in _headers) MapEntry(row.name.text, row.value.text),
     ],
-    mask: context.session.config.redaction.mask,
+    mask: _mask,
     body: withBody ? _bodyBytes : null,
   );
+
+  /// Closes the page when the request it edits was let go some other way: the
+  /// app aborted it, or the client was shut down.
+  void _heldChanged() {
+    final held = widget.held;
+    if (_leaving || held == null || _breakpoints?.find(held.id) != null) return;
+    showToast(context, context.strings.heldGone);
+    _leave();
+  }
+
+  /// Takes this page off the stack. The editor of the next held request can be
+  /// pushed over it at the very moment this one is let go, and that one stays:
+  /// this page is removed where it is.
+  void _leave() {
+    _leaving = true;
+    final navigator = Navigator.of(context);
+    final route = ModalRoute.of(context);
+    if (route == null || route.isCurrent) {
+      navigator.pop();
+    } else {
+      navigator.removeRoute(route);
+    }
+  }
+
+  /// Lets the held request go as it is written, and goes back.
+  void _resume(FlutwireHeldRequest held, Uri target) {
+    final request = _request(target, withBody: true);
+    // The page goes first, because letting the request go can bring up the
+    // editor of the next one.
+    _leave();
+    _breakpoints?.resume(
+      held.id,
+      held.copyWith(
+        method: request.method,
+        uri: request.uri,
+        headers: request.headers,
+        body: request.body ?? Uint8List(0),
+      ),
+    );
+  }
+
+  /// Stops the held request, so that the app's call fails, and goes back.
+  void _stop(FlutwireHeldRequest held) {
+    _leave();
+    _breakpoints?.stop(held.id);
+  }
 
   Future<void> _send() async {
     final target = _target;
     if (target == null) {
       setState(() => _triedToSend = true);
+      return;
+    }
+    final held = widget.held;
+    if (held != null) {
+      _resume(held, target);
       return;
     }
     final s = context.strings;
@@ -211,15 +232,7 @@ class _ResendPageState extends State<ResendPage> {
       navigator.pop();
       return;
     }
-    unawaited(
-      navigator.pushReplacement(
-        shellRoute(
-          session,
-          name: 'flutwire/call',
-          child: CallDetailPage(callId: id),
-        ),
-      ),
-    );
+    unawaited(navigator.pushReplacement(callRoute(session, id)));
   }
 
   @override
@@ -227,7 +240,7 @@ class _ResendPageState extends State<ResendPage> {
     final s = context.strings;
     final t = context.fw;
     final target = _target;
-    final mask = context.session.config.redaction.mask;
+    final mask = _mask;
     // Only the header fields decide what is hidden, so the body, which can be
     // large, is not read on every key.
     final hidden = _request(
@@ -235,7 +248,7 @@ class _ResendPageState extends State<ResendPage> {
       withBody: false,
     ).hidden;
     return Scaffold(
-      appBar: AppBar(title: Text(s.resend)),
+      appBar: AppBar(title: Text(widget.held == null ? s.resend : s.heldTitle)),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
@@ -243,16 +256,23 @@ class _ResendPageState extends State<ResendPage> {
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
+              if (widget.held != null) ...[
+                FieldNote(
+                  icon: Icons.pause_circle_outline_rounded,
+                  text: s.heldNote,
+                ),
+                const SizedBox(height: 16),
+              ],
               _RequestLine(
                 method: _method,
-                methods: {..._methods, widget.call.method}.toList(),
+                methods: {...httpMethods, widget.call.method}.toList(),
                 onMethod: (method) => setState(() => _method = method),
                 url: _url,
                 showError: _triedToSend && target == null,
               ),
               if (_holdsMask(_url.text, mask)) ...[
                 const SizedBox(height: 8),
-                _Note(
+                FieldNote(
                   icon: Icons.visibility_off_outlined,
                   text: s.resendUrlHidden(mask),
                 ),
@@ -265,12 +285,12 @@ class _ResendPageState extends State<ResendPage> {
                 ),
               ],
               const SizedBox(height: 20),
-              _Heading(s.tabHeaders),
+              FieldHeading(s.tabHeaders),
               const SizedBox(height: 8),
               for (final row in _headers)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: _HeaderField(
+                  child: HeaderField(
                     row: row,
                     hidden: isHiddenValue(
                       row.name.text.trim(),
@@ -290,46 +310,53 @@ class _ResendPageState extends State<ResendPage> {
               ),
               if (hidden.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                _Note(
+                FieldNote(
                   icon: Icons.visibility_off_outlined,
                   text: s.resendHiddenNote(hidden.join(', ')),
                 ),
               ],
               const SizedBox(height: 20),
-              _Heading(s.tabBody),
+              FieldHeading(s.tabBody),
               const SizedBox(height: 8),
               ..._bodySection(context),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(
-          color: t.ground,
-          border: Border(top: BorderSide(color: t.line)),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-            child: Center(
-              heightFactor: 1,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 720),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: _sending ? null : _send,
-                    icon: _sending
-                        ? const SizedBox.square(
-                            dimension: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.send_rounded, size: 18),
-                    label: Text(_sending ? s.sending : s.send),
+      // The stop button keeps its own width until it would crowd out the one
+      // that sends, as it does in a long translation or with a large text size.
+      bottomNavigationBar: EditorBottomBar(
+        child: LayoutBuilder(
+          builder: (context, box) => Row(
+            children: [
+              if (widget.held case final held?) ...[
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: box.maxWidth * 0.6),
+                  child: OutlinedButton.icon(
+                    onPressed: () => _stop(held),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: t.error,
+                      side: BorderSide(color: t.error.withValues(alpha: 0.5)),
+                    ),
+                    icon: const Icon(Icons.stop_rounded, size: 18),
+                    label: Text(s.heldStop),
                   ),
                 ),
+                const SizedBox(width: 10),
+              ],
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: _sending ? null : _send,
+                  icon: _sending
+                      ? const SizedBox.square(
+                          dimension: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.send_rounded, size: 18),
+                  label: Text(_sending ? s.sending : s.send),
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -339,8 +366,8 @@ class _ResendPageState extends State<ResendPage> {
   List<Widget> _bodySection(BuildContext context) {
     final s = context.strings;
     final t = context.fw;
-    if (_mode == _BodyMode.text) {
-      final mask = context.session.config.redaction.mask;
+    if (_mode == BodyEditMode.text) {
+      final mask = _mask;
       return [
         // Typing over the mask takes the note away, so it follows the text.
         ListenableBuilder(
@@ -348,7 +375,7 @@ class _ResendPageState extends State<ResendPage> {
           builder: (context, _) => _holdsMask(_body.text, mask)
               ? Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: _Note(
+                  child: FieldNote(
                     icon: Icons.visibility_off_outlined,
                     text: s.resendBodyHidden(mask),
                   ),
@@ -356,7 +383,7 @@ class _ResendPageState extends State<ResendPage> {
               : const SizedBox(width: double.infinity),
         ),
         if (_recorded.truncated) ...[
-          _Note(
+          FieldNote(
             icon: Icons.content_cut_rounded,
             text: s.resendBodyCut(
               formatBytes(_recorded.bytes.length),
@@ -417,18 +444,6 @@ class _ResendPageState extends State<ResendPage> {
       ),
     ];
   }
-}
-
-class _Heading extends StatelessWidget {
-  const _Heading(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Text(
-    text.toUpperCase(),
-    style: context.fw.label(color: context.fw.faint),
-  );
 }
 
 class _RequestLine extends StatelessWidget {
@@ -497,105 +512,6 @@ class _RequestLine extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _HeaderField extends StatelessWidget {
-  const _HeaderField({
-    required this.row,
-    required this.hidden,
-    required this.onRemove,
-  });
-
-  final _HeaderRow row;
-  final bool hidden;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.strings;
-    final t = context.fw;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          flex: 5,
-          child: TextField(
-            controller: row.name,
-            autocorrect: false,
-            enableSuggestions: false,
-            style: t.mono(size: 12.5, color: t.ink),
-            decoration: InputDecoration(
-              hintText: s.headerName,
-              contentPadding: _fieldPadding,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          flex: 6,
-          child: TextField(
-            controller: row.value,
-            minLines: 1,
-            maxLines: 4,
-            autocorrect: false,
-            enableSuggestions: false,
-            style: t.mono(size: 12.5, color: hidden ? t.warning : t.ink),
-            decoration: InputDecoration(
-              hintText: s.headerValue,
-              contentPadding: _fieldPadding,
-              fillColor: hidden ? t.tint(t.warning) : null,
-              suffixIcon: hidden
-                  ? Tooltip(
-                      message: s.hiddenValue,
-                      child: Icon(
-                        Icons.visibility_off_outlined,
-                        size: 18,
-                        color: t.warning,
-                        semanticLabel: s.hiddenValue,
-                      ),
-                    )
-                  : null,
-            ),
-          ),
-        ),
-        IconButton(
-          tooltip: s.removeHeader,
-          icon: const Icon(Icons.close_rounded),
-          onPressed: onRemove,
-        ),
-      ],
-    );
-  }
-}
-
-class _Note extends StatelessWidget {
-  const _Note({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.fw;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-      decoration: BoxDecoration(
-        color: t.warning.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(FlutwireTokens.radiusMd),
-        border: Border.all(color: t.warning.withValues(alpha: 0.35)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: t.warning),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(text, style: t.body(size: 13, color: t.ink)),
-          ),
-        ],
-      ),
     );
   }
 }

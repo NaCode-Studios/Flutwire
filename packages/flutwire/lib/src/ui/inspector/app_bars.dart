@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../dock.dart';
 import '../../export/export.dart';
 import '../actions.dart';
 import '../scope.dart';
@@ -20,7 +21,12 @@ class InspectorAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.wide,
     required this.searching,
     required this.onToggleSearch,
+    required this.onOpenStatistics,
+    required this.onOpenRules,
     required this.onClearHistory,
+    required this.docked,
+    required this.onDock,
+    required this.onUndock,
   });
 
   /// What "export all" writes out.
@@ -36,8 +42,24 @@ class InspectorAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// Shows or hides the search field.
   final VoidCallback onToggleSearch;
 
+  /// Opens the statistics.
+  final VoidCallback onOpenStatistics;
+
+  /// Opens the rules that answer a request or hold it.
+  final VoidCallback onOpenRules;
+
   /// Asks to clear the history.
   final VoidCallback onClearHistory;
+
+  /// Whether the inspector is in the panel beside the app rather than full
+  /// screen.
+  final bool docked;
+
+  /// Moves the inspector from the full screen into the panel.
+  final VoidCallback onDock;
+
+  /// Moves the inspector from the panel to the full screen.
+  final VoidCallback onUndock;
 
   @override
   Size get preferredSize =>
@@ -76,6 +98,11 @@ class InspectorAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
           onPressed: onToggleSearch,
         ),
+        IconButton(
+          tooltip: s.statistics,
+          icon: const Icon(Icons.bar_chart_rounded),
+          onPressed: onOpenStatistics,
+        ),
         // Each entry carries what it does, so the menu is one list.
         PopupMenuButton<VoidCallback>(
           tooltip: '',
@@ -88,6 +115,20 @@ class InspectorAppBar extends StatelessWidget implements PreferredSizeWidget {
                 session.paused.value ? s.resumeRecording : s.pauseRecording,
               ),
             ),
+            // The panel's own actions come first: a panel is short, and the menu
+            // scrolls inside it.
+            if (docked) ...[
+              PopupMenuItem(value: onUndock, child: Text(s.undockInspector)),
+              PopupMenuItem(
+                value: session.dock.swapSide,
+                child: Text(
+                  session.dock.side == FlutwireDockSide.right
+                      ? s.dockToBottom
+                      : s.dockToRight,
+                ),
+              ),
+            ] else if (session.dock.canDock)
+              PopupMenuItem(value: onDock, child: Text(s.dockInspector)),
             const PopupMenuDivider(),
             for (final format in FlutwireExportFormat.values)
               PopupMenuItem(
@@ -96,6 +137,7 @@ class InspectorAppBar extends StatelessWidget implements PreferredSizeWidget {
                 child: Text('${s.exportAll}: ${format.label}'),
               ),
             const PopupMenuDivider(),
+            PopupMenuItem(value: onOpenRules, child: Text(s.interceptTitle)),
             PopupMenuItem(
               value: () => unawaited(showSettingsSheet(context)),
               child: Text(s.settings),
@@ -106,6 +148,12 @@ class InspectorAppBar extends StatelessWidget implements PreferredSizeWidget {
             ),
           ],
         ),
+        if (docked)
+          IconButton(
+            tooltip: s.close,
+            icon: const Icon(Icons.close_rounded),
+            onPressed: session.dock.close,
+          ),
       ],
     );
   }
@@ -119,10 +167,15 @@ class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.controller,
     required this.onTogglePin,
     required this.onDelete,
+    required this.onCompare,
   });
 
   /// Holds the selection.
   final InspectorController controller;
+
+  /// Opens the two selected calls side by side. The bar offers it only while
+  /// exactly two calls are selected.
+  final VoidCallback onCompare;
 
   /// Pins the selected calls, or unpins them when they are all pinned.
   final VoidCallback onTogglePin;
@@ -154,6 +207,12 @@ class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
           icon: const Icon(Icons.select_all_rounded),
           onPressed: controller.selectAllVisible,
         ),
+        if (controller.selection.length == 2)
+          IconButton(
+            tooltip: s.compare,
+            icon: const Icon(Icons.compare_arrows_rounded),
+            onPressed: onCompare,
+          ),
         IconButton(
           tooltip: s.pin,
           icon: const Icon(Icons.push_pin_outlined),

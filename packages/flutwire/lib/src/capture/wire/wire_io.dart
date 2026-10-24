@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import '../../engine.dart';
@@ -7,6 +6,9 @@ import '../../model/call.dart';
 import '../../model/headers.dart';
 import '../messages/websocket_reader_io.dart';
 import '../recorder.dart';
+import 'wire_fake_io.dart';
+import 'wire_forward_io.dart';
+import 'wire_hold_io.dart';
 import 'wire_socket_io.dart';
 
 /// Records every call made through `dart:io`, with no setup in the client.
@@ -14,7 +16,8 @@ import 'wire_socket_io.dart';
 /// `package:http`, Dio's default adapter, Chopper, `Image.network` and most
 /// SDKs that talk HTTP from Dart create their client with `HttpClient()`. This
 /// override hands each of them a thin wrapper around the real client, which
-/// observes the request and the response and changes neither.
+/// observes the request and the response and changes neither, except for the
+/// requests that a mock or a breakpoint of the user's takes over.
 ///
 /// Compose it with overrides the app already has through [previous]; calls
 /// that Flutwire does not record, such as ignored ones, get the real request
@@ -96,6 +99,7 @@ final class FlutwireHttpClient implements HttpClient {
   final HttpClient _inner;
   final FlutwireEngine _engine;
   final Set<FlutwireCallRecorder> _open = {};
+  final Set<HeldHttpClientRequest> _held = {};
   FlutwireCallRecorder? _last;
 
   /// The engine this client reports to.
@@ -173,11 +177,26 @@ final class FlutwireHttpClient implements HttpClient {
 
   @override
   void close({bool force = false}) {
+    // A request that is held has nothing to do with the connection underneath,
+    // so a client that is shut down for good has to stop it itself.
+    if (force) {
+      for (final request in _held.toList()) {
+        request.stopWhileHeld();
+      }
+    }
     _inner.close(force: force);
     for (final recorder in _open.toList()) {
       recorder.cancel();
     }
     _open.clear();
+  }
+
+  /// Says that [recorder], if there is one, has a call that is not over, so
+  /// that closing the client ends it.
+  void _track(FlutwireCallRecorder? recorder) {
+    if (recorder == null) return;
+    _open.add(recorder);
+    unawaited(recorder.done.then((_) => _open.remove(recorder)));
   }
 
   Future<HttpClientRequest> _wrap(
@@ -192,6 +211,23 @@ final class FlutwireHttpClient implements HttpClient {
       resentFrom: resentFrom,
     );
     _last = recorder;
+    // What the user asked to answer or to hold applies to what the app sends
+    // and not to what the inspector sends again, which goes out as it is. It
+    // acts whether or not the call is recorded.
+    final interception = resentFrom == null ? _engine.interception : null;
+    final mock = interception?.rules.mockFor(method, url);
+    if (mock != null) {
+      _track(recorder);
+      return MockHttpClientRequest(
+        method: method,
+        uri: url,
+        rule: mock,
+        recorder: recorder,
+        userAgent: _inner.userAgent,
+        acceptsGzip: _inner.autoUncompress,
+      );
+    }
+    final breakpoint = interception?.rules.breakpointFor(method, url);
     final HttpClientRequest request;
     try {
       request = await open();
@@ -199,9 +235,25 @@ final class FlutwireHttpClient implements HttpClient {
       recorder?.fail(error, stack);
       rethrow;
     }
+    if (breakpoint != null) {
+      _track(recorder);
+      final held = HeldHttpClientRequest(
+        request,
+        client: _inner,
+        engine: _engine,
+        breakpoints: interception!.breakpoints,
+        rule: breakpoint,
+        recorder: recorder,
+        wrapResponse: (response, call) =>
+            _WireResponse(response, call, () => _open.remove(call)),
+        track: _track,
+        onFinished: _held.remove,
+      );
+      _held.add(held);
+      return held;
+    }
     if (recorder == null) return request;
-    _open.add(recorder);
-    unawaited(recorder.done.then((_) => _open.remove(recorder)));
+    _track(recorder);
     // A WebSocket outlives the client that opened it, which an app closes once
     // the handshake is over.
     return _WireRequest(request, recorder, () => _open.remove(recorder));
@@ -273,52 +325,16 @@ final class FlutwireHttpClient implements HttpClient {
   }
 }
 
-class _WireRequest implements HttpClientRequest {
-  _WireRequest(this._inner, this._recorder, this._onDetached);
+class _WireRequest extends ForwardingHttpClientRequest {
+  _WireRequest(super.inner, this._recorder, this._onDetached);
 
-  final HttpClientRequest _inner;
   final FlutwireCallRecorder _recorder;
   final void Function() _onDetached;
   Future<HttpClientResponse>? _closing;
   HttpClientResponse? _wrapped;
 
   @override
-  bool get bufferOutput => _inner.bufferOutput;
-  @override
-  set bufferOutput(bool value) => _inner.bufferOutput = value;
-  @override
-  int get contentLength => _inner.contentLength;
-  @override
-  set contentLength(int value) => _inner.contentLength = value;
-  @override
-  Encoding get encoding => _inner.encoding;
-  @override
-  set encoding(Encoding value) => _inner.encoding = value;
-  @override
-  bool get followRedirects => _inner.followRedirects;
-  @override
-  set followRedirects(bool value) => _inner.followRedirects = value;
-  @override
-  int get maxRedirects => _inner.maxRedirects;
-  @override
-  set maxRedirects(int value) => _inner.maxRedirects = value;
-  @override
-  bool get persistentConnection => _inner.persistentConnection;
-  @override
-  set persistentConnection(bool value) => _inner.persistentConnection = value;
-  @override
-  HttpConnectionInfo? get connectionInfo => _inner.connectionInfo;
-  @override
-  List<Cookie> get cookies => _inner.cookies;
-  @override
-  HttpHeaders get headers => _inner.headers;
-  @override
-  String get method => _inner.method;
-  @override
-  Uri get uri => _inner.uri;
-
-  @override
-  Future<HttpClientResponse> get done => _inner.done.then(_wrap);
+  Future<HttpClientResponse> get done => inner.done.then(_wrap);
 
   HttpClientResponse _wrap(HttpClientResponse response) =>
       _wrapped ??= _WireResponse(response, _recorder, _onDetached);
@@ -326,21 +342,17 @@ class _WireRequest implements HttpClientRequest {
   @override
   void abort([Object? exception, StackTrace? stackTrace]) {
     _recorder.cancel();
-    _inner.abort(exception, stackTrace);
+    inner.abort(exception, stackTrace);
   }
 
   @override
   void add(List<int> data) {
-    _inner.add(data);
+    inner.add(data);
     _recorder.requestBody(data);
   }
 
   @override
-  void addError(Object error, [StackTrace? stackTrace]) =>
-      _inner.addError(error, stackTrace);
-
-  @override
-  Future<dynamic> addStream(Stream<List<int>> stream) => _inner.addStream(
+  Future<dynamic> addStream(Stream<List<int>> stream) => inner.addStream(
     stream.map((chunk) {
       _recorder.requestBody(chunk);
       return chunk;
@@ -351,42 +363,13 @@ class _WireRequest implements HttpClientRequest {
   Future<HttpClientResponse> close() => _closing ??= _close();
 
   Future<HttpClientResponse> _close() async {
-    _recorder.requestHeaders(_headersOf(_inner.headers));
+    _recorder.requestHeaders(_headersOf(inner.headers));
     try {
-      return _wrap(await _inner.close());
+      return _wrap(await inner.close());
     } catch (error, stack) {
       _recorder.fail(error, stack);
       rethrow;
     }
-  }
-
-  @override
-  Future<dynamic> flush() => _inner.flush();
-
-  @override
-  void write(Object? object) {
-    final text = '$object';
-    if (text.isEmpty) return;
-    add(encoding.encode(text));
-  }
-
-  @override
-  void writeAll(Iterable<Object?> objects, [String separator = '']) {
-    var first = true;
-    for (final object in objects) {
-      if (!first && separator.isNotEmpty) write(separator);
-      first = false;
-      write(object);
-    }
-  }
-
-  @override
-  void writeCharCode(int charCode) => write(String.fromCharCode(charCode));
-
-  @override
-  void writeln([Object? object = '']) {
-    write(object);
-    write('\n');
   }
 }
 

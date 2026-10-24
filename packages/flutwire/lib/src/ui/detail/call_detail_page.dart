@@ -3,13 +3,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../export/export.dart';
+import '../../intercept/rule.dart';
 import '../../model/call.dart';
 import '../../model/cookies.dart';
 import '../../model/headers.dart';
 import '../../model/message.dart';
+import '../../session.dart';
 import '../../store/store.dart';
 import '../../util/format.dart';
 import '../actions.dart';
+import '../compare/compare_page.dart';
+import '../intercept/rule_editor_page.dart';
 import '../resend/resend_page.dart';
 import '../scope.dart';
 import '../shell.dart';
@@ -26,6 +30,13 @@ import 'overview_tab.dart';
 enum _Tab { overview, request, response, messages }
 
 enum _Part { body, headers, cookies }
+
+/// The route that opens the call with [id].
+Route<void> callRoute(FlutwireSession session, int id) => shellRoute(
+  session,
+  name: 'flutwire/call',
+  child: CallDetailPage(callId: id),
+);
 
 /// One call in full: an overview, then the request and the response, each as a
 /// body, header fields and cookies.
@@ -100,14 +111,28 @@ class _CallDetailPageState extends State<CallDetailPage> {
   }
 
   void _openCall(int id) {
+    unawaited(Navigator.of(context).push(callRoute(context.session, id)));
+  }
+
+  /// Sets the call this one repeats beside it, the original on the left.
+  void _compareWith(int originalId) {
     unawaited(
       Navigator.of(context).push(
-        shellRoute(
+        compareRoute(
           context.session,
-          name: 'flutwire/call',
-          child: CallDetailPage(callId: id),
+          leftId: originalId,
+          rightId: widget.callId,
         ),
       ),
+    );
+  }
+
+  /// Opens the editor of a new rule that starts from [call].
+  void _makeRule(FlutwireCall call, FlutwireRuleKind kind) {
+    unawaited(
+      Navigator.of(
+        context,
+      ).push(ruleEditorRoute(context.session, kind: kind, from: call)),
     );
   }
 
@@ -213,6 +238,20 @@ class _CallDetailPageState extends State<CallDetailPage> {
             value: () => unawaited(copyCurl(context, call)),
             child: Text(s.copyCurl),
           ),
+          // Only what went through dart:io can be answered or held.
+          if (session.interception != null &&
+              call.source == FlutwireSource.io) ...[
+            const PopupMenuDivider(),
+            if (call.response != null && call.messages == null)
+              PopupMenuItem(
+                value: () => _makeRule(call, FlutwireRuleKind.mock),
+                child: Text(s.mockThisResponse),
+              ),
+            PopupMenuItem(
+              value: () => _makeRule(call, FlutwireRuleKind.breakpoint),
+              child: Text(s.breakOnThis),
+            ),
+          ],
           const PopupMenuDivider(),
           for (final (format, label) in [
             (FlutwireExportFormat.text, s.shareAsText),
@@ -233,10 +272,18 @@ class _CallDetailPageState extends State<CallDetailPage> {
     final s = context.strings;
     switch (_tab) {
       case _Tab.overview:
-        return OverviewTab(call: call, onOpenCall: _openCall);
+        return OverviewTab(
+          call: call,
+          onOpenCall: _openCall,
+          onCompare: _compareWith,
+        );
       case _Tab.messages:
         return call.messages == null
-            ? OverviewTab(call: call, onOpenCall: _openCall)
+            ? OverviewTab(
+                call: call,
+                onOpenCall: _openCall,
+                onCompare: _compareWith,
+              )
             : MessagesTab(call: call);
       case _Tab.request:
         final cookies = [

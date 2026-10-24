@@ -488,8 +488,8 @@ class FlutwireStringsEn extends FlutwireStrings {
           'Flutwire installed, so calls through dart:io are no longer '
           'recorded.',
     FlutwireGap.otherIsolate =>
-      '$subject. Overrides belong to one isolate and nothing records in this '
-          'one, so its calls are not in the list.',
+      '$subject. Nothing records in this isolate until it attaches to '
+          'Flutwire, so its calls are not in the list.',
   };
 
   @override
@@ -500,7 +500,8 @@ class FlutwireStringsEn extends FlutwireStrings {
       'Set your own overrides before Flutwire.init, or build them on '
           'HttpOverrides.current.',
     FlutwireGap.otherIsolate =>
-      'Make the call in the main isolate, where Flutwire records.',
+      'Run it with Flutwire.run or Flutwire.compute, or call '
+          'Flutwire.attach() first thing in the isolate.',
   };
 
   @override
@@ -630,4 +631,257 @@ class FlutwireStringsEn extends FlutwireStrings {
   String get messageUndecoded =>
       'This message was compressed and could not be decompressed, so its '
       'bytes are shown as they came.';
+
+  @override
+  String get compare => 'Compare';
+
+  @override
+  String get compareSwap => 'Swap sides';
+
+  @override
+  String get compareDifferencesOnly => 'Differences only';
+
+  @override
+  String get compareIdentical => 'Identical';
+
+  @override
+  String compareDifferences(int count) =>
+      count == 1 ? '1 difference' : '$count differences';
+
+  @override
+  String get compareHost => 'Host';
+
+  @override
+  String get comparePath => 'Path';
+
+  @override
+  String get compareQuery => 'Query parameters';
+
+  @override
+  String get compareRequestHeaders => 'Request headers';
+
+  @override
+  String get compareResponseHeaders => 'Response headers';
+
+  @override
+  String get compareRequestBody => 'Request body';
+
+  @override
+  String get compareResponseBody => 'Response body';
+
+  @override
+  String get compareMissing => 'Missing';
+
+  @override
+  String compareSkipped(int lines) =>
+      lines == 1 ? '1 identical line' : '$lines identical lines';
+
+  @override
+  String compareBinarySame(String size) => 'Same bytes ($size)';
+
+  @override
+  String compareBinaryDiffer(String left, String right) =>
+      'Different bytes: $left against $right';
+
+  @override
+  String compareCut(String side, String kept, String total) =>
+      'Side $side is cut: $kept of $total shown.';
+
+  @override
+  String get compareWithOriginal => 'Compare with the original';
+
+  @override
+  String get statistics => 'Statistics';
+
+  @override
+  String get statsSummary => 'Summary';
+
+  @override
+  String get statsTimeline => 'Timeline';
+
+  @override
+  String get statsErrorRate => 'Error rate';
+
+  @override
+  String get statsMedian => 'Median';
+
+  @override
+  String get statsP95 => '95th percentile';
+
+  @override
+  String get statsSlowest => 'Slowest calls';
+
+  @override
+  String get statsHosts => 'Error rate by host';
+
+  @override
+  String statsHostLine(int calls, int failed) =>
+      '${calls == 1 ? '1 call' : '$calls calls'}, $failed failed';
+
+  @override
+  String statsMoreHosts(int count) => '$count more hosts';
+
+  @override
+  String get statsNoHost => '(no host)';
+
+  @override
+  String statsPeak(int count) =>
+      count <= 1 ? 'One at a time' : 'Up to $count at once';
+
+  @override
+  String statsShowingLatest(int shown, int total) =>
+      'The latest $shown of $total calls';
+
+  @override
+  String get statsWaiting => 'Waiting';
+
+  @override
+  String get statsReceiving => 'Receiving';
+
+  @override
+  String get dockInspector => 'Dock beside the app';
+
+  @override
+  String get undockInspector => 'Open full screen';
+
+  @override
+  String get dockToBottom => 'Move to the bottom';
+
+  @override
+  String get dockToRight => 'Move to the right';
+
+  @override
+  String get dockResize => 'Resize the inspector';
+
+  @override
+  String get interceptTitle => 'Mocks and breakpoints';
+
+  @override
+  String get interceptOffBody =>
+      'Mocks and breakpoints change what the app sends and receives, so they '
+      'stay off until the app turns them on.';
+
+  @override
+  String get interceptOffHow => 'Turn them on when Flutwire starts:';
+
+  @override
+  String get interceptUnavailableBody =>
+      'They work through the dart:io capture, and this app has none: it runs '
+      'on the web, or captureDartIo is off.';
+
+  @override
+  String get interceptEmptyTitle => 'No rules yet';
+
+  @override
+  String get interceptEmptyBody =>
+      'Open a call and choose "Mock this response" or "Break on requests '
+      'like this", or add a rule here.';
+
+  @override
+  String get interceptNewMock => 'New mock';
+
+  @override
+  String get interceptNewBreakpoint => 'New breakpoint';
+
+  @override
+  String get interceptMock => 'Mock';
+
+  @override
+  String get interceptBreakpoint => 'Breakpoint';
+
+  @override
+  String interceptRulesActive(int count) =>
+      count == 1 ? '1 rule in force' : '$count rules in force';
+
+  @override
+  String get ruleDelete => 'Delete the rule';
+
+  @override
+  String get ruleDeleteTitle => 'Delete this rule?';
+
+  @override
+  String get ruleEditMock => 'Mock';
+
+  @override
+  String get ruleEditBreakpoint => 'Breakpoint';
+
+  @override
+  String get rulePattern => 'Address';
+
+  @override
+  String get rulePatternHelp =>
+      'Use * for any run of characters, as in api.test/items/*. Without a '
+      'scheme it matches the host and the path.';
+
+  @override
+  String get rulePatternBad => 'Write what the address looks like.';
+
+  @override
+  String get ruleMethodAny => 'Any method';
+
+  @override
+  String get ruleName => 'Name (optional)';
+
+  @override
+  String get ruleStatus => 'Status code';
+
+  @override
+  String get ruleStatusBad => 'A status is a number from 100 to 599.';
+
+  @override
+  String get ruleDelay => 'Delay in milliseconds';
+
+  @override
+  String get ruleBodyNotText =>
+      'The stored body is not text, so it is served as it was recorded.';
+
+  @override
+  String get heldTitle => 'Held request';
+
+  @override
+  String get heldNote =>
+      'This request is held at a breakpoint and the app is waiting for it. '
+      'Change what you like and send it on, or stop it.';
+
+  @override
+  String get heldStop => 'Stop the request';
+
+  @override
+  String get heldGone => 'This request is not held any more.';
+
+  @override
+  String heldBanner(int count) => count == 1
+      ? '1 request is held at a breakpoint'
+      : '$count requests are held at a breakpoint';
+
+  @override
+  String get heldReview => 'Review';
+
+  @override
+  String get mockThisResponse => 'Mock this response';
+
+  @override
+  String get breakOnThis => 'Break on requests like this';
+
+  @override
+  String get badgeMocked => 'MOCK';
+
+  @override
+  String get badgeEdited => 'EDITED';
+
+  @override
+  String get badgeHeld => 'HELD';
+
+  @override
+  String get interceptFact => 'Intercepted';
+
+  @override
+  String get interceptedMocked =>
+      'Answered by a mock rule, and nothing was sent';
+
+  @override
+  String get interceptedEdited => 'Held at a breakpoint and sent with changes';
+
+  @override
+  String get interceptedHeld => 'Held at a breakpoint';
 }

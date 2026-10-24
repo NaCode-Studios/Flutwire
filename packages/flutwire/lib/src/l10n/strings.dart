@@ -591,4 +591,248 @@ abstract class FlutwireStrings {
 
   /// A message that was compressed and could not be decompressed.
   String get messageUndecoded;
+
+  // Comparing two calls
+
+  /// The action that sets two selected calls side by side, and the title of
+  /// the screen it opens.
+  String get compare;
+
+  /// Swaps the two sides.
+  String get compareSwap;
+
+  /// Hides what is the same on both sides.
+  String get compareDifferencesOnly;
+
+  /// A part of the two calls that is the same on both sides.
+  String get compareIdentical;
+
+  /// How many things differ in a part of the comparison.
+  String compareDifferences(int count);
+
+  /// The heading of the host of the two calls.
+  String get compareHost;
+
+  /// The heading of the path of the two calls.
+  String get comparePath;
+
+  /// The heading of the query parameters.
+  String get compareQuery;
+
+  /// The heading of the request header fields.
+  String get compareRequestHeaders;
+
+  /// The heading of the response header fields.
+  String get compareResponseHeaders;
+
+  /// The heading of the request bodies.
+  String get compareRequestBody;
+
+  /// The heading of the response bodies.
+  String get compareResponseBody;
+
+  /// What one side shows where it has nothing the other side has.
+  String get compareMissing;
+
+  /// How many lines that are the same on both sides were left out.
+  String compareSkipped(int lines);
+
+  /// Two bodies that are not text and are the same.
+  String compareBinarySame(String size);
+
+  /// Two bodies that are not text and are not the same.
+  String compareBinaryDiffer(String left, String right);
+
+  /// A body that was cut, naming the side it is on.
+  String compareCut(String side, String kept, String total);
+
+  /// Opens a comparison of a call that was sent again with the call it repeats.
+  String get compareWithOriginal;
+
+  // Statistics
+
+  /// The action that opens the statistics, and the title of the screen.
+  String get statistics;
+
+  /// The numbers of the session, as a tab.
+  String get statsSummary;
+
+  /// The calls laid out on one time line, as a tab.
+  String get statsTimeline;
+
+  /// The share of calls that went wrong.
+  String get statsErrorRate;
+
+  /// The time half of the calls came in under.
+  String get statsMedian;
+
+  /// The time nineteen calls in twenty came in under.
+  String get statsP95;
+
+  /// The heading of the slowest calls.
+  String get statsSlowest;
+
+  /// The heading of the hosts, with how often their calls fail.
+  String get statsHosts;
+
+  /// How many calls went to a host and how many of them failed.
+  String statsHostLine(int calls, int failed);
+
+  /// How many hosts the list leaves out.
+  String statsMoreHosts(int count);
+
+  /// What a host with no name is called.
+  String get statsNoHost;
+
+  /// How many calls were in flight at once, at the most.
+  String statsPeak(int count);
+
+  /// The timeline holds the latest calls only.
+  String statsShowingLatest(int shown, int total);
+
+  /// The part of a bar that is the wait for the first byte.
+  String get statsWaiting;
+
+  /// The part of a bar that is the answer coming in.
+  String get statsReceiving;
+
+  // The docked inspector
+
+  /// Puts the inspector in a panel beside the app.
+  String get dockInspector;
+
+  /// Takes the inspector out of the panel and opens it full screen.
+  String get undockInspector;
+
+  /// Moves the docked inspector under the app.
+  String get dockToBottom;
+
+  /// Moves the docked inspector to the right of the app.
+  String get dockToRight;
+
+  /// What the strip that resizes the panel is called, for a screen reader.
+  String get dockResize;
+
+  // Mocks and breakpoints
+
+  /// The title of the screen with the rules, and the entry that opens it.
+  String get interceptTitle;
+
+  /// Why the rules are off when the app did not turn them on.
+  String get interceptOffBody;
+
+  /// Introduces the line of code that turns the rules on.
+  String get interceptOffHow;
+
+  /// Why the rules are not available where the app has no `dart:io` capture.
+  String get interceptUnavailableBody;
+
+  /// The heading of a list of rules that has none.
+  String get interceptEmptyTitle;
+
+  /// What to do to get a rule.
+  String get interceptEmptyBody;
+
+  /// Adds a mock rule.
+  String get interceptNewMock;
+
+  /// Adds a breakpoint.
+  String get interceptNewBreakpoint;
+
+  /// A rule that answers a request.
+  String get interceptMock;
+
+  /// A rule that holds a request.
+  String get interceptBreakpoint;
+
+  /// How many rules are in force.
+  String interceptRulesActive(int count);
+
+  /// Removes a rule.
+  String get ruleDelete;
+
+  /// The question before a rule is removed.
+  String get ruleDeleteTitle;
+
+  /// The title of the editor of a mock.
+  String get ruleEditMock;
+
+  /// The title of the editor of a breakpoint.
+  String get ruleEditBreakpoint;
+
+  /// The label of the field that says which requests a rule is about.
+  String get rulePattern;
+
+  /// How the pattern is written.
+  String get rulePatternHelp;
+
+  /// What is wrong with an empty pattern.
+  String get rulePatternBad;
+
+  /// The choice of a rule that is about every method.
+  String get ruleMethodAny;
+
+  /// The label of the field that names a rule.
+  String get ruleName;
+
+  /// The label of the field with the status code of a mock.
+  String get ruleStatus;
+
+  /// What is wrong with a status that is not a status.
+  String get ruleStatusBad;
+
+  /// The label of the field with how long a mock waits.
+  String get ruleDelay;
+
+  /// Says that a stored body that is not text is served as it was recorded.
+  String get ruleBodyNotText;
+
+  // Requests that are held
+
+  /// The title of the screen where a held request is changed.
+  String get heldTitle;
+
+  /// Says what a held request is and what can be done with it.
+  String get heldNote;
+
+  /// Stops a held request, so that the app's call fails.
+  String get heldStop;
+
+  /// Says that a request is not held any more.
+  String get heldGone;
+
+  /// How many requests are held.
+  String heldBanner(int count);
+
+  /// Opens a held request.
+  String get heldReview;
+
+  // What a rule did to a call
+
+  /// Makes a mock from the response of a call.
+  String get mockThisResponse;
+
+  /// Makes a breakpoint from a call.
+  String get breakOnThis;
+
+  /// Marks a call a mock answered.
+  String get badgeMocked;
+
+  /// Marks a call that was changed at a breakpoint.
+  String get badgeEdited;
+
+  /// Marks a call that was held and replaced or stopped.
+  String get badgeHeld;
+
+  /// The label of the line that says what a rule did.
+  String get interceptFact;
+
+  /// A call a mock answered.
+  String get interceptedMocked;
+
+  /// A call that was changed at a breakpoint.
+  String get interceptedEdited;
+
+  /// A call that was held at a breakpoint and did not go out as it was.
+  String get interceptedHeld;
 }

@@ -79,6 +79,24 @@ enum FlutwireStatusClass {
   }
 }
 
+/// How Flutwire took part in a call, for the calls it did.
+///
+/// Flutwire reads traffic and changes none, except what a rule the user made
+/// asks for. These say which calls such a rule touched.
+enum FlutwireIntercept {
+  /// A mock rule answered the request, and nothing was sent.
+  mocked,
+
+  /// The request was held at a breakpoint and sent with changes. The call it
+  /// replaced is the one it repeats.
+  edited,
+
+  /// The request was held at a breakpoint. It was stopped there, sent on as it
+  /// was, or sent again with changes as another call. How long the call took
+  /// includes the time somebody looked at it.
+  held,
+}
+
 /// A hop the client followed on the way to the final response.
 @immutable
 final class FlutwireRedirect {
@@ -322,6 +340,7 @@ final class FlutwireCall {
     this.pinned = false,
     this.resentFrom,
     this.messages,
+    this.intercept,
   });
 
   /// Restores a summary written by [toJson]. The bodies come back unloaded.
@@ -382,6 +401,7 @@ final class FlutwireCall {
       messages: json['messages'] is Map<String, Object?>
           ? FlutwireMessages.fromJson(json['messages']! as Map<String, Object?>)
           : null,
+      intercept: FlutwireIntercept.values.asNameMap()[json['intercept']],
     );
   }
 
@@ -431,6 +451,9 @@ final class FlutwireCall {
   /// The messages of a WebSocket or of a server-sent event stream, which keep
   /// arriving after the response head. Null for an ordinary call.
   final FlutwireMessages? messages;
+
+  /// How a rule of the user's touched the call, or null when none did.
+  final FlutwireIntercept? intercept;
 
   /// The response status code, or null before one arrived.
   int? get statusCode => response?.statusCode;
@@ -489,6 +512,7 @@ final class FlutwireCall {
 
   /// A copy with the given parts replaced.
   FlutwireCall copyWith({
+    int? id,
     Uri? uri,
     FlutwireCallState? state,
     DateTime? firstByteAt,
@@ -499,8 +523,9 @@ final class FlutwireCall {
     FlutwireGraphql? graphql,
     bool? pinned,
     FlutwireMessages? messages,
+    FlutwireIntercept? intercept,
   }) => FlutwireCall(
-    id: id,
+    id: id ?? this.id,
     method: method,
     uri: uri ?? this.uri,
     source: source,
@@ -515,6 +540,7 @@ final class FlutwireCall {
     pinned: pinned ?? this.pinned,
     resentFrom: resentFrom,
     messages: messages ?? this.messages,
+    intercept: intercept ?? this.intercept,
   );
 
   /// A JSON-encodable summary. Body bytes are not included: the store keeps
@@ -550,6 +576,7 @@ final class FlutwireCall {
     'pinned': pinned,
     if (resentFrom != null) 'resentFrom': resentFrom,
     if (messages != null) 'messages': messages!.toJson(),
+    if (intercept != null) 'intercept': intercept!.name,
   };
 
   @override
