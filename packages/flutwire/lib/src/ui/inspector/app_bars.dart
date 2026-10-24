@@ -119,10 +119,15 @@ class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.controller,
     required this.onTogglePin,
     required this.onDelete,
+    required this.onCompare,
   });
 
   /// Holds the selection.
   final InspectorController controller;
+
+  /// Opens the two selected calls side by side. The bar offers it only while
+  /// exactly two calls are selected.
+  final VoidCallback onCompare;
 
   /// Pins the selected calls, or unpins them when they are all pinned.
   final VoidCallback onTogglePin;
@@ -154,6 +159,12 @@ class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
           icon: const Icon(Icons.select_all_rounded),
           onPressed: controller.selectAllVisible,
         ),
+        if (controller.selection.length == 2)
+          IconButton(
+            tooltip: s.compare,
+            icon: const Icon(Icons.compare_arrows_rounded),
+            onPressed: onCompare,
+          ),
         IconButton(
           tooltip: s.pin,
           icon: const Icon(Icons.push_pin_outlined),

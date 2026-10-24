@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../model/call.dart';
 import '../../session.dart';
+import '../compare/compare_page.dart';
 import '../detail/call_detail_page.dart';
 import '../scope.dart';
 import '../shell.dart';
@@ -166,6 +167,21 @@ class _InspectorPageState extends State<InspectorPage> {
     );
   }
 
+  /// Opens the two selected calls side by side, the older one on the left.
+  void _compareSelected() {
+    final ids = _controller.selection.toList()..sort();
+    if (ids.length != 2) return;
+    unawaited(
+      Navigator.of(context).push(
+        shellRoute(
+          _session,
+          name: 'flutwire/compare',
+          child: ComparePage(leftId: ids.first, rightId: ids.last),
+        ),
+      ),
+    );
+  }
+
   Future<void> _togglePinSelected() async {
     final calls = _controller.selectedCalls;
     final pin = calls.any((c) => !c.pinned);
@@ -221,6 +237,7 @@ class _InspectorPageState extends State<InspectorPage> {
               controller: _controller,
               onTogglePin: () => unawaited(_togglePinSelected()),
               onDelete: () => unawaited(_confirmDeleteSelected()),
+              onCompare: _compareSelected,
             )
           : InspectorAppBar(
               controller: _controller,

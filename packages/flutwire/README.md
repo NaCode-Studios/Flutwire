@@ -78,6 +78,10 @@ Open a call and tap the replay button in the top bar. The method, the address, t
 
 A value the redaction masked was never kept, so it is flagged and sent only if you type it again. A body that is not text goes out as it was recorded, unless only part of it was kept. Sending needs `dart:io`, so the web does not offer it.
 
+## Comparing two calls
+
+Long-press a call to select it, select a second one, and the compare button in the top bar sets them side by side: the status, the time, the query, the header fields and both bodies, with what differs marked and what is the same left out until you ask for it. JSON and XML are laid out before they are compared, so a change of indentation is not a difference. A call that was sent again compares with the call it repeats from its overview.
+
 ## Calls from other isolates
 
 Overrides belong to one isolate, so a call made with `Isolate.run` or `compute` is not seen unless the isolate takes part. `Flutwire.run` and `Flutwire.compute` stand in for the two and record what the isolate sends, with the redaction and the size limit of the app:

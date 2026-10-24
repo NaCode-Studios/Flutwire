@@ -631,4 +631,62 @@ class FlutwireStringsEn extends FlutwireStrings {
   String get messageUndecoded =>
       'This message was compressed and could not be decompressed, so its '
       'bytes are shown as they came.';
+
+  @override
+  String get compare => 'Compare';
+
+  @override
+  String get compareSwap => 'Swap sides';
+
+  @override
+  String get compareDifferencesOnly => 'Differences only';
+
+  @override
+  String get compareIdentical => 'Identical';
+
+  @override
+  String compareDifferences(int count) =>
+      count == 1 ? '1 difference' : '$count differences';
+
+  @override
+  String get compareHost => 'Host';
+
+  @override
+  String get comparePath => 'Path';
+
+  @override
+  String get compareQuery => 'Query parameters';
+
+  @override
+  String get compareRequestHeaders => 'Request headers';
+
+  @override
+  String get compareResponseHeaders => 'Response headers';
+
+  @override
+  String get compareRequestBody => 'Request body';
+
+  @override
+  String get compareResponseBody => 'Response body';
+
+  @override
+  String get compareMissing => 'Missing';
+
+  @override
+  String compareSkipped(int lines) =>
+      lines == 1 ? '1 identical line' : '$lines identical lines';
+
+  @override
+  String compareBinarySame(String size) => 'Same bytes ($size)';
+
+  @override
+  String compareBinaryDiffer(String left, String right) =>
+      'Different bytes: $left against $right';
+
+  @override
+  String compareCut(String side, String kept, String total) =>
+      'Side $side is cut: $kept of $total shown.';
+
+  @override
+  String get compareWithOriginal => 'Compare with the original';
 }

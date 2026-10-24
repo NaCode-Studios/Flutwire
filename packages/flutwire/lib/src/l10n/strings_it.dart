@@ -640,4 +640,62 @@ class FlutwireStringsIt extends FlutwireStrings {
   String get messageUndecoded =>
       'Questo messaggio era compresso e non è stato possibile decomprimerlo, '
       'quindi i byte sono mostrati così come sono arrivati.';
+
+  @override
+  String get compare => 'Confronta';
+
+  @override
+  String get compareSwap => 'Scambia i lati';
+
+  @override
+  String get compareDifferencesOnly => 'Solo differenze';
+
+  @override
+  String get compareIdentical => 'Uguali';
+
+  @override
+  String compareDifferences(int count) =>
+      count == 1 ? '1 differenza' : '$count differenze';
+
+  @override
+  String get compareHost => 'Host';
+
+  @override
+  String get comparePath => 'Percorso';
+
+  @override
+  String get compareQuery => 'Parametri della query';
+
+  @override
+  String get compareRequestHeaders => 'Header della richiesta';
+
+  @override
+  String get compareResponseHeaders => 'Header della risposta';
+
+  @override
+  String get compareRequestBody => 'Corpo della richiesta';
+
+  @override
+  String get compareResponseBody => 'Corpo della risposta';
+
+  @override
+  String get compareMissing => 'Assente';
+
+  @override
+  String compareSkipped(int lines) =>
+      lines == 1 ? '1 riga uguale' : '$lines righe uguali';
+
+  @override
+  String compareBinarySame(String size) => 'Stessi byte ($size)';
+
+  @override
+  String compareBinaryDiffer(String left, String right) =>
+      'Byte diversi: $left contro $right';
+
+  @override
+  String compareCut(String side, String kept, String total) =>
+      'Il lato $side è tagliato: mostrati $kept di $total.';
+
+  @override
+  String get compareWithOriginal => "Confronta con l'originale";
 }

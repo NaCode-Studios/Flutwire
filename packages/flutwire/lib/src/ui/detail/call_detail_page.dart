@@ -10,6 +10,7 @@ import '../../model/message.dart';
 import '../../store/store.dart';
 import '../../util/format.dart';
 import '../actions.dart';
+import '../compare/compare_page.dart';
 import '../resend/resend_page.dart';
 import '../scope.dart';
 import '../shell.dart';
@@ -106,6 +107,19 @@ class _CallDetailPageState extends State<CallDetailPage> {
           context.session,
           name: 'flutwire/call',
           child: CallDetailPage(callId: id),
+        ),
+      ),
+    );
+  }
+
+  /// Sets the call this one repeats beside it, the original on the left.
+  void _compareWith(int originalId) {
+    unawaited(
+      Navigator.of(context).push(
+        shellRoute(
+          context.session,
+          name: 'flutwire/compare',
+          child: ComparePage(leftId: originalId, rightId: widget.callId),
         ),
       ),
     );
@@ -233,10 +247,18 @@ class _CallDetailPageState extends State<CallDetailPage> {
     final s = context.strings;
     switch (_tab) {
       case _Tab.overview:
-        return OverviewTab(call: call, onOpenCall: _openCall);
+        return OverviewTab(
+          call: call,
+          onOpenCall: _openCall,
+          onCompare: _compareWith,
+        );
       case _Tab.messages:
         return call.messages == null
-            ? OverviewTab(call: call, onOpenCall: _openCall)
+            ? OverviewTab(
+                call: call,
+                onOpenCall: _openCall,
+                onCompare: _compareWith,
+              )
             : MessagesTab(call: call);
       case _Tab.request:
         final cookies = [

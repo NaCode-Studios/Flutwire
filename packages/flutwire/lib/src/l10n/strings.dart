@@ -591,4 +591,61 @@ abstract class FlutwireStrings {
 
   /// A message that was compressed and could not be decompressed.
   String get messageUndecoded;
+
+  // Comparing two calls
+
+  /// The action that sets two selected calls side by side, and the title of
+  /// the screen it opens.
+  String get compare;
+
+  /// Swaps the two sides.
+  String get compareSwap;
+
+  /// Hides what is the same on both sides.
+  String get compareDifferencesOnly;
+
+  /// A part of the two calls that is the same on both sides.
+  String get compareIdentical;
+
+  /// How many things differ in a part of the comparison.
+  String compareDifferences(int count);
+
+  /// The heading of the host of the two calls.
+  String get compareHost;
+
+  /// The heading of the path of the two calls.
+  String get comparePath;
+
+  /// The heading of the query parameters.
+  String get compareQuery;
+
+  /// The heading of the request header fields.
+  String get compareRequestHeaders;
+
+  /// The heading of the response header fields.
+  String get compareResponseHeaders;
+
+  /// The heading of the request bodies.
+  String get compareRequestBody;
+
+  /// The heading of the response bodies.
+  String get compareResponseBody;
+
+  /// What one side shows where it has nothing the other side has.
+  String get compareMissing;
+
+  /// How many lines that are the same on both sides were left out.
+  String compareSkipped(int lines);
+
+  /// Two bodies that are not text and are the same.
+  String compareBinarySame(String size);
+
+  /// Two bodies that are not text and are not the same.
+  String compareBinaryDiffer(String left, String right);
+
+  /// A body that was cut, naming the side it is on.
+  String compareCut(String side, String kept, String total);
+
+  /// Opens a comparison of a call that was sent again with the call it repeats.
+  String get compareWithOriginal;
 }

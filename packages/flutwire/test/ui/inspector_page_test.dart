@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutwire/flutwire.dart';
+import 'package:flutwire/src/ui/compare/compare_page.dart';
 import 'package:flutwire/src/ui/inspector/inspector_page.dart';
 import 'package:flutwire/src/ui/widgets/toggle_chip.dart';
 
@@ -244,6 +245,44 @@ void main() {
       await settle(tester);
 
       expect(find.text('/login'), findsOneWidget);
+    });
+
+    testWidgets('comparing is offered for two calls and no other number', (
+      tester,
+    ) async {
+      await open(tester);
+
+      await tester.longPress(find.text('/login'));
+      await settle(tester);
+      expect(find.byTooltip('Compare'), findsNothing);
+
+      await tester.tap(find.text('/items/9'));
+      await settle(tester);
+      expect(find.text('2 selected'), findsOneWidget);
+      expect(find.byTooltip('Compare'), findsOneWidget);
+
+      await tester.tap(find.text('/files/7'));
+      await settle(tester);
+      expect(find.text('3 selected'), findsOneWidget);
+      expect(find.byTooltip('Compare'), findsNothing);
+    });
+
+    testWidgets('comparing puts the older call on the left', (tester) async {
+      await open(tester);
+      await tester.longPress(find.text('/login'));
+      await settle(tester);
+      await tester.tap(find.text('/items/9'));
+      await settle(tester);
+
+      await tester.tap(find.byTooltip('Compare'));
+      await settle(tester);
+
+      expect(find.byType(ComparePage), findsOneWidget);
+      // The call that was made first is call 3, which is /items/9.
+      expect(
+        tester.getTopLeft(find.text('/items/9').first).dx,
+        lessThan(tester.getTopLeft(find.text('/login').first).dx),
+      );
     });
 
     testWidgets('pinning keeps the call pinned in the history', (tester) async {

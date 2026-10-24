@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutwire/flutwire.dart';
+import 'package:flutwire/src/ui/compare/compare_page.dart';
 import 'package:flutwire/src/ui/detail/call_detail_page.dart';
 import 'package:flutwire/src/ui/widgets/call_tile.dart';
 
@@ -99,6 +100,33 @@ void main() {
       await settle(tester);
 
       expect(find.text('POST  api.test'), findsOneWidget);
+    });
+
+    testWidgets('can be compared with the call it repeats', (tester) async {
+      final original = makeCall(1, url: 'https://api.test/orders');
+      await openDetail(
+        tester,
+        makeCall(2, url: 'https://staging.test/orders', resentFrom: 1),
+        more: [original],
+      );
+
+      await tester.tap(find.text('Compare with the original'));
+      await settle(tester);
+
+      expect(find.byType(ComparePage), findsOneWidget);
+      // The original is on the left.
+      expect(
+        tester.getTopLeft(find.text('api.test').first).dx,
+        lessThan(tester.getTopLeft(find.text('staging.test').first).dx),
+      );
+    });
+
+    testWidgets('has nothing to compare with once the original is gone', (
+      tester,
+    ) async {
+      await openDetail(tester, makeCall(2, resentFrom: 1));
+
+      expect(find.text('Compare with the original'), findsNothing);
     });
 
     testWidgets('says so when that call is gone from the history', (
