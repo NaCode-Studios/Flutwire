@@ -119,14 +119,16 @@ class InspectorAppBar extends StatelessWidget implements PreferredSizeWidget {
             // scrolls inside it.
             if (docked) ...[
               PopupMenuItem(value: onUndock, child: Text(s.undockInspector)),
-              PopupMenuItem(
-                value: session.dock.swapSide,
-                child: Text(
-                  session.dock.side == FlutwireDockSide.right
-                      ? s.dockToBottom
-                      : s.dockToRight,
+              if (session.dock.side == FlutwireDockSide.right)
+                PopupMenuItem(
+                  value: session.dock.swapSide,
+                  child: Text(s.dockToBottom),
+                )
+              else if (session.dock.canSitBeside)
+                PopupMenuItem(
+                  value: session.dock.swapSide,
+                  child: Text(s.dockToRight),
                 ),
-              ),
             ] else if (session.dock.canDock)
               PopupMenuItem(value: onDock, child: Text(s.dockInspector)),
             const PopupMenuDivider(),
@@ -197,9 +199,13 @@ class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
         icon: const Icon(Icons.close_rounded),
         onPressed: controller.clearSelection,
       ),
-      title: Text(
-        s.selected(controller.selection.length),
-        style: t.display(size: 18),
+      title: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: AlignmentDirectional.centerStart,
+        child: Text(
+          s.selected(controller.selection.length),
+          style: t.display(size: 18),
+        ),
       ),
       actions: [
         IconButton(

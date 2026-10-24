@@ -198,6 +198,32 @@ void main() {
     expect(find.text('app 680x800'), findsOneWidget);
   });
 
+  testWidgets('does not offer the right side on a screen too narrow for it', (
+    tester,
+  ) async {
+    final session = await pumpDock(tester);
+    await openDock(tester, session);
+
+    await tester.tap(find.byIcon(Icons.more_vert_rounded));
+    await settle(tester);
+
+    expect(find.text('Open full screen'), findsOneWidget);
+    expect(find.text('Move to the right'), findsNothing);
+  });
+
+  testWidgets('keeps the panel under the app of a narrow screen', (
+    tester,
+  ) async {
+    final session = FakeSession(calls: [makeCall(1)]);
+    await session.store.preferences.write('dockSide', 'right');
+    await pumpDock(tester, session: session);
+
+    await openDock(tester, session);
+
+    expect(find.text('app 420x506'), findsOneWidget);
+    expect(tester.getTopLeft(find.text(_inspector)).dy, greaterThan(506));
+  });
+
   testWidgets('closes with the button in its top bar', (tester) async {
     final session = await pumpDock(tester, size: _wide);
     await openDock(tester, session);

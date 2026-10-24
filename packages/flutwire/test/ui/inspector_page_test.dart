@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutwire/flutwire.dart';
 import 'package:flutwire/src/ui/compare/compare_page.dart';
@@ -293,6 +294,26 @@ void main() {
       expect(
         tester.getTopLeft(find.text('/items/9').first).dx,
         lessThan(tester.getTopLeft(find.text('/login').first).dx),
+      );
+    });
+
+    testWidgets('the count is not cut short on a phone', (tester) async {
+      await open(tester, size: const Size(390, 800));
+      await tester.longPress(find.text('/login'));
+      await settle(tester);
+      await tester.tap(find.text('/items/9'));
+      await settle(tester);
+
+      // Five buttons and a close leave the title little room.
+      final title = find.text('2 selected');
+      expect(title, findsOneWidget);
+      expect(
+        tester.renderObject<RenderParagraph>(title).didExceedMaxLines,
+        isFalse,
+      );
+      expect(
+        tester.getBottomRight(title).dx,
+        lessThan(tester.getTopLeft(find.byTooltip('Select all')).dx),
       );
     });
 

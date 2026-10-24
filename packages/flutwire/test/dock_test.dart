@@ -73,13 +73,45 @@ void main() {
     });
 
     test('moves to the other side when asked, and then keeps it there', () {
-      dock.sideFor(const Size(420, 900));
+      dock.sideFor(const Size(720, 900));
 
       dock.swapSide();
-      expect(dock.sideFor(const Size(420, 900)), FlutwireDockSide.right);
+      expect(dock.sideFor(const Size(720, 900)), FlutwireDockSide.right);
       dock.swapSide();
       expect(dock.sideFor(const Size(1280, 800)), FlutwireDockSide.bottom);
     });
+
+    test('goes under the app on a screen too narrow to sit beside it', () {
+      expect(dock.sideFor(const Size(599, 900)), FlutwireDockSide.bottom);
+      expect(dock.canSitBeside, isFalse);
+
+      expect(dock.sideFor(const Size(600, 900)), FlutwireDockSide.bottom);
+      expect(dock.canSitBeside, isTrue);
+    });
+
+    test('is not moved to the right of a screen with no room for it', () {
+      dock.sideFor(const Size(420, 900));
+
+      dock.swapSide();
+
+      expect(dock.sideFor(const Size(420, 900)), FlutwireDockSide.bottom);
+      // Nothing was chosen, so a wide screen still decides by its own shape.
+      expect(dock.sideFor(const Size(1280, 800)), FlutwireDockSide.right);
+    });
+
+    test(
+      'stays at the bottom of a narrow screen after the right was chosen',
+      () {
+        dock.sideFor(const Size(1280, 800));
+        dock.swapSide();
+        dock.swapSide();
+        expect(dock.sideFor(const Size(1280, 800)), FlutwireDockSide.right);
+
+        expect(dock.sideFor(const Size(420, 900)), FlutwireDockSide.bottom);
+        // The choice was only overridden, and holds again where it can.
+        expect(dock.sideFor(const Size(1280, 800)), FlutwireDockSide.right);
+      },
+    );
 
     test('is resized within limits', () {
       dock.resizeBy(1);
@@ -148,7 +180,7 @@ void main() {
       expect(dock.wantsDock, isTrue);
       expect(dock.isOpen, isFalse);
       expect(dock.extent, 0.55);
-      expect(dock.sideFor(const Size(420, 900)), FlutwireDockSide.right);
+      expect(dock.sideFor(const Size(720, 900)), FlutwireDockSide.right);
     });
 
     test('forget the dock once the inspector is left full screen', () {
