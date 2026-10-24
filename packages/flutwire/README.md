@@ -78,6 +78,17 @@ Open a call and tap the replay button in the top bar. The method, the address, t
 
 A value the redaction masked was never kept, so it is flagged and sent only if you type it again. A body that is not text goes out as it was recorded, unless only part of it was kept. Sending needs `dart:io`, so the web does not offer it.
 
+## Calls from other isolates
+
+Overrides belong to one isolate, so a call made with `Isolate.run` or `compute` is not seen unless the isolate takes part. `Flutwire.run` and `Flutwire.compute` stand in for the two and record what the isolate sends, with the redaction and the size limit of the app:
+
+```dart
+final todos = await Flutwire.run(() => fetchTodos());
+final todo = await Flutwire.compute(fetchTodo, 'https://example.com/todos/1');
+```
+
+An isolate you start yourself calls `await Flutwire.attach()` before it uses the network. Where Flutwire is not recording, both are the plain `Isolate.run` and `compute`.
+
 ## Configuration
 
 ```dart
@@ -119,7 +130,7 @@ Flutter cannot give one flavor a different set of dependencies, so the package i
 
 ## What it does not do
 
-Flutwire reads traffic and never changes it. It does not proxy other apps, and it cannot see what never passes through Dart: Firestore, Auth and Storage speak their own protocols through native SDKs. When a call may have gone unseen, because a client does not use `dart:io`, because an adapter ran in another isolate or because something replaced the capture, the inspector says so above the list and says what to change.
+Flutwire reads traffic and never changes it. It does not proxy other apps, and it cannot see what never passes through Dart: Firestore, Auth and Storage speak their own protocols through native SDKs. When a call may have gone unseen, because a client does not use `dart:io`, because an adapter ran in an isolate that never attached to Flutwire or because something replaced the capture, the inspector says so above the list and says what to change.
 
 ## More
 

@@ -7,6 +7,7 @@ import 'diagnostics.dart';
 import 'model/body.dart';
 import 'model/call.dart';
 import 'model/headers.dart';
+import 'store/preferences.dart';
 import 'store/store.dart';
 
 /// The part of Flutwire that records calls: it decides whether a call is
@@ -27,6 +28,18 @@ final class FlutwireEngine implements FlutwireRecorderHost {
              maxCalls: config.maxCalls,
              maxBytes: config.maxMemoryBytes,
            ),
+       _forward = null,
+       _clock = clock ?? DateTime.now;
+
+  /// Creates an engine for an isolate other than the one the app runs in. It
+  /// records calls as usual, but keeps nothing: every snapshot goes to
+  /// [forward], which hands it to the isolate that does keep a history.
+  FlutwireEngine.forwarding({
+    required this.config,
+    required void Function(FlutwireCall call, {required bool finished}) forward,
+    DateTime Function()? clock,
+  }) : store = _ForwardedStore(),
+       _forward = forward,
        _clock = clock ?? DateTime.now;
 
   @override
@@ -35,9 +48,16 @@ final class FlutwireEngine implements FlutwireRecorderHost {
   /// Where recorded calls go.
   final FlutwireStore store;
 
+  final void Function(FlutwireCall call, {required bool finished})? _forward;
   final DateTime Function() _clock;
   int _lastId = 0;
   bool _reportedInternalError = false;
+
+  /// For each isolate that records into this history, the calls it has begun
+  /// and not finished: the id they have here, or null for the ones that are not
+  /// recorded. Calls are numbered by the isolate that records them, and two
+  /// isolates can pick the same number.
+  final Map<int, Map<int, int?>> _adopted = {};
 
   /// Whether the `dart:io` capture is installed for this engine. Capture
   /// adapters for a single client stand down while it is, because it already
@@ -185,7 +205,39 @@ final class FlutwireEngine implements FlutwireRecorderHost {
   }
 
   @override
-  void publish(FlutwireCall call, {required bool finished}) => store.put(call);
+  void publish(FlutwireCall call, {required bool finished}) {
+    final forward = _forward;
+    if (forward != null) {
+      forward(call, finished: finished);
+    } else {
+      store.put(call);
+    }
+  }
+
+  /// Takes in a snapshot of a call that the isolate numbered [origin] is
+  /// recording, and puts it in the history under an id of this isolate's own.
+  ///
+  /// The pause and the ignore rules are judged once, on the first snapshot of a
+  /// call: a call that is not recorded here is not recorded at any later
+  /// snapshot either. [finished] is true for the last snapshot of a call.
+  void adopt(FlutwireCall call, {required int origin, required bool finished}) {
+    try {
+      final calls = _adopted.putIfAbsent(origin, () => {});
+      if (!calls.containsKey(call.id)) {
+        calls[call.id] = _shouldRecord(call.method, call.uri)
+            ? _nextId(at: call.startedAt)
+            : null;
+      }
+      final id = calls[call.id];
+      if (finished) {
+        calls.remove(call.id);
+        if (calls.isEmpty) _adopted.remove(origin);
+      }
+      if (id != null) store.put(call.copyWith(id: id));
+    } on Object catch (error, stack) {
+      internalError(error, stack);
+    }
+  }
 
   @override
   void internalError(Object error, StackTrace stack) {
@@ -206,13 +258,47 @@ final class FlutwireEngine implements FlutwireRecorderHost {
     await store.dispose();
   }
 
-  int _nextId() {
-    final micros = _clock().microsecondsSinceEpoch;
+  /// The next id: the time of [at], or of now, unless that was already given
+  /// out, in which case the one after the latest.
+  int _nextId({DateTime? at}) {
+    final micros = (at ?? _clock()).microsecondsSinceEpoch;
     _lastId = micros > _lastId ? micros : _lastId + 1;
     return _lastId;
   }
 
   static const int _recentIoLimit = 64;
+}
+
+/// The store of an engine that forwards what it records: it keeps nothing.
+final class _ForwardedStore implements FlutwireStore {
+  final ValueNotifier<List<FlutwireCall>> _calls = ValueNotifier(const []);
+
+  @override
+  ValueListenable<List<FlutwireCall>> get calls => _calls;
+
+  @override
+  final FlutwirePreferences preferences = MemoryFlutwirePreferences();
+
+  @override
+  FlutwireCall? find(int id) => null;
+
+  @override
+  Future<FlutwireCall?> load(int id) async => null;
+
+  @override
+  void put(FlutwireCall call) {}
+
+  @override
+  Future<void> remove(Iterable<int> ids) async {}
+
+  @override
+  Future<void> clear({bool keepPinned = true}) async {}
+
+  @override
+  Future<void> setPinned(Iterable<int> ids, {required bool pinned}) async {}
+
+  @override
+  Future<void> dispose() async => _calls.dispose();
 }
 
 /// A call the `dart:io` capture began.

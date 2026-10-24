@@ -102,13 +102,7 @@ final class FlutwireRuntime implements FlutwireSession {
       );
     }
     runtime._actions = native.actions.listen(runtime._onAction);
-    runtime._isolates = FlutwireIsolateBridge.listen(
-      (subject) => engine.coverage.report(
-        FlutwireGap.otherIsolate,
-        subject,
-        engine.now(),
-      ),
-    );
+    runtime._isolates = FlutwireIsolateBridge.listen(engine);
     switch (await native.consumeInitialAction()) {
       case 'open':
         launcher.openWhenReady(runtime);

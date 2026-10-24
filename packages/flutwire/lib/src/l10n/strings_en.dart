@@ -488,8 +488,8 @@ class FlutwireStringsEn extends FlutwireStrings {
           'Flutwire installed, so calls through dart:io are no longer '
           'recorded.',
     FlutwireGap.otherIsolate =>
-      '$subject. Overrides belong to one isolate and nothing records in this '
-          'one, so its calls are not in the list.',
+      '$subject. Nothing records in this isolate until it attaches to '
+          'Flutwire, so its calls are not in the list.',
   };
 
   @override
@@ -500,7 +500,8 @@ class FlutwireStringsEn extends FlutwireStrings {
       'Set your own overrides before Flutwire.init, or build them on '
           'HttpOverrides.current.',
     FlutwireGap.otherIsolate =>
-      'Make the call in the main isolate, where Flutwire records.',
+      'Run it with Flutwire.run or Flutwire.compute, or call '
+          'Flutwire.attach() first thing in the isolate.',
   };
 
   @override

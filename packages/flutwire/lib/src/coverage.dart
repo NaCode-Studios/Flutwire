@@ -12,8 +12,9 @@ enum FlutwireGap {
   /// installed, so the `dart:io` capture no longer sees anything.
   captureReplaced,
 
-  /// A Flutwire adapter ran in an isolate that has no recorder. Overrides
-  /// belong to one isolate, so what that isolate sends is not recorded.
+  /// A Flutwire adapter ran in an isolate that did not attach to Flutwire.
+  /// Overrides belong to one isolate, so what that isolate sends is not
+  /// recorded.
   otherIsolate,
 }
 

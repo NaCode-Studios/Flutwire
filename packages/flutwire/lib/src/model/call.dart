@@ -489,6 +489,7 @@ final class FlutwireCall {
 
   /// A copy with the given parts replaced.
   FlutwireCall copyWith({
+    int? id,
     Uri? uri,
     FlutwireCallState? state,
     DateTime? firstByteAt,
@@ -500,7 +501,7 @@ final class FlutwireCall {
     bool? pinned,
     FlutwireMessages? messages,
   }) => FlutwireCall(
-    id: id,
+    id: id ?? this.id,
     method: method,
     uri: uri ?? this.uri,
     source: source,

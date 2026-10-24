@@ -185,6 +185,16 @@ final List<(String, List<Probe>)> groups = [
     [Probe('WebSocket', _webSocket), Probe('Event stream', _eventStream)],
   ),
   (
+    'Isolates',
+    [
+      Probe('Flutwire.run', () => _safe(() => Flutwire.run(_runInAnIsolate))),
+      Probe(
+        'Flutwire.compute',
+        () => _safe(() => Flutwire.compute(_fetchIn, '$_todos/todos/5')),
+      ),
+    ],
+  ),
+  (
     'Trouble',
     [
       Probe(
@@ -293,11 +303,32 @@ Future<void> _eventStream() async {
   }
 }
 
+/// A call made in an isolate that `Flutwire.run` attached to Flutwire, so it is
+/// in the history like any other.
+Future<void> _runInAnIsolate() => _fetchIn('$_todos/todos/4');
+
+/// The same through `Flutwire.compute`, which hands the callback one message.
+Future<void> _fetchIn(String url) async {
+  if (kIsWeb) return _safe(() => client.get(Uri.parse(url)));
+  final io = HttpClient();
+  try {
+    final request = await io.getUrl(Uri.parse(url));
+    await (await request.close()).drain<void>();
+  } on Object {
+    // The inspector shows what went wrong.
+  } finally {
+    io.close();
+  }
+}
+
 /// What Flutwire cannot see, so that the inspector has something to say about
 /// it. These are left out of "Run everything": replacing the capture stops the
 /// recording of everything after it.
 final List<Probe> blindSpots = [
-  Probe('Another isolate', () => _safe(() => Isolate.run(_fromAnotherIsolate))),
+  Probe(
+    'Isolate, not attached',
+    () => _safe(() => Isolate.run(_fromAnotherIsolate)),
+  ),
   Probe(
     'Off the wire',
     () => _safe(
@@ -313,8 +344,8 @@ final List<Probe> blindSpots = [
 
 HttpOverrides? _kept;
 
-/// A call from an isolate that Flutwire does not run in. Overrides belong to
-/// one isolate, so nothing records it.
+/// A call from an isolate that never attached to Flutwire. Overrides belong to
+/// one isolate, so nothing records it, and the inspector says so.
 Future<void> _fromAnotherIsolate() async {
   try {
     await FlutwireClient(http.Client()).get(Uri.parse('$_todos/todos/2'));

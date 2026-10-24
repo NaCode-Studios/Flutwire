@@ -494,8 +494,8 @@ class FlutwireStringsIt extends FlutwireStrings {
           'installato da Flutwire, quindi le chiamate di dart:io non vengono '
           'più registrate.',
     FlutwireGap.otherIsolate =>
-      "$subject. Gli override appartengono a un solo isolate e in questo non "
-          "registra nessuno, quindi le sue chiamate non sono nell'elenco.",
+      "$subject. In questo isolate non registra nessuno finché non si collega "
+          "a Flutwire, quindi le sue chiamate non sono nell'elenco.",
   };
 
   @override
@@ -506,7 +506,8 @@ class FlutwireStringsIt extends FlutwireStrings {
       'Imposta i tuoi override prima di Flutwire.init, oppure costruiscili su '
           'HttpOverrides.current.',
     FlutwireGap.otherIsolate =>
-      "Fai la chiamata nell'isolate principale, dove Flutwire registra.",
+      "Eseguilo con Flutwire.run o Flutwire.compute, oppure chiama "
+          "Flutwire.attach() all'inizio dell'isolate.",
   };
 
   @override
