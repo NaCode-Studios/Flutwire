@@ -17,6 +17,11 @@ import UserNotifications
 /// local notifications. Flutwire takes the delegate over and passes everything
 /// that is not its own notification on to the one it replaced, so neither side
 /// notices the other.
+///
+/// It does that only once Flutwire has run in the build. The plugin is part of
+/// every build of an app that depends on Flutwire, including the ones that
+/// never start it, such as a production build, and those must behave as if the
+/// plugin were not there.
 public final class FlutwirePlugin: NSObject, FlutterPlugin, UNUserNotificationCenterDelegate {
     private static let channelName = "it.nacodestudios.flutwire/native"
     private static let notificationId = "it.nacodestudios.flutwire.summary"
@@ -25,6 +30,7 @@ public final class FlutwirePlugin: NSObject, FlutterPlugin, UNUserNotificationCe
     private static let threadId = "it.nacodestudios.flutwire"
     private static let pendingKey = "it.nacodestudios.flutwire.pending"
     private static let askedKey = "it.nacodestudios.flutwire.asked"
+    private static let armedKey = "it.nacodestudios.flutwire.armed"
 
     // The registrar does not keep a plugin alive and the notification center
     // holds its delegate weakly, so the instance is held here.
@@ -50,7 +56,22 @@ public final class FlutwirePlugin: NSObject, FlutterPlugin, UNUserNotificationCe
         let instance = FlutwirePlugin(channel: channel)
         shared = instance
         registrar.addMethodCallDelegate(instance, channel: channel)
-        instance.adoptNotificationCenter()
+        // The notification center belongs to the app, so it is left alone until
+        // Flutwire has run in this very build. A notification can only exist if
+        // it did, and tapping one after the app was killed needs the delegate in
+        // place before the app finishes launching, which is before Dart starts.
+        if UserDefaults.standard.string(forKey: armedKey) == buildIdentifier {
+            instance.adoptNotificationCenter()
+        }
+    }
+
+    /// The version and the build number of the app, which tell one build from
+    /// another.
+    private static var buildIdentifier: String {
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? ""
+        let build = info?["CFBundleVersion"] as? String ?? ""
+        return "\(version)+\(build)"
     }
 
     // MARK: Method calls
@@ -86,6 +107,9 @@ public final class FlutwirePlugin: NSObject, FlutterPlugin, UNUserNotificationCe
 
     private func initialize(_ arguments: [String: Any], result: @escaping FlutterResult) {
         adoptNotificationCenter()
+        // Remembered, so that the next launch of this build has the delegate in
+        // place early. A build that never starts Flutwire never gets here.
+        UserDefaults.standard.set(Self.buildIdentifier, forKey: Self.armedKey)
         registerCategory(clearLabel: arguments["clearLabel"] as? String ?? "Clear")
         dartIsListening = true
         let storage = Self.storageDirectory()
@@ -102,8 +126,9 @@ public final class FlutwirePlugin: NSObject, FlutterPlugin, UNUserNotificationCe
     // MARK: Notification center
 
     /// Becomes the notification delegate, keeping the one that was there.
-    /// It runs at registration and again when Dart starts, because an app may
-    /// set its own delegate after plugins register.
+    /// It runs at registration, when Flutwire has run in this build before, and
+    /// again when Dart starts, because an app may set its own delegate after
+    /// plugins register.
     private func adoptNotificationCenter() {
         let center = UNUserNotificationCenter.current()
         guard center.delegate !== self else { return }
@@ -208,6 +233,16 @@ public final class FlutwirePlugin: NSObject, FlutterPlugin, UNUserNotificationCe
             break
         }
         completionHandler()
+    }
+
+    public func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        openSettingsFor notification: UNNotification?
+    ) {
+        if let previous = previousDelegate,
+           previous.responds(to: #selector(UNUserNotificationCenterDelegate.userNotificationCenter(_:openSettingsFor:))) {
+            previous.userNotificationCenter?(center, openSettingsFor: notification)
+        }
     }
 
     // MARK: Actions

@@ -19,6 +19,7 @@ board can be cross-checked against what actually shipped.
 ### Fixed
 
 - `flutwire_dio` allowed `dio` 5.0 and 5.1 but does not compile against them, because `DioException` arrived with 5.2. The constraint is now `^5.2.0` (M34)
+- On iOS and macOS the plugin took over the app's notification delegate as soon as the app launched, in every build, whether or not the app ever started Flutwire. An app that keeps Flutwire in its production build with `init` switched off now keeps its own notification handling untouched: the plugin waits until Flutwire has run in that build, and remembers it did so that a tap on the notification after the app was killed still finds the delegate in place. It also passes the call that opens the system's notification settings on to the delegate it replaced, which it did not before
 
 ### Internal
 
