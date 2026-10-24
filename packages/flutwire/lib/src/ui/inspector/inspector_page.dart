@@ -13,6 +13,7 @@ import '../widgets/empty_state.dart';
 import '../widgets/metric_strip.dart';
 import 'app_bars.dart';
 import 'controller.dart';
+import 'coverage_banner.dart';
 import 'filter_bar.dart';
 import 'pinned_bar.dart';
 import 'recording_row.dart';
@@ -239,6 +240,7 @@ class _InspectorPageState extends State<InspectorPage> {
               onSort: _controller.setSort,
             ),
           ),
+          const SliverToBoxAdapter(child: CoverageBanner()),
           SliverToBoxAdapter(child: MetricStrip(calls: visible)),
           SliverToBoxAdapter(
             child: AnimatedSize(

@@ -11,6 +11,7 @@ board can be cross-checked against what actually shipped.
 
 ### Added
 
+- A line above the list that says when Flutwire may be missing calls, with the reason and what to change: a client or adapter that does not use `dart:io`, an adapter that ran in another isolate, or something that replaced the capture's `HttpOverrides`. It stays out of sight until Flutwire has seen one of them happen, and it names the client or the isolate. `Flutwire.coverage` lists the notes, and an adapter that stands down for the capture reports through `Flutwire.watchStandDown`. The example app has a probe for each case (M24)
 - An example for each adapter, so the package page on pub.dev has one to show (M34)
 - A demo video, screenshots and two diagrams in the README and on the pub.dev page of `flutwire`, taken from the example app running on a device (M36)
 

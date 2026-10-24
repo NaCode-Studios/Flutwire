@@ -3,6 +3,7 @@ import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter/widgets.dart';
 
 import 'config.dart';
+import 'coverage.dart';
 import 'platform/native.dart' show FlutwireNotificationPermission;
 import 'share.dart';
 import 'store/store.dart';
@@ -36,6 +37,10 @@ abstract interface class FlutwireSession {
 
   /// Opens the system page where notifications can be allowed.
   Future<void> openNotificationSettings();
+
+  /// What Flutwire has noticed about its own blind spots, empty while nothing
+  /// is wrong.
+  ValueListenable<List<FlutwireCoverageNote>> get coverage;
 
   /// Whether the inspector is on screen.
   ValueListenable<bool> get inspectorOpen;

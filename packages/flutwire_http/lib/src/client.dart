@@ -30,7 +30,20 @@ class FlutwireClient extends BaseClient {
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
-    if (!force && Flutwire.wireCaptureActive) return _inner.send(request);
+    if (!force && Flutwire.wireCaptureActive) {
+      // The capture is meant to record this call. If the inner client does not
+      // go through dart:io it never will, and Flutwire says so at the end.
+      final watch = Flutwire.watchStandDown(
+        method: request.method,
+        uri: request.url,
+        client: 'FlutwireClient over ${_inner.runtimeType}',
+      );
+      try {
+        return await _inner.send(request);
+      } finally {
+        watch?.finish();
+      }
+    }
     final recorder = Flutwire.begin(
       method: request.method,
       uri: request.url,
