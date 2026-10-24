@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import '../config.dart';
 import '../diagnostics.dart';
 import '../model/call.dart';
+import '../model/message.dart';
 import 'preferences_io.dart';
 import 'store.dart';
 
@@ -19,14 +20,15 @@ import 'store.dart';
 /// calls/<id>.json     the summary of a call: headers, status, timings
 /// bodies/<id>.req     the request body bytes that were kept
 /// bodies/<id>.res     the response body bytes that were kept
+/// messages/<id>.jsonl the messages of a WebSocket or an event stream, a line each
 /// preferences.json    what the user picked in the settings
 /// ```
 ///
-/// A call is written when it ends, bodies first and summary last, through a
-/// temporary file, so a summary on disk always has its bodies and a crash
-/// leaves at worst an orphan body, which the next start sweeps away. Summaries
-/// stay in memory; bodies are read back when a call is opened, and released
-/// again when memory runs short.
+/// A call is written when it ends, bodies and messages first and summary last,
+/// through a temporary file, so a summary on disk always has its bodies and a
+/// crash leaves at worst an orphan body, which the next start sweeps away.
+/// Summaries stay in memory; bodies and messages are read back when a call is
+/// opened, and released again when memory runs short.
 final class DiskFlutwireStore extends MemoryFlutwireStore {
   DiskFlutwireStore._(
     Directory root,
@@ -36,6 +38,7 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
     super.notifyInterval,
   }) : _calls = Directory('${root.path}/calls'),
        _bodies = Directory('${root.path}/bodies'),
+       _messages = Directory('${root.path}/messages'),
        super(
          maxCalls: _config.maxCalls,
          maxBytes: _config.maxMemoryBytes,
@@ -66,6 +69,7 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
   final FileFlutwirePreferences _preferences;
   final Directory _calls;
   final Directory _bodies;
+  final Directory _messages;
 
   /// Ids whose files are complete on disk, which is what makes it safe to let
   /// go of their bodies in memory.
@@ -98,6 +102,7 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
     return call.copyWith(
       request: call.request.copyWith(body: call.request.body.unload()),
       response: response?.copyWith(body: response.body.unload()),
+      messages: call.messages?.unload(),
     );
   }
 
@@ -106,7 +111,10 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
     final call = find(id);
     if (call == null) return null;
     final response = call.response;
-    if (call.request.body.loaded && (response?.body.loaded ?? true)) {
+    final messages = call.messages;
+    if (call.request.body.loaded &&
+        (response?.body.loaded ?? true) &&
+        (messages?.loaded ?? true)) {
       return call;
     }
     await _queue;
@@ -120,6 +128,9 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
       return call.copyWith(
         request: call.request.copyWith(body: request),
         response: response?.copyWith(body: responseBody),
+        messages: messages == null || messages.loaded
+            ? messages
+            : messages.withItems(await _readMessages(id)),
       );
     } on FileSystemException {
       return call;
@@ -141,6 +152,26 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
     }
   }
 
+  Future<List<FlutwireMessage>> _readMessages(int id) async {
+    final List<String> lines;
+    try {
+      lines = await File('${_messages.path}/$id.jsonl').readAsLines();
+    } on PathNotFoundException {
+      return const [];
+    }
+    return [for (final line in lines) ?_message(line)];
+  }
+
+  /// The message a line of a messages file holds, or null for a line that is
+  /// damaged, which a crash in the middle of a write can leave.
+  static FlutwireMessage? _message(String line) {
+    try {
+      return FlutwireMessage.fromJson(jsonDecode(line) as Map<String, Object?>);
+    } on Object {
+      return null;
+    }
+  }
+
   void _enqueue(Future<void> Function() task) {
     _queue = _queue.then((_) => task()).catchError((
       Object error,
@@ -156,6 +187,7 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
 
   Future<void> _write(FlutwireCall call) async {
     await _bodies.create(recursive: true);
+    await _messages.create(recursive: true);
     await _calls.create(recursive: true);
     final id = call.id;
     final request = call.request.body;
@@ -165,6 +197,12 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
     final response = call.response?.body;
     if (response != null && response.loaded && response.bytes.isNotEmpty) {
       await File('${_bodies.path}/$id.res').writeAsBytes(response.bytes);
+    }
+    final messages = call.messages;
+    if (messages != null && messages.loaded && messages.items.isNotEmpty) {
+      await File('${_messages.path}/$id.jsonl').writeAsString(
+        messages.items.map((m) => jsonEncode(m.toJson())).join('\n'),
+      );
     }
     final temporary = File('${_calls.path}/$id.json.tmp');
     await temporary.writeAsString(jsonEncode(call.toJson()), flush: true);
@@ -181,6 +219,7 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
         '${_calls.path}/$id.json.tmp',
         '${_bodies.path}/$id.req',
         '${_bodies.path}/$id.res',
+        '${_messages.path}/$id.jsonl',
       ]) {
         try {
           await File(path).delete();
@@ -194,6 +233,7 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
   Future<void> _load() async {
     await _calls.create(recursive: true);
     await _bodies.create(recursive: true);
+    await _messages.create(recursive: true);
     final loaded = <FlutwireCall>[];
     final known = <int>{};
     await for (final entity in _calls.list()) {
@@ -218,11 +258,13 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
         await entity.delete();
       }
     }
-    // Bodies whose summary never made it to disk.
-    await for (final entity in _bodies.list()) {
-      if (entity is! File) continue;
-      final id = int.tryParse(entity.uri.pathSegments.last.split('.').first);
-      if (id == null || !known.contains(id)) await entity.delete();
+    // Bodies and messages whose summary never made it to disk.
+    for (final directory in [_bodies, _messages]) {
+      await for (final entity in directory.list()) {
+        if (entity is! File) continue;
+        final id = int.tryParse(entity.uri.pathSegments.last.split('.').first);
+        if (id == null || !known.contains(id)) await entity.delete();
+      }
     }
     _persisted.addAll(known);
     seed(loaded);
@@ -264,5 +306,7 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
   }
 
   static int _diskBytes(FlutwireCall call) =>
-      call.request.body.keptBytes + (call.response?.body.keptBytes ?? 0);
+      call.request.body.keptBytes +
+      (call.response?.body.keptBytes ?? 0) +
+      (call.messages?.keptBytes ?? 0);
 }
