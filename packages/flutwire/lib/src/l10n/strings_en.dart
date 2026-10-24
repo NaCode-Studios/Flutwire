@@ -1,4 +1,5 @@
 import '../coverage.dart' show FlutwireGap;
+import '../model/message.dart' show FlutwireMessageKind;
 import 'strings.dart';
 
 /// English.
@@ -581,4 +582,52 @@ class FlutwireStringsEn extends FlutwireStrings {
 
   @override
   String get resentBadge => 'Sent again';
+
+  @override
+  String get tabMessages => 'Messages';
+
+  @override
+  String get tabEvents => 'Events';
+
+  @override
+  String messageCount(int count) =>
+      count == 1 ? '1 message' : '$count messages';
+
+  @override
+  String eventCount(int count) => count == 1 ? '1 event' : '$count events';
+
+  @override
+  String get messagesAll => 'All';
+
+  @override
+  String get messagesSent => 'Sent';
+
+  @override
+  String get messagesReceived => 'Received';
+
+  @override
+  String messagesDropped(int count) => count == 1
+      ? 'One earlier message was not kept.'
+      : '$count earlier messages were not kept.';
+
+  @override
+  String get messagesEmpty => 'Nothing has crossed yet';
+
+  @override
+  String messageKind(FlutwireMessageKind kind) => switch (kind) {
+    FlutwireMessageKind.text => 'Text',
+    FlutwireMessageKind.binary => 'Binary',
+    FlutwireMessageKind.ping => 'Ping',
+    FlutwireMessageKind.pong => 'Pong',
+    FlutwireMessageKind.close => 'Close',
+    FlutwireMessageKind.event => 'Event',
+  };
+
+  @override
+  String get messageNoPayload => 'No payload';
+
+  @override
+  String get messageUndecoded =>
+      'This message was compressed and could not be decompressed, so its '
+      'bytes are shown as they came.';
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../model/call.dart';
+import '../../model/message.dart';
 import '../../util/format.dart';
 import '../scope.dart';
 import '../theme/tokens.dart';
@@ -45,8 +46,12 @@ class CallTile extends StatelessWidget {
     final t = context.fw;
     final title = call.graphql?.operationName ?? _path(call);
     final slow = call.duration.inMilliseconds;
+    // A conversation lasts as long as its two sides have something to say, so
+    // its length says nothing about how slow it was.
     final durationColor = call.isPending
         ? t.copperTone
+        : call.messages != null
+        ? t.muted
         : slow >= 3000
         ? t.error
         : slow >= 1000
@@ -101,6 +106,16 @@ class CallTile extends StatelessWidget {
                           if (call.graphql != null) ...[
                             const SizedBox(width: 6),
                             _Badge('GQL', t.copperTone),
+                          ],
+                          if (call.messages case final messages?) ...[
+                            const SizedBox(width: 6),
+                            _Badge(
+                              messages.kind ==
+                                      FlutwireConversationKind.eventStream
+                                  ? 'SSE'
+                                  : 'WS',
+                              t.info,
+                            ),
                           ],
                           if (call.resentFrom != null) ...[
                             const SizedBox(width: 6),
