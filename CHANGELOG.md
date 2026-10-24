@@ -11,6 +11,7 @@ board can be cross-checked against what actually shipped.
 
 ### Added
 
+- Any call can be opened in an editor, changed and sent again. The editor starts from the method, address, header fields and body that were recorded. A value the redaction masked was never kept, so it is flagged and not sent unless it is typed again. What goes out is recorded as a new call that names the one it repeats, marked in the list and linked from its overview. It needs `dart:io`, so the web does not offer it (M15)
 - A line above the list that says when Flutwire may be missing calls, with the reason and what to change: a client or adapter that does not use `dart:io`, an adapter that ran in another isolate, or something that replaced the capture's `HttpOverrides`. It stays out of sight until Flutwire has seen one of them happen, and it names the client or the isolate. `Flutwire.coverage` lists the notes, and an adapter that stands down for the capture reports through `Flutwire.watchStandDown`. The example app has a probe for each case (M24)
 - An example for each adapter, so the package page on pub.dev has one to show (M34)
 
