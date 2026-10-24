@@ -55,6 +55,23 @@ A WebSocket opened through `dart:io` is one call that stays open. Its Messages t
 
 `dart:io` makes one client for all WebSockets the first time one is opened, so a WebSocket opened before `Flutwire.init` is not seen: call `init` first thing in `main`. On the web the browser opens WebSockets itself, and none is recorded there.
 
+## Protobuf and MessagePack
+
+A MessagePack body is shown as indented text with no setup, and a Protobuf body is shown by field number. To see Protobuf with names and types, give the decoder the descriptor set that `protoc` writes with `--descriptor_set_out=api.desc --include_imports`:
+
+```dart
+WidgetsFlutterBinding.ensureInitialized();
+final descriptors = (await rootBundle.load('assets/api.desc')).buffer.asUint8List();
+
+await Flutwire.init(
+  config: FlutwireConfig(
+    decoders: [FlutwireProtobufDecoder(descriptorSet: descriptors)],
+  ),
+);
+```
+
+A gRPC or gRPC-web call finds its message types from the method in its address. For any other Protobuf body, say which message it is with `messageType: (call, {required isRequest}) => 'demo.Person'`, and a body whose type is not known is shown by field number. The decoders run when a body is opened, so what the app sends and receives is not touched.
+
 ## Sending a call again
 
 Open a call and tap the replay button in the top bar. The method, the address, the header fields and the body can all be changed, and Send makes the request. What goes out is recorded as a new call that names the one it repeats.
@@ -76,7 +93,7 @@ await Flutwire.init(
 );
 ```
 
-Authorization headers and the values of cookies are masked by default; the names and attributes of cookies stay readable. A masked value is replaced when the call is recorded, so it never reaches memory, disk, a notification or an export. The other options are documented on `FlutwireConfig`: how much of a body is kept, where the history is stored, what the notification lists, the language, the look, and decoders for formats the inspector does not read, such as Protobuf.
+Authorization headers and the values of cookies are masked by default; the names and attributes of cookies stay readable. A masked value is replaced when the call is recorded, so it never reaches memory, disk, a notification or an export. The other options are documented on `FlutwireConfig`: how much of a body is kept, where the history is stored, what the notification lists, the language, the look, and decoders for formats the inspector does not read on its own.
 
 ## Clients that bypass `dart:io`
 
