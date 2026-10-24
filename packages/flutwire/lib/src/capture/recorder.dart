@@ -251,6 +251,27 @@ final class FlutwireCallRecorder {
     return out.stream;
   }
 
+  /// Says how a rule of the user's touched the call, which the list marks.
+  void intercepted(FlutwireIntercept how) => _guard(() {
+    if (_finished) return;
+    _call = _call.copyWith(intercept: how);
+    _publish(finished: false);
+  });
+
+  /// Ends a call that was held at a breakpoint and did not go out as the app
+  /// made it, for the reason in [message]. It ends in [state], which is
+  /// `failed` when the app is told the request did not work and `cancelled`
+  /// when a changed copy took its place.
+  void endHeld(String message, {required FlutwireCallState state}) =>
+      _guard(() {
+        if (_finished) return;
+        _call = _call.copyWith(intercept: FlutwireIntercept.held);
+        _end(
+          state,
+          error: FlutwireError(type: 'Breakpoint', message: message),
+        );
+      });
+
   /// Ends the call: the response, if any, was read to its end.
   void complete() => _end(FlutwireCallState.completed);
 

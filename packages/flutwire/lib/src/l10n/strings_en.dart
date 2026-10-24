@@ -752,4 +752,136 @@ class FlutwireStringsEn extends FlutwireStrings {
 
   @override
   String get dockResize => 'Resize the inspector';
+
+  @override
+  String get interceptTitle => 'Mocks and breakpoints';
+
+  @override
+  String get interceptOffBody =>
+      'Mocks and breakpoints change what the app sends and receives, so they '
+      'stay off until the app turns them on.';
+
+  @override
+  String get interceptOffHow => 'Turn them on when Flutwire starts:';
+
+  @override
+  String get interceptUnavailableBody =>
+      'They work through the dart:io capture, and this app has none: it runs '
+      'on the web, or captureDartIo is off.';
+
+  @override
+  String get interceptEmptyTitle => 'No rules yet';
+
+  @override
+  String get interceptEmptyBody =>
+      'Open a call and choose "Mock this response" or "Break on requests '
+      'like this", or add a rule here.';
+
+  @override
+  String get interceptNewMock => 'New mock';
+
+  @override
+  String get interceptNewBreakpoint => 'New breakpoint';
+
+  @override
+  String get interceptMock => 'Mock';
+
+  @override
+  String get interceptBreakpoint => 'Breakpoint';
+
+  @override
+  String interceptRulesActive(int count) =>
+      count == 1 ? '1 rule in force' : '$count rules in force';
+
+  @override
+  String get ruleDelete => 'Delete the rule';
+
+  @override
+  String get ruleDeleteTitle => 'Delete this rule?';
+
+  @override
+  String get ruleEditMock => 'Mock';
+
+  @override
+  String get ruleEditBreakpoint => 'Breakpoint';
+
+  @override
+  String get rulePattern => 'Address';
+
+  @override
+  String get rulePatternHelp =>
+      'Use * for any run of characters, as in api.test/items/*. Without a '
+      'scheme it matches the host and the path.';
+
+  @override
+  String get rulePatternBad => 'Write what the address looks like.';
+
+  @override
+  String get ruleMethodAny => 'Any method';
+
+  @override
+  String get ruleName => 'Name (optional)';
+
+  @override
+  String get ruleStatus => 'Status code';
+
+  @override
+  String get ruleStatusBad => 'A status is a number from 100 to 599.';
+
+  @override
+  String get ruleDelay => 'Delay in milliseconds';
+
+  @override
+  String get ruleBodyNotText =>
+      'The stored body is not text, so it is served as it was recorded.';
+
+  @override
+  String get heldTitle => 'Held request';
+
+  @override
+  String get heldNote =>
+      'This request is held at a breakpoint and the app is waiting for it. '
+      'Change what you like and send it on, or stop it.';
+
+  @override
+  String get heldStop => 'Stop the request';
+
+  @override
+  String get heldGone => 'This request is not held any more.';
+
+  @override
+  String heldBanner(int count) => count == 1
+      ? '1 request is held at a breakpoint'
+      : '$count requests are held at a breakpoint';
+
+  @override
+  String get heldReview => 'Review';
+
+  @override
+  String get mockThisResponse => 'Mock this response';
+
+  @override
+  String get breakOnThis => 'Break on requests like this';
+
+  @override
+  String get badgeMocked => 'MOCK';
+
+  @override
+  String get badgeEdited => 'EDITED';
+
+  @override
+  String get badgeHeld => 'HELD';
+
+  @override
+  String get interceptFact => 'Intercepted';
+
+  @override
+  String get interceptedMocked =>
+      'Answered by a mock rule, and nothing was sent';
+
+  @override
+  String get interceptedEdited => 'Held at a breakpoint and sent with changes';
+
+  @override
+  String get interceptedHeld => 'Held at a breakpoint and not sent as it was';
 }

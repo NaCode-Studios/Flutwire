@@ -9,6 +9,7 @@ import 'config.dart';
 import 'coverage.dart';
 import 'dock.dart';
 import 'engine.dart';
+import 'intercept/interception.dart';
 import 'isolate_bridge.dart';
 import 'l10n/lookup.dart';
 import 'notify/notifier.dart';
@@ -71,7 +72,16 @@ final class FlutwireRuntime implements FlutwireSession {
       config,
       defaultPath: () async => info?.storagePath,
     );
-    final engine = FlutwireEngine(config: config, store: store);
+    // Changing traffic goes through the dart:io capture and nothing else, so
+    // there is nothing to turn on without it.
+    final interception = config.interception && config.captureDartIo && !kIsWeb
+        ? FlutwireInterception(store.preferences)
+        : null;
+    final engine = FlutwireEngine(
+      config: config,
+      store: store,
+      interception: interception,
+    );
     final launcher = InspectorLauncher(navigatorKey);
     final dock = FlutwireDock(store.preferences);
     final notifier = FlutwireNotifier(
@@ -105,6 +115,9 @@ final class FlutwireRuntime implements FlutwireSession {
         known: info?.permission ?? FlutwireNotificationPermission.unsupported,
       );
     }
+    // A request that is held holds up the app, so the inspector comes forward.
+    interception?.breakpoints.onHeld = (_) =>
+        unawaited(runtime.openInspector());
     launcher.isOpen.addListener(runtime._syncInspectorOpen);
     dock.addListener(runtime._syncInspectorOpen);
     runtime._actions = native.actions.listen(runtime._onAction);
@@ -170,6 +183,9 @@ final class FlutwireRuntime implements FlutwireSession {
 
   @override
   Future<int?> resend(FlutwireResend request) => sendAgain(engine, request);
+
+  @override
+  FlutwireInterception? get interception => engine.interception;
 
   @override
   final FlutwireDock dock;

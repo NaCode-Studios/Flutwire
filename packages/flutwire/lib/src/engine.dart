@@ -4,6 +4,7 @@ import 'capture/recorder.dart';
 import 'config.dart';
 import 'coverage.dart';
 import 'diagnostics.dart';
+import 'intercept/interception.dart';
 import 'model/body.dart';
 import 'model/call.dart';
 import 'model/headers.dart';
@@ -22,6 +23,7 @@ final class FlutwireEngine implements FlutwireRecorderHost {
     required this.config,
     FlutwireStore? store,
     DateTime Function()? clock,
+    this.interception,
   }) : store =
            store ??
            MemoryFlutwireStore(
@@ -39,6 +41,7 @@ final class FlutwireEngine implements FlutwireRecorderHost {
     required void Function(FlutwireCall call, {required bool finished}) forward,
     DateTime Function()? clock,
   }) : store = _ForwardedStore(),
+       interception = null,
        _forward = forward,
        _clock = clock ?? DateTime.now;
 
@@ -47,6 +50,11 @@ final class FlutwireEngine implements FlutwireRecorderHost {
 
   /// Where recorded calls go.
   final FlutwireStore store;
+
+  /// The rules that answer a request or hold it, and the requests held, or null
+  /// when the app did not turn interception on. Only the `dart:io` capture
+  /// acts on them.
+  final FlutwireInterception? interception;
 
   final void Function(FlutwireCall call, {required bool finished})? _forward;
   final DateTime Function() _clock;
@@ -253,6 +261,7 @@ final class FlutwireEngine implements FlutwireRecorderHost {
 
   /// Releases the store and the listeners.
   Future<void> dispose() async {
+    interception?.dispose();
     paused.dispose();
     coverage.dispose();
     await store.dispose();

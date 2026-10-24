@@ -12,10 +12,11 @@ import 'package:flutwire_dio/flutwire_dio.dart';
 import 'package:flutwire_http/flutwire_http.dart';
 import 'package:http/http.dart' as http;
 
-/// The whole integration is the next line. Everything below only makes calls,
-/// so there is something to look at.
+/// The whole integration is the next line, and `interception` is the one
+/// option it turns on, so that a mock or a breakpoint can be tried on the calls
+/// below. Everything below only makes calls, so there is something to look at.
 Future<void> main() async {
-  await Flutwire.init();
+  await Flutwire.init(config: const FlutwireConfig(interception: true));
   runApp(const ExampleApp());
 }
 

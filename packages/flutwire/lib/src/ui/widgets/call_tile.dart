@@ -126,6 +126,22 @@ class CallTile extends StatelessWidget {
                               semanticLabel: context.strings.resentBadge,
                             ),
                           ],
+                          if (call.intercept case final how?) ...[
+                            const SizedBox(width: 6),
+                            _Badge(
+                              switch (how) {
+                                FlutwireIntercept.mocked =>
+                                  context.strings.badgeMocked,
+                                FlutwireIntercept.edited =>
+                                  context.strings.badgeEdited,
+                                FlutwireIntercept.held =>
+                                  context.strings.badgeHeld,
+                              },
+                              how == FlutwireIntercept.mocked
+                                  ? t.copperTone
+                                  : t.warning,
+                            ),
+                          ],
                           if (call.pinned) ...[
                             const SizedBox(width: 6),
                             Icon(

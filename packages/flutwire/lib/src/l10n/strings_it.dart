@@ -762,4 +762,139 @@ class FlutwireStringsIt extends FlutwireStrings {
 
   @override
   String get dockResize => "Ridimensiona l'ispettore";
+
+  @override
+  String get interceptTitle => 'Mock e breakpoint';
+
+  @override
+  String get interceptOffBody =>
+      "I mock e i breakpoint cambiano ciò che l'app invia e riceve, quindi "
+      "restano spenti finché l'app non li accende.";
+
+  @override
+  String get interceptOffHow => 'Accendili quando parte Flutwire:';
+
+  @override
+  String get interceptUnavailableBody =>
+      "Funzionano con la cattura di dart:io, e questa app non ce l'ha: gira "
+      'sul web, oppure captureDartIo è spento.';
+
+  @override
+  String get interceptEmptyTitle => 'Ancora nessuna regola';
+
+  @override
+  String get interceptEmptyBody =>
+      'Apri una chiamata e scegli "Simula questa risposta" o "Ferma le '
+      'richieste come questa", oppure aggiungi una regola qui.';
+
+  @override
+  String get interceptNewMock => 'Nuovo mock';
+
+  @override
+  String get interceptNewBreakpoint => 'Nuovo breakpoint';
+
+  @override
+  String get interceptMock => 'Mock';
+
+  @override
+  String get interceptBreakpoint => 'Breakpoint';
+
+  @override
+  String interceptRulesActive(int count) =>
+      count == 1 ? '1 regola attiva' : '$count regole attive';
+
+  @override
+  String get ruleDelete => 'Elimina la regola';
+
+  @override
+  String get ruleDeleteTitle => 'Eliminare questa regola?';
+
+  @override
+  String get ruleEditMock => 'Mock';
+
+  @override
+  String get ruleEditBreakpoint => 'Breakpoint';
+
+  @override
+  String get rulePattern => 'Indirizzo';
+
+  @override
+  String get rulePatternHelp =>
+      'Usa * per una sequenza qualsiasi di caratteri, come in '
+      'api.test/items/*. Senza schema vale per host e percorso.';
+
+  @override
+  String get rulePatternBad => "Scrivi come è fatto l'indirizzo.";
+
+  @override
+  String get ruleMethodAny => 'Qualsiasi metodo';
+
+  @override
+  String get ruleName => 'Nome (facoltativo)';
+
+  @override
+  String get ruleStatus => 'Codice di stato';
+
+  @override
+  String get ruleStatusBad => 'Uno stato è un numero da 100 a 599.';
+
+  @override
+  String get ruleDelay => 'Ritardo in millisecondi';
+
+  @override
+  String get ruleBodyNotText =>
+      'Il corpo salvato non è testo, quindi viene servito come era stato '
+      'registrato.';
+
+  @override
+  String get heldTitle => 'Richiesta trattenuta';
+
+  @override
+  String get heldNote =>
+      "Questa richiesta è trattenuta a un breakpoint e l'app la sta "
+      'aspettando. Cambia quello che vuoi e mandala avanti, oppure fermala.';
+
+  @override
+  String get heldStop => 'Ferma la richiesta';
+
+  @override
+  String get heldGone => 'Questa richiesta non è più trattenuta.';
+
+  @override
+  String heldBanner(int count) => count == 1
+      ? '1 richiesta è trattenuta a un breakpoint'
+      : '$count richieste sono trattenute a un breakpoint';
+
+  @override
+  String get heldReview => 'Controlla';
+
+  @override
+  String get mockThisResponse => 'Simula questa risposta';
+
+  @override
+  String get breakOnThis => 'Ferma le richieste come questa';
+
+  @override
+  String get badgeMocked => 'MOCK';
+
+  @override
+  String get badgeEdited => 'MODIFICATA';
+
+  @override
+  String get badgeHeld => 'TRATTENUTA';
+
+  @override
+  String get interceptFact => 'Intercettata';
+
+  @override
+  String get interceptedMocked =>
+      'Risposta da una regola mock, non è stato inviato niente';
+
+  @override
+  String get interceptedEdited =>
+      'Trattenuta a un breakpoint e inviata con modifiche';
+
+  @override
+  String get interceptedHeld =>
+      'Trattenuta a un breakpoint e non inviata così com\'era';
 }

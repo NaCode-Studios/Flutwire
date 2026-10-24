@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'config.dart';
 import 'coverage.dart';
 import 'dock.dart';
+import 'intercept/interception.dart';
 import 'platform/native.dart' show FlutwireNotificationPermission;
 import 'resend.dart';
 import 'share.dart';
@@ -53,6 +54,11 @@ abstract interface class FlutwireSession {
   /// or null when it could not be recorded. The call fills in as the answer
   /// arrives.
   Future<int?> resend(FlutwireResend request);
+
+  /// The rules that answer a request or hold it, and the requests held. Null
+  /// where the app did not turn interception on, or cannot have it, as on the
+  /// web.
+  FlutwireInterception? get interception;
 
   /// The panel the inspector can sit in beside the app.
   FlutwireDock get dock;

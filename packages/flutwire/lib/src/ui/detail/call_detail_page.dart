@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../export/export.dart';
+import '../../intercept/rule.dart';
 import '../../model/call.dart';
 import '../../model/cookies.dart';
 import '../../model/headers.dart';
@@ -11,6 +12,7 @@ import '../../store/store.dart';
 import '../../util/format.dart';
 import '../actions.dart';
 import '../compare/compare_page.dart';
+import '../intercept/rule_editor_page.dart';
 import '../resend/resend_page.dart';
 import '../scope.dart';
 import '../shell.dart';
@@ -125,6 +127,19 @@ class _CallDetailPageState extends State<CallDetailPage> {
     );
   }
 
+  /// Opens the editor of a new rule that starts from [call].
+  void _makeRule(FlutwireCall call, FlutwireRuleKind kind) {
+    unawaited(
+      Navigator.of(context).push(
+        shellRoute(
+          context.session,
+          name: 'flutwire/rule',
+          child: RuleEditorPage(kind: kind, from: call),
+        ),
+      ),
+    );
+  }
+
   Future<void> _togglePin(FlutwireCall call) async {
     await _store.setPinned([call.id], pinned: !call.pinned);
     await _load();
@@ -227,6 +242,20 @@ class _CallDetailPageState extends State<CallDetailPage> {
             value: () => unawaited(copyCurl(context, call)),
             child: Text(s.copyCurl),
           ),
+          // Only what went through dart:io can be answered or held.
+          if (session.interception != null &&
+              call.source == FlutwireSource.io) ...[
+            const PopupMenuDivider(),
+            if (call.response != null && call.messages == null)
+              PopupMenuItem(
+                value: () => _makeRule(call, FlutwireRuleKind.mock),
+                child: Text(s.mockThisResponse),
+              ),
+            PopupMenuItem(
+              value: () => _makeRule(call, FlutwireRuleKind.breakpoint),
+              child: Text(s.breakOnThis),
+            ),
+          ],
           const PopupMenuDivider(),
           for (final (format, label) in [
             (FlutwireExportFormat.text, s.shareAsText),

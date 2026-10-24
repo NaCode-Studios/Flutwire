@@ -55,6 +55,12 @@ class OverviewTab extends StatelessWidget {
 
     final request = <_Fact>[
       if (call.resentFrom case final from?) ..._repeated(context, from),
+      if (call.intercept case final how?)
+        _Fact(s.interceptFact, switch (how) {
+          FlutwireIntercept.mocked => s.interceptedMocked,
+          FlutwireIntercept.edited => s.interceptedEdited,
+          FlutwireIntercept.held => s.interceptedHeld,
+        }, color: t.warning),
       _Fact(s.url, call.uri.toString()),
       _Fact(s.method, call.method),
       _Fact(s.started, formatDateTime(call.startedAt)),

@@ -6,6 +6,9 @@ import '../../model/call.dart';
 import '../../session.dart';
 import '../compare/compare_page.dart';
 import '../detail/call_detail_page.dart';
+import '../intercept/held.dart';
+import '../intercept/intercept_banner.dart';
+import '../intercept/rules_page.dart';
 import '../scope.dart';
 import '../shell.dart';
 import '../stats/statistics_page.dart';
@@ -60,6 +63,9 @@ class _InspectorPageState extends State<InspectorPage> {
       _session.store.calls,
       loadCall: _session.store.load,
     );
+    _session.interception?.breakpoints.addListener(_heldChanged);
+    // What is already held when the inspector comes up is looked at too.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _heldChanged());
     // Relative times ("12s", "4m") move on by themselves.
     _clock = Timer.periodic(const Duration(seconds: 5), (_) {
       if (mounted) setState(() => _now = DateTime.now());
@@ -68,6 +74,7 @@ class _InspectorPageState extends State<InspectorPage> {
 
   @override
   void dispose() {
+    _session.interception?.breakpoints.removeListener(_heldChanged);
     _clock?.cancel();
     _debounce?.cancel();
     _controller.dispose();
@@ -184,6 +191,28 @@ class _InspectorPageState extends State<InspectorPage> {
     unawaited(_session.openInspector());
   }
 
+  void _openRules() {
+    unawaited(
+      Navigator.of(context).push(
+        shellRoute(_session, name: 'flutwire/rules', child: const RulesPage()),
+      ),
+    );
+  }
+
+  /// A request held at a breakpoint is what the app is waiting for, so its
+  /// editor opens by itself, once, for each one the inspector learns of.
+  void _heldChanged() {
+    if (!mounted) return;
+    final breakpoints = _session.interception?.breakpoints;
+    if (breakpoints == null) return;
+    for (final held in breakpoints.held) {
+      if (breakpoints.claim(held.id)) {
+        unawaited(Navigator.of(context).push(heldRoute(_session, held)));
+        return;
+      }
+    }
+  }
+
   void _openStatistics() {
     unawaited(
       Navigator.of(context).push(
@@ -274,6 +303,7 @@ class _InspectorPageState extends State<InspectorPage> {
               searching: _searching,
               onToggleSearch: _toggleSearch,
               onOpenStatistics: _openStatistics,
+              onOpenRules: _openRules,
               onClearHistory: () => unawaited(_confirmClear()),
               docked: widget.docked,
               onDock: _dock,
@@ -293,6 +323,7 @@ class _InspectorPageState extends State<InspectorPage> {
             ),
           ),
           const SliverToBoxAdapter(child: CoverageBanner()),
+          const SliverToBoxAdapter(child: InterceptBanner()),
           SliverToBoxAdapter(child: MetricStrip(calls: visible)),
           SliverToBoxAdapter(
             child: AnimatedSize(

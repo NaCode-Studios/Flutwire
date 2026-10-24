@@ -22,6 +22,7 @@ class InspectorAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.searching,
     required this.onToggleSearch,
     required this.onOpenStatistics,
+    required this.onOpenRules,
     required this.onClearHistory,
     required this.docked,
     required this.onDock,
@@ -45,6 +46,9 @@ class InspectorAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   /// Opens the statistics.
   final VoidCallback onOpenStatistics;
+
+  /// Opens the rules that answer a request or hold it.
+  final VoidCallback onOpenRules;
 
   /// Asks to clear the history.
   final VoidCallback onClearHistory;
@@ -141,6 +145,7 @@ class InspectorAppBar extends StatelessWidget implements PreferredSizeWidget {
                 child: Text('${s.exportAll}: ${format.label}'),
               ),
             const PopupMenuDivider(),
+            PopupMenuItem(value: onOpenRules, child: Text(s.interceptTitle)),
             PopupMenuItem(
               value: () => unawaited(showSettingsSheet(context)),
               child: Text(s.settings),

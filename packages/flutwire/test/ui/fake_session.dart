@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutwire/flutwire.dart';
 import 'package:flutwire/src/dock.dart';
+import 'package:flutwire/src/intercept/interception.dart';
 import 'package:flutwire/src/platform/native.dart';
 import 'package:flutwire/src/resend.dart';
 import 'package:flutwire/src/session.dart';
@@ -93,6 +94,10 @@ class FakeSession implements FlutwireSession {
     await onResend?.call(request);
     return resendAnswer;
   }
+
+  /// The rules and the held requests. Tests that need them turn them on.
+  @override
+  FlutwireInterception? interception;
 
   /// The panel the inspector docks into, over the same preferences the history
   /// keeps.
