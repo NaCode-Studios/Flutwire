@@ -102,6 +102,13 @@ final class FlutwireCallRecorder {
 
   /// Reports the response head. Calling it a second time, as a client does
   /// after following a redirect, replaces the first.
+  ///
+  /// A response that has no body ends the call here: the answer to a HEAD
+  /// request, a 204, a 304 and one that says it is empty. A client reads such a
+  /// body only when it wants to, and most never do, so waiting for the stream
+  /// to end would leave the call running for as long as the app does. A
+  /// redirect is left open, because the client may follow it and report the
+  /// head of what it finds.
   void responseHead({
     required int statusCode,
     required FlutwireHeaders headers,
@@ -137,7 +144,11 @@ final class FlutwireCallRecorder {
         compression: compression,
       ),
     );
-    _publish(finished: false);
+    if (_endsAtHead(statusCode, headers)) {
+      _end(FlutwireCallState.completed);
+    } else {
+      _publish(finished: false);
+    }
   });
 
   /// Adds a chunk of the response body.
@@ -283,6 +294,22 @@ final class FlutwireCallRecorder {
   void cancel() => _end(FlutwireCallState.cancelled);
 
   static const Duration _progressInterval = Duration(milliseconds: 200);
+
+  static const Set<int> _redirectStatuses = {301, 302, 303, 307, 308};
+
+  /// Whether nothing can follow the head of this response, so that the call is
+  /// over with it. RFC 9110, section 6.4.1, says which responses have no body.
+  bool _endsAtHead(int statusCode, FlutwireHeaders headers) {
+    // After a protocol switch come the bytes of the new protocol, and a client
+    // may follow a redirect and report the head of what it finds.
+    if (statusCode < 200 || _redirectStatuses.contains(statusCode)) {
+      return false;
+    }
+    return _call.method == 'HEAD' ||
+        statusCode == 204 ||
+        statusCode == 304 ||
+        int.tryParse(headers.first('content-length')?.trim() ?? '') == 0;
+  }
 
   /// The address of a WebSocket as the app wrote it. The handshake is an HTTP
   /// request, so the capture is handed an `http` or `https` address, with a

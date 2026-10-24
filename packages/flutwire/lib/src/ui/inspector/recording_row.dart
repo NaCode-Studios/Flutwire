@@ -46,6 +46,7 @@ class RecordingRow extends StatelessWidget {
                         children: [
                           Pulse(
                             active: !paused,
+                            restartOn: session.store.calls,
                             child: Container(
                               width: 8,
                               height: 8,
