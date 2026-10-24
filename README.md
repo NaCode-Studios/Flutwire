@@ -66,7 +66,7 @@ Flutwire reads traffic and changes it only through the mocks and breakpoints the
 
 In a release build `Flutwire.init` does nothing: no call is recorded, no file is written and no notification is posted. The plugin's native code still ships in the app, like any other plugin's, and stays idle until Flutwire starts: on iOS and macOS it leaves the app's notification delegate alone, and on Android its manifest adds the notification permission to the merged one.
 
-> **Status — `0.1`, alpha.** Minor versions may still break the API until `1.0`. The plan is on [the project board](https://github.com/orgs/NaCode-Studios/projects/13).
+> **Status — `0.2`, alpha.** Minor versions may still break the API until `1.0`. The plan is on [the project board](https://github.com/orgs/NaCode-Studios/projects/13).
 
 ## Why Flutwire
 
@@ -94,6 +94,10 @@ Flutwire
 │   ├── lib/src/model                 a call, its bodies, headers, cookies, multipart parts
 │   ├── lib/src/store                 the history in memory and on disk, and preferences
 │   ├── lib/src/export                cURL, HAR 1.2, text and JSON
+│   ├── lib/src/decode                Protobuf and MessagePack bodies
+│   ├── lib/src/compare               the line diff and the comparison of two calls
+│   ├── lib/src/stats                 the numbers of a history and its timeline
+│   ├── lib/src/intercept             the rules that answer or hold a request, and what is held
 │   ├── lib/src/notify                what the notification says and when it changes
 │   ├── lib/src/ui                    the inspector, the body viewer, settings
 │   ├── android, darwin               the native halves
@@ -106,19 +110,22 @@ Flutwire
 
 | Component | What it does |
 | --- | --- |
-| Capture | Wraps `HttpClient` through `HttpOverrides`, copies the byte streams as they pass and hands the copies to the recorder. The app gets its bytes untouched, in order and at the same pace. |
+| Capture | Wraps `HttpClient` through `HttpOverrides`, copies the byte streams as they pass and hands the copies to the recorder. Unless the app turns interception on, it gets its bytes untouched, in order and at the same pace. |
 | Model | A call with its bodies cut at a limit that keeps the real size, GraphQL operation names, and the redaction policy. |
 | Store | The history in memory and on disk with retention and limits, and what the user picked in the settings. |
 | Export | A call or many as cURL, HAR 1.2, text or JSON, and a body as a file. |
+| Interception | Rules that answer a request with a stored response or hold it until somebody has looked at it. Off until the app asks for it. |
 | Notify | Decides what the notification lists and when it updates. The native halves only relay. |
-| Inspector | The list, the call in full, the body viewer and the settings, in dark and light, in English and Italian. |
+| Inspector | The list, the call in full, the body viewer, two calls side by side, statistics, a dock beside the app and the settings, in dark and light, in English and Italian. |
 | Adapters | The Dio interceptor, the `http` client and the Cloud Functions recorder, for the places `dart:io` does not reach. |
 
 ## Roadmap
 
-**Shipped (`0.1.0`).** Capture, the history on disk, the notification on Android, iOS and macOS, the inspector with the body viewer, export, the adapters and the example app. [`CHANGELOG.md`](CHANGELOG.md) has the detail.
+**Shipped (`0.2.0`).** Editing a call and sending it again, the messages of a WebSocket and of an event stream, comparing two calls, statistics and a timeline, a dock beside the app, mocks and breakpoints, calls made in other isolates, Protobuf and MessagePack bodies, and a note above the list when calls may have gone unseen. [`CHANGELOG.md`](CHANGELOG.md) has the detail.
 
-**Next, `0.2.0`: beyond the interceptor.** Editing and resending a call, WebSocket and server-sent event frames, comparing two calls, mocking a response, calls made from other isolates, statistics and a waterfall, and decoders for Protobuf and MessagePack. The ideas that were turned down, with the reason, are on the board too.
+**Shipped (`0.1.0`).** Capture, the history on disk, the notification on Android, iOS and macOS, the inspector with the body viewer, export, the adapters and the example app.
+
+**Next, `1.0.0`: stabilisation.** A review of the public API so that every public member is documented or made private, and a written stability policy with its deprecation window. gRPC capture comes after `1.0`. The ideas that were turned down, with the reason, are on the board too.
 
 The plan lives on [the project board](https://github.com/orgs/NaCode-Studios/projects/13) and is mirrored as [milestones](https://github.com/NaCode-Studios/Flutwire/milestones).
 

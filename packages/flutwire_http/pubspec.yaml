@@ -2,7 +2,7 @@ name: flutwire_http
 description: >-
   A package:http client for Flutwire. It records the calls that the dart:io
   capture cannot see, such as every call on the web.
-version: 0.1.0
+version: 0.2.0
 repository: https://github.com/NaCode-Studios/Flutwire
 issue_tracker: https://github.com/NaCode-Studios/Flutwire/issues
 funding:
@@ -23,7 +23,7 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
-  flutwire: ^0.1.0
+  flutwire: ^0.2.0
   http: ^1.0.0
 
 dev_dependencies:
