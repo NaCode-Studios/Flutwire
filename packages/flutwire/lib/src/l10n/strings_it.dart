@@ -511,4 +511,83 @@ class FlutwireStringsIt extends FlutwireStrings {
   @override
   String coverageSeen(int count) =>
       count == 1 ? 'Visto una volta' : 'Visto $count volte';
+
+  @override
+  String get resend => 'Modifica e reinvia';
+
+  @override
+  String get send => 'Invia';
+
+  @override
+  String get sending => 'Invio in corso';
+
+  @override
+  String get addHeader => 'Aggiungi header';
+
+  @override
+  String get headerName => 'Nome';
+
+  @override
+  String get headerValue => 'Valore';
+
+  @override
+  String get removeHeader => 'Rimuovi header';
+
+  @override
+  String get hiddenValue => 'Nascosto';
+
+  @override
+  String resendTarget(String host) => 'Invia una richiesta vera a $host.';
+
+  @override
+  String resendHiddenNote(String names) =>
+      'Non vengono inviati, perché Flutwire ne ha nascosto il valore quando '
+      'ha registrato la chiamata: $names. Scrivi un valore per inviarlo.';
+
+  @override
+  String resendBodyCut(String kept, String total) =>
+      "Il corpo è stato tagliato a $kept su $total. Qui c'è solo la parte "
+      'iniziale.';
+
+  @override
+  String resendBinaryBody(String size) =>
+      "Un corpo che non è testo, $size. Viene inviato com'è stato registrato.";
+
+  @override
+  String get resendBinaryCut =>
+      'Del corpo è stata registrata solo una parte, quindi non viene inviato.';
+
+  @override
+  String get resendSendBody => 'Invia il corpo registrato';
+
+  @override
+  String resendBodyHidden(String mask) =>
+      'Alcuni valori del corpo sono stati nascosti quando la chiamata è stata '
+      'registrata e compaiono come $mask. Sostituiscili per inviare quelli '
+      'veri.';
+
+  @override
+  String resendUrlHidden(String mask) =>
+      "Un valore dell'indirizzo è stato nascosto quando la chiamata è stata "
+      'registrata e compare come $mask. Sostituiscilo per inviare quello vero.';
+
+  @override
+  String get resendBadUrl =>
+      'Scrivi un indirizzo completo, per esempio https://example.com/percorso.';
+
+  @override
+  String get resendNotRecorded =>
+      'Inviata, ma Flutwire non è riuscito a registrarla.';
+
+  @override
+  String get resendFailed => 'Non è stato possibile inviare la richiesta.';
+
+  @override
+  String get resentFrom => 'Reinviata da';
+
+  @override
+  String get resentFromGone => 'Una chiamata che non è più nella cronologia';
+
+  @override
+  String get resentBadge => 'Reinviata';
 }
