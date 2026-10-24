@@ -8,6 +8,8 @@ export 'src/capture/recorder.dart' show FlutwireCallRecorder;
 export 'src/capture/redaction.dart';
 export 'src/config.dart';
 export 'src/coverage.dart' show FlutwireCoverageNote, FlutwireGap;
+export 'src/decode/messagepack.dart' show FlutwireMessagePackDecoder;
+export 'src/decode/protobuf_decoder.dart' show FlutwireProtobufDecoder;
 export 'src/engine.dart' show FlutwireStandDown;
 export 'src/export/export.dart' show FlutwireExportFormat, callToJson;
 export 'src/flutwire.dart' show Flutwire;

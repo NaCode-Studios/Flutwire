@@ -7,7 +7,7 @@ import 'package:flutwire/src/config.dart';
 import 'package:flutwire/src/model/body.dart';
 import 'package:flutwire/src/model/call.dart';
 import 'package:flutwire/src/model/headers.dart';
-import 'package:flutwire/src/store/disk_store.dart';
+import 'package:flutwire/src/store/disk_store_io.dart';
 import 'package:flutwire/src/store/open_store.dart';
 import 'package:flutwire/src/store/store.dart';
 

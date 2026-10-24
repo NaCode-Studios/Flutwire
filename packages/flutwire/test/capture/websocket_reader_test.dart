@@ -4,7 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutwire/flutwire.dart';
-import 'package:flutwire/src/capture/messages/websocket_reader.dart';
+import 'package:flutwire/src/capture/messages/websocket_reader_io.dart';
 
 import '../support/websocket_frames.dart';
 

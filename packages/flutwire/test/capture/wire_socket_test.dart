@@ -8,7 +8,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutwire/flutwire.dart';
-import 'package:flutwire/src/capture/wire/wire_socket.dart';
+import 'package:flutwire/src/capture/wire/wire_socket_io.dart';
 import 'package:flutwire/src/engine.dart';
 
 import '../support/websocket_frames.dart';

@@ -4,7 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutwire/flutwire.dart';
-import 'package:flutwire/src/store/disk_store.dart';
+import 'package:flutwire/src/store/disk_store_io.dart';
 
 final epoch = DateTime.utc(2026, 10, 24, 12);
 

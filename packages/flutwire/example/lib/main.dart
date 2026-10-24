@@ -176,6 +176,8 @@ final List<(String, List<Probe>)> groups = [
               client.get(Uri.parse('$_bin/cookies/set?theme=dark&session=abc')),
         ),
       ),
+      Probe('MessagePack', () => _canned(_messagePack, 'application/msgpack')),
+      Probe('Protobuf', () => _canned(_protobuf, 'application/x-protobuf')),
     ],
   ),
   (
@@ -214,6 +216,33 @@ final List<(String, List<Probe>)> groups = [
     ],
   ),
 ];
+
+/// `{"club": "Orion", "members": 3, "tags": ["a", "b"], "founded": 1999.5}`.
+const List<int> _messagePack = [
+  0x84, //
+  0xa4, 0x63, 0x6c, 0x75, 0x62, 0xa5, 0x4f, 0x72, 0x69, 0x6f, 0x6e,
+  0xa7, 0x6d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x73, 0x03,
+  0xa4, 0x74, 0x61, 0x67, 0x73, 0x92, 0xa1, 0x61, 0xa1, 0x62,
+  0xa7, 0x66, 0x6f, 0x75, 0x6e, 0x64, 0x65, 0x64,
+  0xcb, 0x40, 0x9f, 0x3e, 0x00, 0x00, 0x00, 0x00, 0x00,
+];
+
+/// A message of field 1 as "Orion", field 2 as 3 and field 3 as a message of
+/// its own that holds "Vega" in field 1.
+const List<int> _protobuf = [
+  0x0a, 0x05, 0x4f, 0x72, 0x69, 0x6f, 0x6e, //
+  0x10, 0x03,
+  0x1a, 0x06, 0x0a, 0x04, 0x56, 0x65, 0x67, 0x61,
+];
+
+/// Answers with [body] and the media type [type], so that the viewer has
+/// something to decode. The client records the call itself.
+Future<void> _canned(List<int> body, String type) => _safe(
+  () => FlutwireClient(
+    _Canned(body, type),
+    force: true,
+  ).get(Uri.parse('$_todos/club')),
+);
 
 /// Opens a WebSocket to an echo server, sends a text and a binary message, and
 /// closes it, so the inspector has a conversation to list. `dart:io` makes one
@@ -292,6 +321,22 @@ Future<void> _fromAnotherIsolate() async {
   } on Object {
     // The point is the note in the inspector, not the answer.
   }
+}
+
+/// A client that answers every request with the same body.
+class _Canned extends http.BaseClient {
+  _Canned(this.body, this.type);
+
+  final List<int> body;
+  final String type;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async =>
+      http.StreamedResponse(
+        Stream.value(body),
+        200,
+        headers: {'content-type': type},
+      );
 }
 
 /// A client with a transport of its own, as `cronet_http` has: it never

@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutwire/src/config.dart';
-import 'package:flutwire/src/store/disk_store.dart';
+import 'package:flutwire/src/store/disk_store_io.dart';
 import 'package:flutwire/src/store/preferences.dart';
 import 'package:flutwire/src/store/preferences_io.dart';
 

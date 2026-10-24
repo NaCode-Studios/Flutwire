@@ -5,9 +5,9 @@ import 'dart:io';
 import '../../engine.dart';
 import '../../model/call.dart';
 import '../../model/headers.dart';
-import '../messages/websocket_reader.dart';
+import '../messages/websocket_reader_io.dart';
 import '../recorder.dart';
-import 'wire_socket.dart';
+import 'wire_socket_io.dart';
 
 /// Records every call made through `dart:io`, with no setup in the client.
 ///
