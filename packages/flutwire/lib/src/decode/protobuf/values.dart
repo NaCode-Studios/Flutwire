@@ -16,6 +16,9 @@ final class ProtoValues {
   /// Creates a converter that looks types up in [schema], if there is one.
   const ProtoValues(this.schema);
 
+  static final RegExp _lineBreak = RegExp(r'[\t\n\r]');
+  static final RegExp _trailingZeros = RegExp(r'0+$');
+
   /// What the types are, or null to go by field number.
   final ProtoSchema? schema;
 
@@ -249,8 +252,7 @@ final class ProtoValues {
     }
     // Text that has a line break in it is as likely to be the bytes of a
     // message, whose tags are often control characters, as a paragraph.
-    if (text != null &&
-        !(nested != null && RegExp(r'[\t\n\r]').hasMatch(text))) {
+    if (text != null && !(nested != null && _lineBreak.hasMatch(text))) {
       return text;
     }
     return nested ?? DecodedBytes(Uint8List.fromList(bytes));
@@ -294,7 +296,7 @@ final class ProtoValues {
           .abs()
           .toString()
           .padLeft(9, '0')
-          .replaceFirst(RegExp(r'0+$'), '');
+          .replaceFirst(_trailingZeros, '');
       return '$sign${s.abs()}${fraction.isEmpty ? '' : '.$fraction'}s';
     }
     try {

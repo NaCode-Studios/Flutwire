@@ -127,6 +127,8 @@ final class FlutwireMessage {
         )
       : null;
 
+  static final RegExp _whitespace = RegExp(r'\s+');
+
   /// What the message holds in a line or two, for a list or a text export: the
   /// text of a text message or an event, the code and the reason of a close,
   /// and the first bytes, in hex, of anything else.
@@ -134,7 +136,7 @@ final class FlutwireMessage {
     switch (kind) {
       case FlutwireMessageKind.text:
       case FlutwireMessageKind.event:
-        final flat = (text ?? '').replaceAll(RegExp(r'\s+'), ' ').trim();
+        final flat = (text ?? '').replaceAll(_whitespace, ' ').trim();
         return flat.length <= 240 ? flat : '${flat.substring(0, 240)}…';
       case FlutwireMessageKind.close:
         final code = closeCode;

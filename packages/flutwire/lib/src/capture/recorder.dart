@@ -186,7 +186,7 @@ final class FlutwireCallRecorder {
         : FlutwireConversationKind.webSocket;
     final cap = _host.config.maxBodyBytes;
     var bytes = payload is Uint8List ? payload : Uint8List.fromList(payload);
-    if (bytes.length > cap) bytes = Uint8List.fromList(bytes.sublist(0, cap));
+    if (bytes.length > cap) bytes = bytes.sublist(0, cap);
     if (kind == FlutwireMessageKind.text || kind == FlutwireMessageKind.event) {
       bytes = _host.config.redaction.applyToBody(bytes, contentType: null);
     }
