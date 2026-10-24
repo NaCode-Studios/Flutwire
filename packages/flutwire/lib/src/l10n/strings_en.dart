@@ -737,4 +737,19 @@ class FlutwireStringsEn extends FlutwireStrings {
 
   @override
   String get statsReceiving => 'Receiving';
+
+  @override
+  String get dockInspector => 'Dock beside the app';
+
+  @override
+  String get undockInspector => 'Open full screen';
+
+  @override
+  String get dockToBottom => 'Move to the bottom';
+
+  @override
+  String get dockToRight => 'Move to the right';
+
+  @override
+  String get dockResize => 'Resize the inspector';
 }

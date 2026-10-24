@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../dock.dart';
 import '../../export/export.dart';
 import '../actions.dart';
 import '../scope.dart';
@@ -22,6 +23,11 @@ class InspectorAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.onToggleSearch,
     required this.onOpenStatistics,
     required this.onClearHistory,
+    required this.docked,
+    required this.onDock,
+    required this.onUndock,
+    required this.onSwapSide,
+    required this.onCloseDock,
   });
 
   /// What "export all" writes out.
@@ -42,6 +48,22 @@ class InspectorAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   /// Asks to clear the history.
   final VoidCallback onClearHistory;
+
+  /// Whether the inspector is in the panel beside the app rather than full
+  /// screen.
+  final bool docked;
+
+  /// Moves the inspector from the full screen into the panel.
+  final VoidCallback onDock;
+
+  /// Moves the inspector from the panel to the full screen.
+  final VoidCallback onUndock;
+
+  /// Moves the panel to the other side of the app.
+  final VoidCallback onSwapSide;
+
+  /// Closes the panel.
+  final VoidCallback onCloseDock;
 
   @override
   Size get preferredSize =>
@@ -97,6 +119,20 @@ class InspectorAppBar extends StatelessWidget implements PreferredSizeWidget {
                 session.paused.value ? s.resumeRecording : s.pauseRecording,
               ),
             ),
+            // The panel's own actions come first: a panel is short, and the menu
+            // scrolls inside it.
+            if (docked) ...[
+              PopupMenuItem(value: onUndock, child: Text(s.undockInspector)),
+              PopupMenuItem(
+                value: onSwapSide,
+                child: Text(
+                  session.dock.side == FlutwireDockSide.right
+                      ? s.dockToBottom
+                      : s.dockToRight,
+                ),
+              ),
+            ] else if (session.dock.canDock)
+              PopupMenuItem(value: onDock, child: Text(s.dockInspector)),
             const PopupMenuDivider(),
             for (final format in FlutwireExportFormat.values)
               PopupMenuItem(
@@ -115,6 +151,12 @@ class InspectorAppBar extends StatelessWidget implements PreferredSizeWidget {
             ),
           ],
         ),
+        if (docked)
+          IconButton(
+            tooltip: s.close,
+            icon: const Icon(Icons.close_rounded),
+            onPressed: onCloseDock,
+          ),
       ],
     );
   }

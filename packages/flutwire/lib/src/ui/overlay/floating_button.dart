@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import '../../config.dart';
 import '../../platform/native.dart';
 import '../../session.dart';
+import '../dock/dock_layout.dart';
 import '../scope.dart';
 import '../shell.dart';
 import '../theme/tokens.dart';
@@ -92,7 +93,15 @@ class _FlutwireOverlayState extends State<FlutwireOverlay> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Positioned.fill(child: widget.child),
+        // Laid out the same way whether or not there is a session and a dock,
+        // so that the app is never rebuilt when one arrives.
+        Positioned.fill(
+          child: ValueListenableBuilder<FlutwireSession?>(
+            valueListenable: widget.session,
+            builder: (context, session, _) =>
+                DockLayout(session: session, app: widget.child),
+          ),
+        ),
         ValueListenableBuilder<FlutwireSession?>(
           valueListenable: widget.session,
           builder: (context, session, _) =>

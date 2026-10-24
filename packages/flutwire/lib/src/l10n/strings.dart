@@ -695,4 +695,21 @@ abstract class FlutwireStrings {
 
   /// The part of a bar that is the answer coming in.
   String get statsReceiving;
+
+  // The docked inspector
+
+  /// Puts the inspector in a panel beside the app.
+  String get dockInspector;
+
+  /// Takes the inspector out of the panel and opens it full screen.
+  String get undockInspector;
+
+  /// Moves the docked inspector under the app.
+  String get dockToBottom;
+
+  /// Moves the docked inspector to the right of the app.
+  String get dockToRight;
+
+  /// What the strip that resizes the panel is called, for a screen reader.
+  String get dockResize;
 }

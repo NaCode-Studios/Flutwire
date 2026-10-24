@@ -105,6 +105,10 @@ abstract final class Flutwire {
   /// notification to open the inspector from, and it shows only there unless
   /// [FlutwireConfig.floatingButton] says otherwise.
   ///
+  /// It is also what lets the inspector be docked: put in a panel beside the
+  /// app, under it or to its right, which can be dragged to any size, so that
+  /// the app and its traffic are in view together.
+  ///
   /// ```dart
   /// MaterialApp(builder: Flutwire.builder, ...)
   /// ```

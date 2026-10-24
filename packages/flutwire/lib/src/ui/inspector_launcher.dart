@@ -24,11 +24,17 @@ final class InspectorLauncher {
 
   /// Opens the inspector for [session].
   ///
-  /// With a [context] the navigator above it is used. Without one, the
-  /// navigator from the key, or else the outermost one in the widget tree.
-  /// Does nothing if the inspector is already open or there is no navigator.
+  /// It goes into the panel beside the app when the user left it there, and
+  /// otherwise onto the screen. With a [context] the navigator above it is
+  /// used. Without one, the navigator from the key, or else the outermost one
+  /// in the widget tree. Does nothing if the inspector is already open or there
+  /// is no navigator.
   Future<void> open(FlutwireSession session, [BuildContext? context]) async {
-    if (_isOpen.value) return;
+    if (_isOpen.value || session.dock.isOpen) return;
+    if (session.dock.wantsDock) {
+      session.dock.open();
+      return;
+    }
     final navigator = context != null
         ? Navigator.maybeOf(context, rootNavigator: true)
         : (_navigatorKey.currentState ?? _outermostNavigator());

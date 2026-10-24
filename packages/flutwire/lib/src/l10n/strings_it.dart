@@ -747,4 +747,19 @@ class FlutwireStringsIt extends FlutwireStrings {
 
   @override
   String get statsReceiving => 'Ricezione';
+
+  @override
+  String get dockInspector => "Aggancia accanto all'app";
+
+  @override
+  String get undockInspector => 'Apri a schermo intero';
+
+  @override
+  String get dockToBottom => 'Sposta in basso';
+
+  @override
+  String get dockToRight => 'Sposta a destra';
+
+  @override
+  String get dockResize => "Ridimensiona l'ispettore";
 }

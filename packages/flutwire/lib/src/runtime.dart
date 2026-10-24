@@ -7,6 +7,7 @@ import 'capture/wire/send_again.dart';
 import 'capture/wire/wire.dart';
 import 'config.dart';
 import 'coverage.dart';
+import 'dock.dart';
 import 'engine.dart';
 import 'isolate_bridge.dart';
 import 'l10n/lookup.dart';
@@ -31,6 +32,7 @@ final class FlutwireRuntime implements FlutwireSession {
     required FlutwireNative native,
     required FlutwireNotifier notifier,
     required InspectorLauncher launcher,
+    required this.dock,
     required this.sharing,
     required ThemeMode themeMode,
     required void Function()? uninstallWire,
@@ -71,6 +73,7 @@ final class FlutwireRuntime implements FlutwireSession {
     );
     final engine = FlutwireEngine(config: config, store: store);
     final launcher = InspectorLauncher(navigatorKey);
+    final dock = FlutwireDock(store.preferences);
     final notifier = FlutwireNotifier(
       native: native,
       store: store,
@@ -83,6 +86,7 @@ final class FlutwireRuntime implements FlutwireSession {
       native: native,
       notifier: notifier,
       launcher: launcher,
+      dock: dock,
       sharing: FlutwireSharing(
         native: native,
         store: store,
@@ -101,6 +105,8 @@ final class FlutwireRuntime implements FlutwireSession {
         known: info?.permission ?? FlutwireNotificationPermission.unsupported,
       );
     }
+    launcher.isOpen.addListener(runtime._syncInspectorOpen);
+    dock.addListener(runtime._syncInspectorOpen);
     runtime._actions = native.actions.listen(runtime._onAction);
     runtime._isolates = FlutwireIsolateBridge.listen(engine);
     switch (await native.consumeInitialAction()) {
@@ -166,7 +172,15 @@ final class FlutwireRuntime implements FlutwireSession {
   Future<int?> resend(FlutwireResend request) => sendAgain(engine, request);
 
   @override
-  ValueListenable<bool> get inspectorOpen => _launcher.isOpen;
+  final FlutwireDock dock;
+
+  final ValueNotifier<bool> _inspectorOpen = ValueNotifier(false);
+
+  @override
+  ValueListenable<bool> get inspectorOpen => _inspectorOpen;
+
+  void _syncInspectorOpen() =>
+      _inspectorOpen.value = _launcher.isOpen.value || dock.isOpen;
 
   @override
   Future<void> openInspector([BuildContext? context]) {
@@ -193,6 +207,8 @@ final class FlutwireRuntime implements FlutwireSession {
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
+    _launcher.isOpen.removeListener(_syncInspectorOpen);
+    dock.removeListener(_syncInspectorOpen);
     _uninstallWire?.call();
     _isolates?.close();
     await _actions?.cancel();
@@ -200,6 +216,8 @@ final class FlutwireRuntime implements FlutwireSession {
     await _native.dispose();
     await engine.dispose();
     _launcher.dispose();
+    dock.dispose();
+    _inspectorOpen.dispose();
     themeMode.dispose();
   }
 }

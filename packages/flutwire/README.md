@@ -49,6 +49,8 @@ MaterialApp(
 );
 ```
 
+The same builder lets the inspector dock. Choose "Dock beside the app" in its menu and it moves into a panel to the right of the app on a wide screen and under it on a phone, so the app and its traffic are in view together. Drag the strip between the two to resize it, or move the panel to the other side from its menu. Flutwire keeps the side and the size, and the next time the notification or the shortcut opens the inspector it docks again until "Open full screen" says otherwise.
+
 ## WebSockets and event streams
 
 A WebSocket opened through `dart:io` is one call that stays open. Its Messages tab lists every message and control frame in the order it crossed, which way it went, how big it was and when, and a compressed message is shown after it is decompressed. An event stream (`text/event-stream`) lists its events as they complete, with their names and ids, and the raw stream stays the body of the response. Only the latest 1000 messages are kept, and the tab says how many came before them.

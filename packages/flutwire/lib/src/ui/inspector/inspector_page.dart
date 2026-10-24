@@ -23,8 +23,12 @@ import 'recording_row.dart';
 /// The inspector: the history as a list, with search, filters, order and a
 /// selection. On a wide screen the call that is open sits beside the list.
 class InspectorPage extends StatefulWidget {
-  /// Creates the inspector.
-  const InspectorPage({super.key});
+  /// Creates the inspector. [docked] says it sits in the panel beside the app,
+  /// which gives its top bar the actions of the panel.
+  const InspectorPage({super.key, this.docked = false});
+
+  /// Whether the inspector is in the panel beside the app.
+  final bool docked;
 
   @override
   State<InspectorPage> createState() => _InspectorPageState();
@@ -168,6 +172,18 @@ class _InspectorPageState extends State<InspectorPage> {
     );
   }
 
+  /// Moves from the full screen into the panel beside the app.
+  void _dock() {
+    Navigator.of(context).pop();
+    _session.dock.open();
+  }
+
+  /// Moves from the panel to the full screen.
+  void _undock() {
+    _session.dock.leave();
+    unawaited(_session.openInspector());
+  }
+
   void _openStatistics() {
     unawaited(
       Navigator.of(context).push(
@@ -259,6 +275,11 @@ class _InspectorPageState extends State<InspectorPage> {
               onToggleSearch: _toggleSearch,
               onOpenStatistics: _openStatistics,
               onClearHistory: () => unawaited(_confirmClear()),
+              docked: widget.docked,
+              onDock: _dock,
+              onUndock: _undock,
+              onSwapSide: _session.dock.swapSide,
+              onCloseDock: _session.dock.close,
             ),
       // The recording row and the numbers scroll away with the list, so a phone
       // keeps its height for the calls. The filters stay.
