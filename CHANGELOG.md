@@ -9,6 +9,10 @@ board can be cross-checked against what actually shipped.
 
 ## [Unreleased]
 
+### Internal
+
+- The release workflow looks up the archive of each package by the version of the tag, for the attestation and for the record on the Packages panel. It used the latest version that pub.dev lists, which can still be the previous one for minutes after an upload, and on 1.0.0 it was for two of the four packages when the record job read it
+
 ## [1.0.0] - 2026-10-24
 
 ### Added

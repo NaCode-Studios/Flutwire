@@ -157,17 +157,25 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # The archive of the tagged version, looked up by that version. The page of
+      # a package names its `latest`, and that can still be the previous version
+      # for minutes after an upload: on 1.0.0 it was for two of the four packages
+      # when the record job read it. Read here, it would attest the archive that
+      # was already attested and leave the new one without.
       - name: Collect the published archives
         run: |
+          VERSION="${GITHUB_REF_NAME#v}"
           : > checksums.txt
           for pubspec in packages/*/pubspec.yaml; do
             grep -q '^publish_to: none' "$pubspec" && continue
             pkg=$(basename "$(dirname "$pubspec")")
-            curl -sf "https://pub.dev/api/packages/$pkg" > meta.json || {
-              echo "::error::pub.dev did not answer for $pkg"; exit 1; }
-            sha=$(jq -re '.latest.archive_sha256' meta.json)
-            ver=$(jq -re '.latest.version' meta.json)
-            echo "$sha  $pkg-$ver.tar.gz" >> checksums.txt
+            for _ in $(seq 1 40); do
+              curl -sf "https://pub.dev/api/packages/$pkg/versions/$VERSION" > meta.json && break
+              sleep 15
+            done
+            sha=$(jq -re '.archive_sha256' meta.json) || {
+              echo "::error::pub.dev has no $pkg $VERSION"; exit 1; }
+            echo "$sha  $pkg-$VERSION.tar.gz" >> checksums.txt
           done
           [ -s checksums.txt ] || { echo "::error::no publishable package found"; exit 1; }
           cat checksums.txt
@@ -200,18 +208,25 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # The archive of the tagged version, looked up by that version, because the
+      # `latest` of a package can still be the previous one for minutes after an
+      # upload and the record would then name an archive that already has one.
       - name: Record the published archives
         env:
           GH_TOKEN: ${{ secrets.ARTIFACT_METADATA_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
+          VERSION="${GITHUB_REF_NAME#v}"
           for pubspec in packages/*/pubspec.yaml; do
             grep -q '^publish_to: none' "$pubspec" && continue
             pkg=$(basename "$(dirname "$pubspec")")
-            curl -sf "https://pub.dev/api/packages/$pkg" > meta.json || {
-              echo "::warning::pub.dev did not answer for $pkg"; continue; }
-            sha=$(jq -re '.latest.archive_sha256' meta.json)
-            url=$(jq -re '.latest.archive_url' meta.json)
-            ver=$(jq -re '.latest.version' meta.json)
+            for _ in $(seq 1 40); do
+              curl -sf "https://pub.dev/api/packages/$pkg/versions/$VERSION" > meta.json && break
+              sleep 15
+            done
+            sha=$(jq -re '.archive_sha256' meta.json) || {
+              echo "::warning::pub.dev has no $pkg $VERSION"; continue; }
+            url=$(jq -re '.archive_url' meta.json)
+            ver="$VERSION"
             if gh api "/orgs/${GITHUB_REPOSITORY_OWNER}/artifacts/sha256:$sha/metadata/storage-records" \
                  --silent 2>/dev/null; then
               echo "already recorded: $pkg $ver"
