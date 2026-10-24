@@ -1,0 +1,2 @@
+# The fixtures are bytes that tests compare exactly, so git never converts them.
+packages/flutwire/test/fixtures/** -text

@@ -22,3 +22,9 @@ indent_size = 2
 
 [*.md]
 trim_trailing_whitespace = false
+
+[packages/flutwire/test/fixtures/**]
+# Bytes that a test compares exactly, with no final newline to add or trailing
+# space to trim.
+insert_final_newline = false
+trim_trailing_whitespace = false
