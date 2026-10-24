@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutwire/flutwire.dart';
 import 'package:flutwire/src/ui/compare/compare_page.dart';
 import 'package:flutwire/src/ui/inspector/inspector_page.dart';
+import 'package:flutwire/src/ui/stats/statistics_page.dart';
 import 'package:flutwire/src/ui/widgets/toggle_chip.dart';
 
 import 'body/helpers.dart' show spyOnClipboard;
@@ -195,6 +196,16 @@ void main() {
       expect(find.text('/files/7'), findsOneWidget);
       expect(find.text('/items/9'), findsNothing);
     });
+  });
+
+  testWidgets('the statistics open from the top bar', (tester) async {
+    await open(tester);
+
+    await tester.tap(find.byTooltip('Statistics'));
+    await settle(tester);
+
+    expect(find.byType(StatisticsPage), findsOneWidget);
+    expect(find.text('Summary'), findsOneWidget);
   });
 
   group('selection', () {

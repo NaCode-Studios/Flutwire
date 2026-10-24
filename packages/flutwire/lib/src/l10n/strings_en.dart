@@ -689,4 +689,52 @@ class FlutwireStringsEn extends FlutwireStrings {
 
   @override
   String get compareWithOriginal => 'Compare with the original';
+
+  @override
+  String get statistics => 'Statistics';
+
+  @override
+  String get statsSummary => 'Summary';
+
+  @override
+  String get statsTimeline => 'Timeline';
+
+  @override
+  String get statsErrorRate => 'Error rate';
+
+  @override
+  String get statsMedian => 'Median';
+
+  @override
+  String get statsP95 => '95th percentile';
+
+  @override
+  String get statsSlowest => 'Slowest calls';
+
+  @override
+  String get statsHosts => 'Error rate by host';
+
+  @override
+  String statsHostLine(int calls, int failed) =>
+      '${calls == 1 ? '1 call' : '$calls calls'}, $failed failed';
+
+  @override
+  String statsMoreHosts(int count) => '$count more hosts';
+
+  @override
+  String get statsNoHost => '(no host)';
+
+  @override
+  String statsPeak(int count) =>
+      count <= 1 ? 'One at a time' : 'Up to $count at once';
+
+  @override
+  String statsShowingLatest(int shown, int total) =>
+      'The latest $shown of $total calls';
+
+  @override
+  String get statsWaiting => 'Waiting';
+
+  @override
+  String get statsReceiving => 'Receiving';
 }

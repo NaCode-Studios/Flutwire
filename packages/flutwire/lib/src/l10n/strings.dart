@@ -648,4 +648,51 @@ abstract class FlutwireStrings {
 
   /// Opens a comparison of a call that was sent again with the call it repeats.
   String get compareWithOriginal;
+
+  // Statistics
+
+  /// The action that opens the statistics, and the title of the screen.
+  String get statistics;
+
+  /// The numbers of the session, as a tab.
+  String get statsSummary;
+
+  /// The calls laid out on one time line, as a tab.
+  String get statsTimeline;
+
+  /// The share of calls that went wrong.
+  String get statsErrorRate;
+
+  /// The time half of the calls came in under.
+  String get statsMedian;
+
+  /// The time nineteen calls in twenty came in under.
+  String get statsP95;
+
+  /// The heading of the slowest calls.
+  String get statsSlowest;
+
+  /// The heading of the hosts, with how often their calls fail.
+  String get statsHosts;
+
+  /// How many calls went to a host and how many of them failed.
+  String statsHostLine(int calls, int failed);
+
+  /// How many hosts the list leaves out.
+  String statsMoreHosts(int count);
+
+  /// What a host with no name is called.
+  String get statsNoHost;
+
+  /// How many calls were in flight at once, at the most.
+  String statsPeak(int count);
+
+  /// The timeline holds the latest calls only.
+  String statsShowingLatest(int shown, int total);
+
+  /// The part of a bar that is the wait for the first byte.
+  String get statsWaiting;
+
+  /// The part of a bar that is the answer coming in.
+  String get statsReceiving;
 }

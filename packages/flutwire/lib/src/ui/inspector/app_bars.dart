@@ -20,6 +20,7 @@ class InspectorAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.wide,
     required this.searching,
     required this.onToggleSearch,
+    required this.onOpenStatistics,
     required this.onClearHistory,
   });
 
@@ -35,6 +36,9 @@ class InspectorAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   /// Shows or hides the search field.
   final VoidCallback onToggleSearch;
+
+  /// Opens the statistics.
+  final VoidCallback onOpenStatistics;
 
   /// Asks to clear the history.
   final VoidCallback onClearHistory;
@@ -75,6 +79,11 @@ class InspectorAppBar extends StatelessWidget implements PreferredSizeWidget {
             searching ? Icons.search_off_rounded : Icons.search_rounded,
           ),
           onPressed: onToggleSearch,
+        ),
+        IconButton(
+          tooltip: s.statistics,
+          icon: const Icon(Icons.bar_chart_rounded),
+          onPressed: onOpenStatistics,
         ),
         // Each entry carries what it does, so the menu is one list.
         PopupMenuButton<VoidCallback>(

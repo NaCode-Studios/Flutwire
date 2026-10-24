@@ -8,6 +8,7 @@ import '../compare/compare_page.dart';
 import '../detail/call_detail_page.dart';
 import '../scope.dart';
 import '../shell.dart';
+import '../stats/statistics_page.dart';
 import '../theme/tokens.dart';
 import '../widgets/call_tile.dart';
 import '../widgets/empty_state.dart';
@@ -167,6 +168,18 @@ class _InspectorPageState extends State<InspectorPage> {
     );
   }
 
+  void _openStatistics() {
+    unawaited(
+      Navigator.of(context).push(
+        shellRoute(
+          _session,
+          name: 'flutwire/statistics',
+          child: const StatisticsPage(),
+        ),
+      ),
+    );
+  }
+
   /// Opens the two selected calls side by side, the older one on the left.
   void _compareSelected() {
     final ids = _controller.selection.toList()..sort();
@@ -244,6 +257,7 @@ class _InspectorPageState extends State<InspectorPage> {
               wide: wide,
               searching: _searching,
               onToggleSearch: _toggleSearch,
+              onOpenStatistics: _openStatistics,
               onClearHistory: () => unawaited(_confirmClear()),
             ),
       // The recording row and the numbers scroll away with the list, so a phone

@@ -82,6 +82,10 @@ A value the redaction masked was never kept, so it is flagged and sent only if y
 
 Long-press a call to select it, select a second one, and the compare button in the top bar sets them side by side: the status, the time, the query, the header fields and both bodies, with what differs marked and what is the same left out until you ask for it. JSON and XML are laid out before they are compared, so a change of indentation is not a difference. A call that was sent again compares with the call it repeats from its overview.
 
+## Statistics and the timeline
+
+The chart button in the top bar opens the statistics: how many calls went wrong, the average, the median and the 95th percentile of their times, the slowest calls, and how often the calls to each host fail. The Timeline tab lays the latest hundred calls on one time line, pale while a call waited for its first byte and solid while the answer came in, so calls that overlapped can be seen to. A WebSocket or an event stream takes no part in the times, because it stays open for as long as it has something to say.
+
 ## Calls from other isolates
 
 Overrides belong to one isolate, so a call made with `Isolate.run` or `compute` is not seen unless the isolate takes part. `Flutwire.run` and `Flutwire.compute` stand in for the two and record what the isolate sends, with the redaction and the size limit of the app:
