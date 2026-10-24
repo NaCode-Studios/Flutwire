@@ -169,7 +169,10 @@ final class HeldHttpClientRequest extends ForwardingHttpClientRequest {
     }
     final unchanged = _sameToSend(answer, sent, body);
     final target = unchanged ? recorder : _recordChanged(answer);
-    if (!unchanged) {
+    if (unchanged) {
+      // It is the same call, and how long it took includes the time it was held.
+      recorder?.intercepted(FlutwireIntercept.held);
+    } else {
       recorder?.endHeld(
         target == null
             ? 'Held at a breakpoint and sent with changes.'

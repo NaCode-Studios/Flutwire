@@ -895,6 +895,5 @@ class FlutwireStringsIt extends FlutwireStrings {
       'Trattenuta a un breakpoint e inviata con modifiche';
 
   @override
-  String get interceptedHeld =>
-      'Trattenuta a un breakpoint e non inviata così com\'era';
+  String get interceptedHeld => 'Trattenuta a un breakpoint';
 }

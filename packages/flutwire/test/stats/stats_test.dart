@@ -15,6 +15,7 @@ FlutwireCall _call(
   int requestBytes = 0,
   int responseBytes = 0,
   bool conversation = false,
+  FlutwireIntercept? intercept,
 }) {
   final pending = state == FlutwireCallState.pending;
   final begun = _start.add(Duration(milliseconds: atMillis));
@@ -52,6 +53,7 @@ FlutwireCall _call(
             keptBytes: 0,
           )
         : null,
+    intercept: intercept,
   );
 }
 
@@ -122,6 +124,26 @@ void main() {
       expect(stats.failed, 1);
       expect(stats.average, const Duration(milliseconds: 100));
       expect(stats.slowest.map((c) => c.id), [1]);
+    });
+
+    test('keeps a call that was held at a breakpoint out of the times', () {
+      final stats = SessionStats.of([
+        _call(1, millis: 100),
+        _call(
+          2,
+          status: null,
+          millis: 70000,
+          intercept: FlutwireIntercept.held,
+        ),
+        _call(3, millis: 300, intercept: FlutwireIntercept.edited),
+      ]);
+
+      // The one that was held still counts as a call, and it failed.
+      expect(stats.total, 3);
+      expect(stats.failed, 1);
+      expect(stats.average, const Duration(milliseconds: 200));
+      expect(stats.slowest.map((c) => c.id), [3, 1]);
+      expect(stats.hosts.single.average, const Duration(milliseconds: 200));
     });
 
     test('lists the slowest first, and no more than asked for', () {
@@ -214,6 +236,53 @@ void main() {
       expect(waterfall.total, 8);
       expect(waterfall.isCut, isTrue);
       expect(waterfall.rows.first.offset, Duration.zero);
+    });
+
+    test('leaves out what came before the latest long pause', () {
+      final waterfall = Waterfall.of([
+        _call(1, atMillis: 0),
+        _call(2, atMillis: 500),
+        _call(3, atMillis: 600000),
+        _call(4, atMillis: 600200),
+      ], now: _start.add(const Duration(minutes: 11)));
+
+      expect(waterfall.rows.map((r) => r.call.id), [3, 4]);
+      expect(waterfall.total, 4);
+      expect(waterfall.isCut, isTrue);
+      expect(waterfall.rows.first.offset, Duration.zero);
+      expect(waterfall.span, const Duration(milliseconds: 300));
+    });
+
+    test('keeps a call that was still running through the pause', () {
+      final waterfall = Waterfall.of([
+        _call(1, atMillis: 0, millis: 700000),
+        _call(2, atMillis: 600000),
+      ], now: _start.add(const Duration(minutes: 12)));
+
+      expect(waterfall.rows.map((r) => r.call.id), [1, 2]);
+      expect(waterfall.isCut, isFalse);
+    });
+
+    test('takes a pause to be as long as it was told', () {
+      final calls = [_call(1, atMillis: 0), _call(2, atMillis: 5000)];
+      final at = _start.add(const Duration(seconds: 10));
+
+      expect(
+        Waterfall.of(
+          calls,
+          now: at,
+          lull: const Duration(seconds: 3),
+        ).rows.map((r) => r.call.id),
+        [2],
+      );
+      expect(
+        Waterfall.of(
+          calls,
+          now: at,
+          lull: const Duration(seconds: 10),
+        ).rows.map((r) => r.call.id),
+        [1, 2],
+      );
     });
 
     test('draws a call that has not ended as lasting until now', () {

@@ -883,5 +883,5 @@ class FlutwireStringsEn extends FlutwireStrings {
   String get interceptedEdited => 'Held at a breakpoint and sent with changes';
 
   @override
-  String get interceptedHeld => 'Held at a breakpoint and not sent as it was';
+  String get interceptedHeld => 'Held at a breakpoint';
 }

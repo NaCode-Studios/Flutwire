@@ -91,8 +91,9 @@ enum FlutwireIntercept {
   /// replaced is the one it repeats.
   edited,
 
-  /// The request was held at a breakpoint and did not go as it was: it was
-  /// stopped there, or sent again with changes as another call.
+  /// The request was held at a breakpoint. It was stopped there, sent on as it
+  /// was, or sent again with changes as another call. How long the call took
+  /// includes the time somebody looked at it.
   held,
 }
 

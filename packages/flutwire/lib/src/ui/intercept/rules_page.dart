@@ -207,9 +207,14 @@ class _RuleTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // The path is what tells two rules for one host apart, so
+                      // the address wraps over three lines before it is cut,
+                      // and stays with its method on the first.
                       Text(
-                        rule.label,
-                        maxLines: 1,
+                        rule.name.isEmpty
+                            ? rule.label.replaceFirst(' ', '\u00a0')
+                            : rule.label,
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: t.mono(
                           size: 12.5,

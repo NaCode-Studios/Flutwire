@@ -178,6 +178,9 @@ double _along(Duration at, Duration span) =>
     span.inMicroseconds == 0 ? 0 : at.inMicroseconds / span.inMicroseconds;
 
 class _AxisPainter extends CustomPainter {
+  /// The room kept between two labels.
+  static const double _labelGap = 8;
+
   _AxisPainter({
     required this.span,
     required this.ticks,
@@ -195,6 +198,7 @@ class _AxisPainter extends CustomPainter {
     final paint = Paint()
       ..color = line
       ..strokeWidth = 1;
+    var free = 0.0;
     for (final tick in ticks) {
       final x = _along(tick, span) * size.width;
       canvas.drawLine(
@@ -207,11 +211,14 @@ class _AxisPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       )..layout();
       // A label stays inside the bar area, so the first sits at the start and
-      // the last ends at the end.
+      // the last ends at the end. One that would run into the one before it,
+      // as the long labels of a span of hours do, is left out.
       final left = (x - label.width / 2).clamp(0.0, size.width - label.width);
-      label
-        ..paint(canvas, Offset(left, 1))
-        ..dispose();
+      if (left >= free) {
+        label.paint(canvas, Offset(left, 1));
+        free = left + label.width + _labelGap;
+      }
+      label.dispose();
     }
   }
 

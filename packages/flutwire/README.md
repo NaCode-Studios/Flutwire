@@ -86,7 +86,7 @@ Long-press a call to select it, select a second one, and the compare button in t
 
 ## Statistics and the timeline
 
-The chart button in the top bar opens the statistics: how many calls went wrong, the average, the median and the 95th percentile of their times, the slowest calls, and how often the calls to each host fail. The Timeline tab lays the latest hundred calls on one time line, pale while a call waited for its first byte and solid while the answer came in, so calls that overlapped can be seen to. A WebSocket or an event stream takes no part in the times, because it stays open for as long as it has something to say.
+The chart button in the top bar opens the statistics: how many calls went wrong, the average, the median and the 95th percentile of their times, the slowest calls, and how often the calls to each host fail. The Timeline tab lays the latest hundred calls on one time line, pale while a call waited for its first byte and solid while the answer came in, so calls that overlapped can be seen to. Calls from before a pause of two minutes are left out, so that yesterday's history does not squeeze today's calls into a corner. A call that was held at a breakpoint is counted but takes no part in the times, because it took as long as somebody looked at it. A WebSocket or an event stream takes no part in the times, because it stays open for as long as it has something to say.
 
 ## Calls from other isolates
 

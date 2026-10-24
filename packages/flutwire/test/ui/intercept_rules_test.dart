@@ -66,6 +66,10 @@ FlutwireRule _breakpoint(FlutwireInterception interception, String pattern) {
   return rule;
 }
 
+/// A rule's label as the list sets it: the method stays with the address when
+/// the line breaks, which a space between them would not make it do.
+String _asListed(String label) => label.replaceFirst(' ', '\u00a0');
+
 Future<void> _openRules(WidgetTester tester, FakeSession session) async {
   setScreen(tester, const Size(420, 900));
   await tester.pumpWidget(inspectorApp(session, const RulesPage()));
@@ -131,10 +135,10 @@ void main() {
       _breakpoint(interception, 'api.test/new/*');
       await _openRules(tester, session);
 
-      expect(find.text('ANY api.test/new/*'), findsOneWidget);
+      expect(find.text(_asListed('ANY api.test/new/*')), findsOneWidget);
       expect(find.text('Old'), findsOneWidget);
       expect(
-        tester.getTopLeft(find.text('ANY api.test/new/*')).dy,
+        tester.getTopLeft(find.text(_asListed('ANY api.test/new/*'))).dy,
         lessThan(tester.getTopLeft(find.text('Old')).dy),
       );
       expect(find.text('Breakpoint'), findsOneWidget);
@@ -189,11 +193,24 @@ void main() {
       expect(rule.kind, FlutwireRuleKind.breakpoint);
       expect(rule.pattern, 'api.test/login');
       expect(rule.method, isNull);
-      expect(find.text('ANY api.test/login'), findsOneWidget);
+      expect(find.text(_asListed('ANY api.test/login')), findsOneWidget);
     });
   });
 
   group('the editor of a rule', () {
+    testWidgets('has a Save button as wide as the bar it sits in', (
+      tester,
+    ) async {
+      await _openEditor(tester, _session(), kind: FlutwireRuleKind.mock);
+
+      final save = find.ancestor(
+        of: find.text('Save'),
+        matching: find.byWidgetPredicate((widget) => widget is FilledButton),
+      );
+      // The screen is 420 wide and the bar keeps 16 on each side.
+      expect(tester.getSize(save).width, 420 - 32);
+    });
+
     testWidgets('starts a breakpoint from a call', (tester) async {
       final session = _session();
       final call = makeCall(

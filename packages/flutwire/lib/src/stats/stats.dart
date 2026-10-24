@@ -8,8 +8,10 @@ import '../model/call.dart';
 /// take, which are the slowest and which hosts fail most.
 ///
 /// A WebSocket or an event stream stays open for as long as it has something to
-/// say, so how long it lasts says nothing about latency. It counts as a call,
-/// and a failed one counts as a failure, but it takes no part in the times.
+/// say, so how long it lasts says nothing about latency. A call that was held
+/// at a breakpoint took as long as somebody looked at it, which says as little.
+/// Such a call counts as a call, and a failed one counts as a failure, but it
+/// takes no part in the times.
 @immutable
 final class SessionStats {
   const SessionStats._({
@@ -42,7 +44,10 @@ final class SessionStats {
       final judged = _isJudged(call);
       if (judged) decided++;
       if (call.isError) failed++;
-      final isTimed = !call.isPending && call.messages == null;
+      final isTimed =
+          !call.isPending &&
+          call.messages == null &&
+          call.intercept != FlutwireIntercept.held;
       if (isTimed) timed.add(call);
       final tally = byHost.putIfAbsent(call.host, _HostTally.new);
       tally.calls++;
@@ -225,6 +230,10 @@ final class WaterfallRow {
 
 /// The latest calls laid out on one time line, so that calls that overlapped
 /// can be seen to.
+///
+/// What came before a pause of [Waterfall.of]'s `lull` or more is left out. A
+/// history that is kept from one run to the next holds yesterday's calls, and
+/// they would squeeze today's into a corner of a line that is hours long.
 @immutable
 final class Waterfall {
   const Waterfall._({
@@ -234,18 +243,22 @@ final class Waterfall {
     required this.peak,
   });
 
-  /// Lays out the latest [limit] of [calls]. A call that has not ended is
+  /// Lays out the latest [limit] of [calls], from after the latest pause of
+  /// [lull] or more in which no call was running. A call that has not ended is
   /// drawn as lasting until [now].
   factory Waterfall.of(
     Iterable<FlutwireCall> calls, {
     required DateTime now,
     int limit = 100,
+    Duration lull = const Duration(minutes: 2),
   }) {
     final all = calls.toList();
     final latest = [...all]..sort((a, b) => a.startedAt.compareTo(b.startedAt));
-    final shown = latest.length > limit
-        ? latest.sublist(latest.length - limit)
-        : latest;
+    final shown = _afterLastLull(
+      latest.length > limit ? latest.sublist(latest.length - limit) : latest,
+      now,
+      lull,
+    );
     if (shown.isEmpty) {
       return Waterfall._(
         rows: const [],
@@ -291,6 +304,31 @@ final class Waterfall {
 
   /// Whether some of the calls are not in the timeline.
   bool get isCut => rows.length < total;
+
+  /// What is left of [sorted], the calls in the order they began, once what
+  /// came before the latest pause longer than [lull] is taken off. A call that
+  /// was still running through a pause bridges it.
+  static List<FlutwireCall> _afterLastLull(
+    List<FlutwireCall> sorted,
+    DateTime now,
+    Duration lull,
+  ) {
+    if (sorted.isEmpty) return sorted;
+    // The latest end among the calls that began up to each one.
+    final reaching = <DateTime>[];
+    var latestEnd = sorted.first.startedAt;
+    for (final call in sorted) {
+      final end = call.endedAt ?? now;
+      if (end.isAfter(latestEnd)) latestEnd = end;
+      reaching.add(latestEnd);
+    }
+    for (var i = sorted.length - 1; i > 0; i--) {
+      if (sorted[i].startedAt.difference(reaching[i - 1]) > lull) {
+        return sorted.sublist(i);
+      }
+    }
+    return sorted;
+  }
 
   static Duration _lasted(FlutwireCall call, DateTime now) {
     final end = call.endedAt ?? now;

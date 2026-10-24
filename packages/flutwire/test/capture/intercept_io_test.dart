@@ -457,7 +457,8 @@ void main() {
       final recorded = await settled();
       expect(recorded, hasLength(1));
       expect(recorded.single.state, FlutwireCallState.completed);
-      expect(recorded.single.intercept, isNull);
+      // It was held, even though it went as it was, and the list says so.
+      expect(recorded.single.intercept, FlutwireIntercept.held);
       expect(recorded.single.request.body.text, 'hello');
       expect(recorded.single.response!.body.text, contains('"hello"'));
     });
