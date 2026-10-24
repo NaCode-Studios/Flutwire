@@ -8,14 +8,14 @@ import 'package:flutwire/src/intercept/breakpoints.dart';
 Future<FlutwireHeldRequest?> _hold(
   FlutwireBreakpoints breakpoints, {
   String path = '/a',
-  String? rule,
+  String? ruleId,
 }) => breakpoints
     .hold(
       method: 'POST',
       uri: Uri.parse('https://api.test$path'),
       headers: FlutwireHeaders.fromMap({'x-id': '1'}),
       body: Uint8List.fromList([1, 2]),
-      rule: rule,
+      ruleId: ruleId,
     )
     .answer;
 
@@ -119,9 +119,9 @@ void main() {
     final seen = <FlutwireHeldRequest>[];
     breakpoints.onHeld = seen.add;
 
-    unawaited(_hold(breakpoints, rule: 'Login'));
+    unawaited(_hold(breakpoints, ruleId: 'r1'));
 
-    expect(seen.single.rule, 'Login');
+    expect(seen.single.ruleId, 'r1');
     expect(seen.single.id, breakpoints.held.single.id);
   });
 

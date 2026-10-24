@@ -292,8 +292,6 @@ class _InspectorPageState extends State<InspectorPage> {
               docked: widget.docked,
               onDock: _dock,
               onUndock: _undock,
-              onSwapSide: _session.dock.swapSide,
-              onCloseDock: _session.dock.close,
             ),
       // The recording row and the numbers scroll away with the list, so a phone
       // keeps its height for the calls. The filters stay.

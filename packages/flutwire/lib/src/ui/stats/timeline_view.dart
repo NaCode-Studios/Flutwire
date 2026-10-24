@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
 import '../../stats/stats.dart';
@@ -208,13 +209,18 @@ class _AxisPainter extends CustomPainter {
       // A label stays inside the bar area, so the first sits at the start and
       // the last ends at the end.
       final left = (x - label.width / 2).clamp(0.0, size.width - label.width);
-      label.paint(canvas, Offset(left, 1));
+      label
+        ..paint(canvas, Offset(left, 1))
+        ..dispose();
     }
   }
 
   @override
   bool shouldRepaint(_AxisPainter old) =>
-      old.span != span || old.line != line || old.ticks != ticks;
+      old.span != span ||
+      old.line != line ||
+      old.style != style ||
+      !listEquals(old.ticks, ticks);
 }
 
 class _BarPainter extends CustomPainter {
@@ -285,5 +291,7 @@ class _BarPainter extends CustomPainter {
       old.row != row ||
       old.span != span ||
       old.color != color ||
-      old.pending != pending;
+      old.line != line ||
+      old.pending != pending ||
+      !listEquals(old.ticks, ticks);
 }

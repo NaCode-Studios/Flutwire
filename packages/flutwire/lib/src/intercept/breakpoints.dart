@@ -16,7 +16,7 @@ final class FlutwireHeldRequest {
     required this.headers,
     required this.body,
     required this.since,
-    this.rule,
+    this.ruleId,
   });
 
   /// Names the request while it is held.
@@ -38,8 +38,8 @@ final class FlutwireHeldRequest {
   /// When the request was stopped.
   final DateTime since;
 
-  /// The label of the breakpoint that stopped it.
-  final String? rule;
+  /// The id of the breakpoint that stopped it, or null when none is named.
+  final String? ruleId;
 
   /// A copy with the given parts replaced.
   FlutwireHeldRequest copyWith({
@@ -54,7 +54,7 @@ final class FlutwireHeldRequest {
     headers: headers ?? this.headers,
     body: body ?? this.body,
     since: since,
-    rule: rule,
+    ruleId: ruleId,
   );
 }
 
@@ -103,7 +103,7 @@ final class FlutwireBreakpoints extends ChangeNotifier {
     required Uri uri,
     required FlutwireHeaders headers,
     required Uint8List body,
-    String? rule,
+    String? ruleId,
     DateTime? now,
   }) {
     if (_disposed) return FlutwireHoldTicket(0, Future.value());
@@ -114,7 +114,7 @@ final class FlutwireBreakpoints extends ChangeNotifier {
       headers: headers,
       body: body,
       since: now ?? DateTime.now(),
-      rule: rule,
+      ruleId: ruleId,
     );
     final hold = _Hold(request);
     _holds[request.id] = hold;

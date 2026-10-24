@@ -39,6 +39,7 @@ FlutwireHoldTicket _hold(
   String url = 'https://api.test/orders',
   Map<String, String> headers = const {'x-demo': '1'},
   String body = '{"qty":1}',
+  String? ruleId,
 }) => session.interception!.breakpoints.hold(
   method: method,
   uri: Uri.parse(url),
@@ -47,7 +48,7 @@ FlutwireHoldTicket _hold(
     'content-type': 'application/json',
   }),
   body: Uint8List.fromList(utf8.encode(body)),
-  rule: 'ANY api.test/*',
+  ruleId: ruleId,
 );
 
 Future<void> _openInspector(WidgetTester tester, FakeSession session) async {
@@ -227,6 +228,23 @@ void main() {
 
       expect(find.byType(ResendPage, skipOffstage: false), findsOneWidget);
       expect(find.text('https://api.test/second'), findsOneWidget);
+    });
+
+    testWidgets('closes its editor when its breakpoint is switched off', (
+      tester,
+    ) async {
+      final session = _session();
+      await _openInspector(tester, session);
+      final rule = _breakpoint(session.interception!, 'api.test/*');
+      final ticket = _hold(session, ruleId: rule.id);
+      await settle(tester);
+      expect(find.byType(ResendPage), findsOneWidget);
+
+      session.interception!.rules.setEnabled(rule.id, enabled: false);
+      await settle(tester);
+
+      expect((await ticket.answer)?.uri.path, '/orders');
+      expect(find.byType(ResendPage, skipOffstage: false), findsNothing);
     });
 
     testWidgets('can be sent with a header taken away', (tester) async {

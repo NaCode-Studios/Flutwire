@@ -824,16 +824,33 @@ void main() {
 
     test('says which breakpoint holds a request', () async {
       start();
-      breakpoint('127.0.0.1:*/echo');
+      final rule = breakpoint('127.0.0.1:*/echo');
       final client = HttpClient();
 
       final answer = post(client, '/echo');
       await until(() => interception.breakpoints.held.isNotEmpty);
 
-      expect(interception.breakpoints.held.single.rule, 'ANY 127.0.0.1:*/echo');
+      expect(interception.breakpoints.held.single.ruleId, rule.id);
       interception.breakpoints.stopAll();
       await answer.then<void>((_) {}, onError: (Object _) {});
     });
+
+    test(
+      'goes on as it was when the breakpoint that holds it is off',
+      () async {
+        start();
+        final rule = breakpoint('127.0.0.1:*/echo');
+        final client = HttpClient();
+
+        final answer = post(client, '/echo');
+        await until(() => interception.breakpoints.held.isNotEmpty);
+        interception.rules.setEnabled(rule.id, enabled: false);
+
+        expect(jsonDecode(await answer), containsPair('body', 'hello'));
+        expect(received, hasLength(1));
+        expect(interception.breakpoints.held, isEmpty);
+      },
+    );
   });
 
   test('a breakpoint hold is a typed ticket', () {

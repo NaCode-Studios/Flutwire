@@ -146,7 +146,7 @@ final class HeldHttpClientRequest extends ForwardingHttpClientRequest {
       uri: inner.uri,
       headers: sent,
       body: body,
-      rule: rule.label,
+      ruleId: rule.id,
     );
     _heldId = ticket.id;
     final answer = await ticket.answer;

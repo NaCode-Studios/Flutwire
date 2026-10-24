@@ -27,8 +27,6 @@ class InspectorAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.docked,
     required this.onDock,
     required this.onUndock,
-    required this.onSwapSide,
-    required this.onCloseDock,
   });
 
   /// What "export all" writes out.
@@ -62,12 +60,6 @@ class InspectorAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   /// Moves the inspector from the panel to the full screen.
   final VoidCallback onUndock;
-
-  /// Moves the panel to the other side of the app.
-  final VoidCallback onSwapSide;
-
-  /// Closes the panel.
-  final VoidCallback onCloseDock;
 
   @override
   Size get preferredSize =>
@@ -128,7 +120,7 @@ class InspectorAppBar extends StatelessWidget implements PreferredSizeWidget {
             if (docked) ...[
               PopupMenuItem(value: onUndock, child: Text(s.undockInspector)),
               PopupMenuItem(
-                value: onSwapSide,
+                value: session.dock.swapSide,
                 child: Text(
                   session.dock.side == FlutwireDockSide.right
                       ? s.dockToBottom
@@ -160,7 +152,7 @@ class InspectorAppBar extends StatelessWidget implements PreferredSizeWidget {
           IconButton(
             tooltip: s.close,
             icon: const Icon(Icons.close_rounded),
-            onPressed: onCloseDock,
+            onPressed: session.dock.close,
           ),
       ],
     );
