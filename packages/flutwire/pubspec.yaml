@@ -15,6 +15,26 @@ topics:
   - inspector
   - notifications
 
+# Taken from the example app on a device. The first one is the picture the
+# package list shows.
+screenshots:
+  - description: The notification in the shade lists the latest calls and opens the inspector.
+    path: screenshots/shade.png
+  - description: The list of calls, with status, method, host and timing, and the totals on top.
+    path: screenshots/list.png
+  - description: A JSON body as a tree that collapses and expands.
+    path: screenshots/body-json.png
+  - description: Search across URLs, status codes, headers and the text of bodies.
+    path: screenshots/search.png
+  - description: Credentials are masked when a call is recorded, so they never reach the disk.
+    path: screenshots/headers.png
+  - description: XML, HTML and text are colour-coded, and forms, images and bytes have their own views.
+    path: screenshots/body-xml.png
+  - description: The light look.
+    path: screenshots/list-light.png
+  - description: The same notification on iOS, on the lock screen.
+    path: screenshots/lock-screen-ios.jpg
+
 environment:
   sdk: ^3.9.0
   flutter: ">=3.35.0"
