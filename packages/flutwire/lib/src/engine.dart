@@ -81,9 +81,10 @@ final class FlutwireEngine implements FlutwireRecorderHost {
   }) {
     try {
       final upper = method.toUpperCase();
-      if (resentFrom == null ? !_shouldRecord(upper, uri) : !config.isActive) {
-        return null;
-      }
+      final record = resentFrom == null
+          ? _shouldRecord(upper, uri)
+          : config.isActive;
+      if (!record) return null;
       final redaction = config.redaction;
       final call = FlutwireCall(
         id: _nextId(),

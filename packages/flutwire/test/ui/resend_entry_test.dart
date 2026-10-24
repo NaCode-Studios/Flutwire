@@ -43,6 +43,27 @@ void main() {
       expect(find.byTooltip('Edit and resend'), findsNothing);
     });
 
+    FlutwireCall holding(FlutwireConversationKind kind) => makeCall(1).copyWith(
+      messages: FlutwireMessages(
+        kind: kind,
+        items: const [],
+        total: 0,
+        keptBytes: 0,
+      ),
+    );
+
+    testWidgets('is not offered for a WebSocket', (tester) async {
+      await openDetail(tester, holding(FlutwireConversationKind.webSocket));
+
+      expect(find.byTooltip('Edit and resend'), findsNothing);
+    });
+
+    testWidgets('is offered for an event stream', (tester) async {
+      await openDetail(tester, holding(FlutwireConversationKind.eventStream));
+
+      expect(find.byTooltip('Edit and resend'), findsOneWidget);
+    });
+
     testWidgets('is not offered for a callable function', (tester) async {
       await openDetail(
         tester,

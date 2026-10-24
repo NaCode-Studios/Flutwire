@@ -13,7 +13,7 @@
 
 When an app misbehaves on a phone, the call that explains it is usually out of reach. The console shows only what a logger was told to print. A proxy needs a certificate on the device and a changed Wi-Fi setting. Every HTTP client in the app has to be wired by hand before it says anything, and when the app is killed the evidence goes with it.
 
-Flutwire records the calls an app makes, keeps them on the device and lists the latest ones in the notification shade. Tapping it opens the inspector, and each call opens in full: URL, timings, headers, cookies, and the request and response bodies as a JSON tree, indented text, form fields, an image or a hex dump. A call can be edited and sent again from the same screen. A debug build needs one line in `main`; a release build records nothing.
+Flutwire records the calls an app makes, keeps them on the device and lists the latest ones in the notification shade. Tapping it opens the inspector, and each call opens in full: URL, timings, headers, cookies, and the request and response bodies as a JSON tree, indented text, form fields, an image or a hex dump. A call can be edited and sent again from the same screen, and a WebSocket or an event stream lists its messages as they arrive. A debug build needs one line in `main`; a release build records nothing.
 
 <p align="center">
   <a href="docs/media/flutwire-demo.mp4"><img src="docs/media/flutwire-demo.gif" alt="The notification in the shade lists the latest calls, and tapping it opens the inspector, where a call opens as a JSON tree" width="300"></a><br>

@@ -14,6 +14,7 @@ export 'src/flutwire.dart' show Flutwire;
 export 'src/model/body.dart';
 export 'src/model/call.dart';
 export 'src/model/headers.dart';
+export 'src/model/message.dart';
 export 'src/model/multipart.dart';
 export 'src/store/preferences.dart';
 export 'src/store/store.dart';

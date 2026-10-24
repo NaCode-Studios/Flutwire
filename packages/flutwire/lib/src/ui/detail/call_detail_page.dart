@@ -6,6 +6,7 @@ import '../../export/export.dart';
 import '../../model/call.dart';
 import '../../model/cookies.dart';
 import '../../model/headers.dart';
+import '../../model/message.dart';
 import '../../store/store.dart';
 import '../../util/format.dart';
 import '../actions.dart';
@@ -19,9 +20,10 @@ import '../widgets/wire_rule.dart';
 import 'body_pane.dart';
 import 'cookies_view.dart';
 import 'headers_view.dart';
+import 'messages_tab.dart';
 import 'overview_tab.dart';
 
-enum _Tab { overview, request, response }
+enum _Tab { overview, request, response, messages }
 
 enum _Part { body, headers, cookies }
 
@@ -149,6 +151,12 @@ class _CallDetailPageState extends State<CallDetailPage> {
                       _Tab.overview: s.tabOverview,
                       _Tab.request: s.tabRequest,
                       _Tab.response: s.tabResponse,
+                      if (call.messages case final messages?)
+                        _Tab.messages:
+                            messages.kind ==
+                                FlutwireConversationKind.eventStream
+                            ? s.tabEvents
+                            : s.tabMessages,
                     },
                     value: _tab,
                     onChanged: (v) => setState(() => _tab = v),
@@ -165,8 +173,11 @@ class _CallDetailPageState extends State<CallDetailPage> {
     final session = context.session;
     return [
       // A callable function travels through the native SDK, which adds
-      // credentials Flutwire never sees, so it cannot be sent again from here.
-      if (session.canResend && call.source != FlutwireSource.functions)
+      // credentials Flutwire never sees, and a WebSocket handshake is not a
+      // request that can be sent on its own, so neither is sent again from here.
+      if (session.canResend &&
+          call.source != FlutwireSource.functions &&
+          call.messages?.kind != FlutwireConversationKind.webSocket)
         IconButton(
           tooltip: s.resend,
           icon: const Icon(Icons.replay_rounded),
@@ -223,6 +234,10 @@ class _CallDetailPageState extends State<CallDetailPage> {
     switch (_tab) {
       case _Tab.overview:
         return OverviewTab(call: call, onOpenCall: _openCall);
+      case _Tab.messages:
+        return call.messages == null
+            ? OverviewTab(call: call, onOpenCall: _openCall)
+            : MessagesTab(call: call);
       case _Tab.request:
         final cookies = [
           for (final line in call.request.headers['cookie'])

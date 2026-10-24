@@ -1,6 +1,7 @@
 import '../model/body.dart';
 import '../model/call.dart';
 import '../model/headers.dart';
+import '../model/message.dart';
 import '../util/format.dart';
 
 /// One call as plain text a person can paste into a ticket or a chat.
@@ -33,6 +34,19 @@ String callToText(FlutwireCall call) {
   buffer
     ..writeln(_row('Request size', formatBytes(call.requestSize)))
     ..writeln(_row('Response size', formatBytes(call.responseSize)));
+  if (call.messages case final messages?) {
+    final kept = messages.items.length;
+    buffer.writeln(
+      _row(
+        messages.kind == FlutwireConversationKind.eventStream
+            ? 'Events'
+            : 'Messages',
+        messages.loaded && messages.dropped > 0
+            ? '${messages.total} ($kept kept)'
+            : '${messages.total}',
+      ),
+    );
+  }
   if (response != null && response.redirects.isNotEmpty) {
     buffer.writeln(
       _row(
@@ -63,6 +77,24 @@ String callToText(FlutwireCall call) {
       ..writeln()
       ..writeln('--- Response body ---')
       ..writeln(_body(response.body));
+  }
+  if (call.messages case final messages? when messages.items.isNotEmpty) {
+    buffer
+      ..writeln()
+      ..writeln(
+        messages.kind == FlutwireConversationKind.eventStream
+            ? '--- Events ---'
+            : '--- Messages ---',
+      );
+    for (final m in messages.items) {
+      final offset = '+${formatDuration(m.at.difference(call.startedAt))}';
+      buffer.writeln(
+        '${m.sent ? '->' : '<-'} ${offset.padRight(10)} '
+                '${(m.event ?? m.kind.name).padRight(8)} '
+                '${formatBytes(m.totalBytes).padRight(8)} ${m.preview}'
+            .trimRight(),
+      );
+    }
   }
   return buffer.toString().trimRight();
 }

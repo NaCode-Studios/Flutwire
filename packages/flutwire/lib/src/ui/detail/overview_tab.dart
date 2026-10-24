@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../model/call.dart';
+import '../../model/message.dart';
 import '../../util/format.dart';
 import '../actions.dart';
 import '../scope.dart';
@@ -76,6 +77,15 @@ class OverviewTab extends StatelessWidget {
           FlutwireCallState.cancelled => s.cancelled,
           FlutwireCallState.completed => s.noResponseYet,
         }, color: t.statusColor(call)),
+      if (call.messages case final messages?)
+        _Fact(
+          messages.kind == FlutwireConversationKind.eventStream
+              ? s.tabEvents
+              : s.tabMessages,
+          messages.kind == FlutwireConversationKind.eventStream
+              ? s.eventCount(messages.total)
+              : s.messageCount(messages.total),
+        ),
       _Fact(
         s.duration,
         call.isPending

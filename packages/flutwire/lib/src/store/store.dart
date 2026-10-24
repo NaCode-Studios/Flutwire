@@ -251,5 +251,7 @@ class MemoryFlutwireStore implements FlutwireStore {
   }
 
   static int _sizeOf(FlutwireCall call) =>
-      call.request.body.bytes.length + (call.response?.body.bytes.length ?? 0);
+      call.request.body.bytes.length +
+      (call.response?.body.bytes.length ?? 0) +
+      (call.messages?.memoryBytes ?? 0);
 }

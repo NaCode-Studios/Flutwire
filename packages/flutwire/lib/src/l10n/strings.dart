@@ -1,4 +1,5 @@
 import '../coverage.dart' show FlutwireGap;
+import '../model/message.dart' show FlutwireMessageKind;
 
 /// Every piece of text Flutwire shows, in one language.
 ///
@@ -552,4 +553,42 @@ abstract class FlutwireStrings {
 
   /// What a screen reader says about a call that was sent again.
   String get resentBadge;
+
+  // Messages and events
+
+  /// The tab with the messages of a WebSocket.
+  String get tabMessages;
+
+  /// The tab with the events of a server-sent event stream.
+  String get tabEvents;
+
+  /// How many messages a conversation holds.
+  String messageCount(int count);
+
+  /// How many events a stream holds.
+  String eventCount(int count);
+
+  /// Shows the messages that went either way.
+  String get messagesAll;
+
+  /// Shows the messages the app sent.
+  String get messagesSent;
+
+  /// Shows the messages the server sent.
+  String get messagesReceived;
+
+  /// How many messages at the start were not kept.
+  String messagesDropped(int count);
+
+  /// A conversation that has had no message yet.
+  String get messagesEmpty;
+
+  /// The name of a kind of message.
+  String messageKind(FlutwireMessageKind kind);
+
+  /// A message that carries nothing.
+  String get messageNoPayload;
+
+  /// A message that was compressed and could not be decompressed.
+  String get messageUndecoded;
 }

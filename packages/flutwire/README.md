@@ -6,7 +6,7 @@
 
 **A network inspector for Flutter that opens from the notification shade.**
 
-Flutwire records the HTTP calls an app makes, keeps them on the device and lists the latest ones in the notification shade. Tapping it opens the inspector, and each call opens in full: URL, timings, headers, cookies, and the request and response bodies as a JSON tree, indented text, form fields, an image or a hex dump. A call can be edited and sent again from the same screen.
+Flutwire records the HTTP calls an app makes, keeps them on the device and lists the latest ones in the notification shade. Tapping it opens the inspector, and each call opens in full: URL, timings, headers, cookies, and the request and response bodies as a JSON tree, indented text, form fields, an image or a hex dump. A call can be edited and sent again from the same screen, and a WebSocket or an event stream lists its messages as they arrive.
 
 <p align="center">
   <a href="https://github.com/NaCode-Studios/Flutwire/blob/main/docs/media/flutwire-demo.mp4"><img src="https://raw.githubusercontent.com/NaCode-Studios/Flutwire/main/docs/media/flutwire-demo.gif" alt="The notification in the shade lists the latest calls, and tapping it opens the inspector, where a call opens as a JSON tree" width="300"></a><br>
@@ -48,6 +48,12 @@ MaterialApp(
   home: const Home(),
 );
 ```
+
+## WebSockets and event streams
+
+A WebSocket opened through `dart:io` is one call that stays open. Its Messages tab lists every message and control frame in the order it crossed, which way it went, how big it was and when, and a compressed message is shown after it is decompressed. An event stream (`text/event-stream`) lists its events as they complete, with their names and ids, and the raw stream stays the body of the response. Only the latest 1000 messages are kept, and the tab says how many came before them.
+
+`dart:io` makes one client for all WebSockets the first time one is opened, so a WebSocket opened before `Flutwire.init` is not seen: call `init` first thing in `main`. On the web the browser opens WebSockets itself, and none is recorded there.
 
 ## Sending a call again
 

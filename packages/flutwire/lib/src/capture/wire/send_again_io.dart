@@ -6,7 +6,8 @@ import '../../resend.dart';
 import '../recorder.dart';
 import 'wire_io.dart';
 
-/// How long a request may wait for the connection.
+/// How long a request may wait for the connection, unless the app's own
+/// client already says.
 const Duration _connectTimeout = Duration(seconds: 30);
 
 /// How long a request may run, from the moment its connection is open.
@@ -34,7 +35,7 @@ Future<int?> sendAgain(
 }) async {
   var inner = HttpClient();
   if (inner is FlutwireHttpClient) inner = inner.unwrapped;
-  inner.connectionTimeout = _connectTimeout;
+  inner.connectionTimeout ??= _connectTimeout;
   final client = FlutwireHttpClient(inner, engine, resentFrom: request.from);
   final HttpClientRequest open;
   try {

@@ -4,6 +4,7 @@ import '../model/body.dart';
 import '../model/call.dart';
 import '../model/cookies.dart';
 import '../model/headers.dart';
+import '../model/message.dart';
 import '../util/format.dart';
 
 /// The calls as a HAR 1.2 document, the format browsers and proxies import.
@@ -59,6 +60,49 @@ Map<String, Object?> _entry(FlutwireCall call) {
       'state': call.state.name,
       if (call.graphql != null) 'graphql': call.graphql!.toJson(),
     },
+    ..._conversation(call),
+  };
+}
+
+/// The messages of a WebSocket or an event stream, written the way Chrome
+/// writes them: a WebSocket under `_webSocketMessages` with the opcode of each
+/// frame, and the events of a stream under `_eventSourceMessages`.
+Map<String, Object?> _conversation(FlutwireCall call) {
+  final messages = call.messages;
+  if (messages == null || !messages.loaded) return const {};
+  double seconds(DateTime at) => at.microsecondsSinceEpoch / 1000000;
+  if (messages.kind == FlutwireConversationKind.eventStream) {
+    return {
+      '_eventSourceMessages': [
+        for (final m in messages.items)
+          {
+            'time': seconds(m.at),
+            'eventName': m.event ?? 'message',
+            'eventId': ?m.eventId,
+            'data': m.text ?? '',
+          },
+      ],
+    };
+  }
+  return {
+    '_resourceType': 'websocket',
+    '_webSocketMessages': [
+      for (final m in messages.items)
+        {
+          'type': m.sent ? 'send' : 'receive',
+          'time': seconds(m.at),
+          'opcode': switch (m.kind) {
+            FlutwireMessageKind.text || FlutwireMessageKind.event => 1,
+            FlutwireMessageKind.binary => 2,
+            FlutwireMessageKind.close => 8,
+            FlutwireMessageKind.ping => 9,
+            FlutwireMessageKind.pong => 10,
+          },
+          'data': m.kind == FlutwireMessageKind.text
+              ? m.text
+              : base64Encode(m.bytes),
+        },
+    ],
   };
 }
 

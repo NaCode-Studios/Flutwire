@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import 'body.dart';
 import 'headers.dart';
+import 'message.dart';
 
 /// Where in the networking stack a call was recorded.
 enum FlutwireSource {
@@ -320,6 +321,7 @@ final class FlutwireCall {
     this.graphql,
     this.pinned = false,
     this.resentFrom,
+    this.messages,
   });
 
   /// Restores a summary written by [toJson]. The bodies come back unloaded.
@@ -377,6 +379,9 @@ final class FlutwireCall {
           : null,
       pinned: json['pinned'] as bool? ?? false,
       resentFrom: (json['resentFrom'] as num?)?.toInt(),
+      messages: json['messages'] is Map<String, Object?>
+          ? FlutwireMessages.fromJson(json['messages']! as Map<String, Object?>)
+          : null,
     );
   }
 
@@ -422,6 +427,10 @@ final class FlutwireCall {
   /// The id of the call this one repeats, when it was sent again from the
   /// inspector. The original may be gone from the history by now.
   final int? resentFrom;
+
+  /// The messages of a WebSocket or of a server-sent event stream, which keep
+  /// arriving after the response head. Null for an ordinary call.
+  final FlutwireMessages? messages;
 
   /// The response status code, or null before one arrived.
   int? get statusCode => response?.statusCode;
@@ -489,6 +498,7 @@ final class FlutwireCall {
     FlutwireError? error,
     FlutwireGraphql? graphql,
     bool? pinned,
+    FlutwireMessages? messages,
   }) => FlutwireCall(
     id: id,
     method: method,
@@ -504,6 +514,7 @@ final class FlutwireCall {
     graphql: graphql ?? this.graphql,
     pinned: pinned ?? this.pinned,
     resentFrom: resentFrom,
+    messages: messages ?? this.messages,
   );
 
   /// A JSON-encodable summary. Body bytes are not included: the store keeps
@@ -538,6 +549,7 @@ final class FlutwireCall {
     'graphql': graphql?.toJson(),
     'pinned': pinned,
     if (resentFrom != null) 'resentFrom': resentFrom,
+    if (messages != null) 'messages': messages!.toJson(),
   };
 
   @override
