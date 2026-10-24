@@ -102,7 +102,11 @@ final class DiskFlutwireStore extends MemoryFlutwireStore {
     try {
       text = (await file.readAsString()).trim();
     } on PathNotFoundException {
-      await file.writeAsString('$currentLayout\n', flush: true);
+      // Through a temporary file, so that a crash cannot leave a marker with
+      // nothing in it, which would shut the history out for good.
+      final temporary = File('${root.path}/layout.tmp');
+      await temporary.writeAsString('$currentLayout\n', flush: true);
+      await temporary.rename(file.path);
       return;
     }
     final found = int.tryParse(text);
