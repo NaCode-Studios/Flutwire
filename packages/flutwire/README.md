@@ -72,6 +72,18 @@ await Flutwire.init(
 
 Authorization headers and the values of cookies are masked by default; the names and attributes of cookies stay readable. A masked value is replaced when the call is recorded, so it never reaches memory, disk, a notification or an export. The other options are documented on `FlutwireConfig`: how much of a body is kept, where the history is stored, what the notification lists, the language, the look, and decoders for formats the inspector does not read, such as Protobuf.
 
+## Test builds
+
+A release build records nothing unless you say otherwise, because the history can hold tokens and personal data. To record in the builds you give to testers and in no other, pass the choice to `init`:
+
+```dart
+await Flutwire.init(
+  config: FlutwireConfig(enabled: isTestBuild, allowInRelease: true),
+);
+```
+
+Flutter cannot give one flavor a different set of dependencies, so the package is part of every build. Where `init` does not start it, it does nothing: no hook is installed, and on iOS and macOS the notification center stays with the app.
+
 ## Clients that bypass `dart:io`
 
 `dart:io` does not exist on the web, and some clients bring a transport of their own. Three packages cover them.
