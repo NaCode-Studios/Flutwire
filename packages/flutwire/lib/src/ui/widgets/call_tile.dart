@@ -102,6 +102,15 @@ class CallTile extends StatelessWidget {
                             const SizedBox(width: 6),
                             _Badge('GQL', t.copperTone),
                           ],
+                          if (call.resentFrom != null) ...[
+                            const SizedBox(width: 6),
+                            Icon(
+                              Icons.replay_rounded,
+                              size: 13,
+                              color: t.copperTone,
+                              semanticLabel: context.strings.resentBadge,
+                            ),
+                          ],
                           if (call.pinned) ...[
                             const SizedBox(width: 6),
                             Icon(

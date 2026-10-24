@@ -8,11 +8,28 @@ import '../scope.dart';
 /// The facts of a call: what was asked, what came back, how long it took and
 /// anything that went wrong.
 class OverviewTab extends StatelessWidget {
-  /// Creates the tab for [call].
-  const OverviewTab({super.key, required this.call});
+  /// Creates the tab for [call]. [onOpenCall] opens another call of the
+  /// history, which the call it repeats is.
+  const OverviewTab({super.key, required this.call, this.onOpenCall});
 
   /// The call to describe.
   final FlutwireCall call;
+
+  /// Opens the call with the given id.
+  final ValueChanged<int>? onOpenCall;
+
+  /// The line that names the call this one repeats, and opens it while it is
+  /// still in the history.
+  _Fact _repeated(BuildContext context, int from) {
+    final s = context.strings;
+    final original = context.session.store.find(from);
+    if (original == null) return _Fact(s.resentFrom, s.resentFromGone);
+    return _Fact(
+      s.resentFrom,
+      '${original.method}  ${original.host}${original.pathAndQuery}',
+      onTap: onOpenCall == null ? null : () => onOpenCall!(from),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +40,7 @@ class OverviewTab extends StatelessWidget {
     final redirects = response?.redirects ?? const <FlutwireRedirect>[];
 
     final request = <_Fact>[
+      if (call.resentFrom case final from?) _repeated(context, from),
       _Fact(s.url, call.uri.toString()),
       _Fact(s.method, call.method),
       _Fact(s.started, formatDateTime(call.startedAt)),
@@ -103,11 +121,14 @@ class OverviewTab extends StatelessWidget {
 }
 
 class _Fact {
-  const _Fact(this.label, this.value, {this.color});
+  const _Fact(this.label, this.value, {this.color, this.onTap});
 
   final String label;
   final String value;
   final Color? color;
+
+  /// What a tap does. Without it a tap copies the value.
+  final VoidCallback? onTap;
 }
 
 class _Group extends StatelessWidget {
@@ -150,7 +171,7 @@ class _Row extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.fw;
     return InkWell(
-      onTap: () => copyText(context, fact.value),
+      onTap: fact.onTap ?? () => copyText(context, fact.value),
       borderRadius: last
           ? const BorderRadius.vertical(bottom: Radius.circular(14))
           : null,

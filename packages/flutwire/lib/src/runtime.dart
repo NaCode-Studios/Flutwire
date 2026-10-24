@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'capture/wire/send_again.dart';
 import 'capture/wire/wire.dart';
 import 'config.dart';
 import 'coverage.dart';
@@ -11,6 +12,7 @@ import 'isolate_bridge.dart';
 import 'l10n/lookup.dart';
 import 'notify/notifier.dart';
 import 'platform/native.dart';
+import 'resend.dart';
 import 'session.dart';
 import 'share.dart';
 import 'store/open_store.dart';
@@ -162,6 +164,12 @@ final class FlutwireRuntime implements FlutwireSession {
   @override
   ValueListenable<List<FlutwireCoverageNote>> get coverage =>
       engine.coverage.notes;
+
+  @override
+  bool get canResend => canSendAgain;
+
+  @override
+  Future<int?> resend(FlutwireResend request) => sendAgain(engine, request);
 
   @override
   ValueListenable<bool> get inspectorOpen => _launcher.isOpen;

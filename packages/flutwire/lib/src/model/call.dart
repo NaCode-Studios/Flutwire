@@ -319,6 +319,7 @@ final class FlutwireCall {
     this.error,
     this.graphql,
     this.pinned = false,
+    this.resentFrom,
   });
 
   /// Restores a summary written by [toJson]. The bodies come back unloaded.
@@ -375,6 +376,7 @@ final class FlutwireCall {
           ? FlutwireGraphql.fromJson(json['graphql']! as Map<String, Object?>)
           : null,
       pinned: json['pinned'] as bool? ?? false,
+      resentFrom: (json['resentFrom'] as num?)?.toInt(),
     );
   }
 
@@ -416,6 +418,10 @@ final class FlutwireCall {
 
   /// Whether the user pinned this call so retention and clearing skip it.
   final bool pinned;
+
+  /// The id of the call this one repeats, when it was sent again from the
+  /// inspector. The original may be gone from the history by now.
+  final int? resentFrom;
 
   /// The response status code, or null before one arrived.
   int? get statusCode => response?.statusCode;
@@ -497,6 +503,7 @@ final class FlutwireCall {
     error: error ?? this.error,
     graphql: graphql ?? this.graphql,
     pinned: pinned ?? this.pinned,
+    resentFrom: resentFrom,
   );
 
   /// A JSON-encodable summary. Body bytes are not included: the store keeps
@@ -530,6 +537,7 @@ final class FlutwireCall {
     'error': error?.toJson(),
     'graphql': graphql?.toJson(),
     'pinned': pinned,
+    if (resentFrom != null) 'resentFrom': resentFrom,
   };
 
   @override

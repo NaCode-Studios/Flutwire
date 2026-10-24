@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'config.dart';
 import 'coverage.dart';
 import 'platform/native.dart' show FlutwireNotificationPermission;
+import 'resend.dart';
 import 'share.dart';
 import 'store/store.dart';
 
@@ -41,6 +42,16 @@ abstract interface class FlutwireSession {
   /// What Flutwire has noticed about its own blind spots, empty while nothing
   /// is wrong.
   ValueListenable<List<FlutwireCoverageNote>> get coverage;
+
+  /// Whether a call can be sent again from the inspector. It cannot on the web,
+  /// where there is no `dart:io` to send it with.
+  bool get canResend;
+
+  /// Sends [request] and records it as a call that repeats the one it names.
+  /// Returns the id of the recorded call as soon as the request is on its way,
+  /// or null when it could not be recorded. The call fills in as the answer
+  /// arrives.
+  Future<int?> resend(FlutwireResend request);
 
   /// Whether the inspector is on screen.
   ValueListenable<bool> get inspectorOpen;

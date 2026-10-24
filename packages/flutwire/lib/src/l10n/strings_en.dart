@@ -505,4 +505,80 @@ class FlutwireStringsEn extends FlutwireStrings {
   @override
   String coverageSeen(int count) =>
       count == 1 ? 'Seen once' : 'Seen $count times';
+
+  @override
+  String get resend => 'Edit and resend';
+
+  @override
+  String get send => 'Send';
+
+  @override
+  String get sending => 'Sending';
+
+  @override
+  String get addHeader => 'Add header';
+
+  @override
+  String get headerName => 'Name';
+
+  @override
+  String get headerValue => 'Value';
+
+  @override
+  String get removeHeader => 'Remove header';
+
+  @override
+  String get hiddenValue => 'Hidden';
+
+  @override
+  String resendTarget(String host) => 'Sends a real request to $host.';
+
+  @override
+  String resendHiddenNote(String names) =>
+      'Not sent, because Flutwire hid their values when it recorded the call: '
+      '$names. Type a value to send one.';
+
+  @override
+  String resendBodyCut(String kept, String total) =>
+      'The body was cut at $kept of $total. This is only the start of it.';
+
+  @override
+  String resendBinaryBody(String size) =>
+      'A body that is not text, $size. It is sent as it was recorded.';
+
+  @override
+  String get resendBinaryCut =>
+      'Only part of this body was recorded, so it is not sent.';
+
+  @override
+  String get resendSendBody => 'Send the recorded body';
+
+  @override
+  String resendBodyHidden(String mask) =>
+      'Some values in the body were hidden when the call was recorded and show '
+      'as $mask. Replace them to send the real ones.';
+
+  @override
+  String resendUrlHidden(String mask) =>
+      'A value in the address was hidden when the call was recorded and shows '
+      'as $mask. Replace it to send the real one.';
+
+  @override
+  String get resendBadUrl =>
+      'Enter a full address, such as https://example.com/path.';
+
+  @override
+  String get resendNotRecorded => 'Sent, but Flutwire could not record it.';
+
+  @override
+  String get resendFailed => 'The request could not be sent.';
+
+  @override
+  String get resentFrom => 'Sent again from';
+
+  @override
+  String get resentFromGone => 'A call that is no longer in the history';
+
+  @override
+  String get resentBadge => 'Sent again';
 }

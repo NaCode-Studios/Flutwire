@@ -482,4 +482,74 @@ abstract class FlutwireStrings {
 
   /// How often a blind spot was seen.
   String coverageSeen(int count);
+
+  // Edit and resend
+
+  /// The action that opens a call in an editor to send it again, and the
+  /// title of that editor.
+  String get resend;
+
+  /// Sends the edited request.
+  String get send;
+
+  /// What the send button says while the request leaves.
+  String get sending;
+
+  /// Adds a row for a header field.
+  String get addHeader;
+
+  /// The label of the name of a header field.
+  String get headerName;
+
+  /// The label of the value of a header field.
+  String get headerValue;
+
+  /// Takes a header field out of the request.
+  String get removeHeader;
+
+  /// Marks a header field whose value Flutwire hid when it recorded the call.
+  String get hiddenValue;
+
+  /// What sending does and where it goes.
+  String resendTarget(String host);
+
+  /// The header fields that are not sent because their values were hidden,
+  /// named in [names].
+  String resendHiddenNote(String names);
+
+  /// A text body that was recorded only in part, with the sizes written out.
+  String resendBodyCut(String kept, String total);
+
+  /// A body that is not text, which is sent exactly as it was recorded.
+  String resendBinaryBody(String size);
+
+  /// A body that is not text and was recorded only in part, so it is not sent.
+  String get resendBinaryCut;
+
+  /// The switch that sends the recorded body of a call, or leaves it out.
+  String get resendSendBody;
+
+  /// Values in the body that the redaction hid, which show as [mask].
+  String resendBodyHidden(String mask);
+
+  /// Values in the address that the redaction hid, which show as [mask].
+  String resendUrlHidden(String mask);
+
+  /// The address in the editor cannot be sent to.
+  String get resendBadUrl;
+
+  /// The request left but could not be put in the history.
+  String get resendNotRecorded;
+
+  /// The request could not leave.
+  String get resendFailed;
+
+  /// The label of the call that a resent call repeats.
+  String get resentFrom;
+
+  /// What stands in for a repeated call that is no longer in the history.
+  String get resentFromGone;
+
+  /// What a screen reader says about a call that was sent again.
+  String get resentBadge;
 }

@@ -9,7 +9,9 @@ import '../../model/headers.dart';
 import '../../store/store.dart';
 import '../../util/format.dart';
 import '../actions.dart';
+import '../resend/resend_page.dart';
 import '../scope.dart';
+import '../shell.dart';
 import '../widgets/method_chip.dart';
 import '../widgets/segmented_control.dart';
 import '../widgets/status_pill.dart';
@@ -95,6 +97,18 @@ class _CallDetailPageState extends State<CallDetailPage> {
     });
   }
 
+  void _openCall(int id) {
+    unawaited(
+      Navigator.of(context).push(
+        shellRoute(
+          context.session,
+          name: 'flutwire/call',
+          child: CallDetailPage(callId: id),
+        ),
+      ),
+    );
+  }
+
   Future<void> _togglePin(FlutwireCall call) async {
     await _store.setPinned([call.id], pinned: !call.pinned);
     await _load();
@@ -148,7 +162,24 @@ class _CallDetailPageState extends State<CallDetailPage> {
 
   List<Widget> _actions(BuildContext context, FlutwireCall call) {
     final s = context.strings;
+    final session = context.session;
     return [
+      // A callable function travels through the native SDK, which adds
+      // credentials Flutwire never sees, so it cannot be sent again from here.
+      if (session.canResend && call.source != FlutwireSource.functions)
+        IconButton(
+          tooltip: s.resend,
+          icon: const Icon(Icons.replay_rounded),
+          onPressed: () => unawaited(
+            Navigator.of(context).push(
+              shellRoute(
+                session,
+                name: 'flutwire/resend',
+                child: ResendPage(call: call),
+              ),
+            ),
+          ),
+        ),
       IconButton(
         tooltip: call.pinned ? s.unpin : s.pin,
         icon: Icon(
@@ -191,7 +222,7 @@ class _CallDetailPageState extends State<CallDetailPage> {
     final s = context.strings;
     switch (_tab) {
       case _Tab.overview:
-        return OverviewTab(call: call);
+        return OverviewTab(call: call, onOpenCall: _openCall);
       case _Tab.request:
         final cookies = [
           for (final line in call.request.headers['cookie'])

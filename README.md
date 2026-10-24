@@ -13,7 +13,7 @@
 
 When an app misbehaves on a phone, the call that explains it is usually out of reach. The console shows only what a logger was told to print. A proxy needs a certificate on the device and a changed Wi-Fi setting. Every HTTP client in the app has to be wired by hand before it says anything, and when the app is killed the evidence goes with it.
 
-Flutwire records the calls an app makes, keeps them on the device and lists the latest ones in the notification shade. Tapping it opens the inspector, and each call opens in full: URL, timings, headers, cookies, and the request and response bodies as a JSON tree, indented text, form fields, an image or a hex dump. A debug build needs one line in `main`; a release build records nothing.
+Flutwire records the calls an app makes, keeps them on the device and lists the latest ones in the notification shade. Tapping it opens the inspector, and each call opens in full: URL, timings, headers, cookies, and the request and response bodies as a JSON tree, indented text, form fields, an image or a hex dump. A call can be edited and sent again from the same screen. A debug build needs one line in `main`; a release build records nothing.
 
 <p align="center">
   <a href="docs/media/flutwire-demo.mp4"><img src="docs/media/flutwire-demo.gif" alt="The notification in the shade lists the latest calls, and tapping it opens the inspector, where a call opens as a JSON tree" width="300"></a><br>
@@ -62,7 +62,7 @@ curl -X POST 'https://api.example.com/v1/orders' \
   --data-raw '{"items":[{"sku":"A-12","qty":2}]}'
 ```
 
-Flutwire reads traffic and never changes it. It does not proxy other apps, and it cannot see what never passes through Dart: Firestore, Auth and Storage speak their own protocols through native SDKs. When a call may have gone unseen, because a client does not use `dart:io`, because an adapter ran in another isolate or because something replaced the capture, the inspector says so above the list and says what to change. Authorization and cookie values are masked when a call is recorded, so they never reach memory, disk, a notification or an export.
+Flutwire reads traffic and never changes it. It does not proxy other apps, and it cannot see what never passes through Dart: Firestore, Auth and Storage speak their own protocols through native SDKs. When a call may have gone unseen, because a client does not use `dart:io`, because an adapter ran in another isolate or because something replaced the capture, the inspector says so above the list and says what to change. Authorization and cookie values are masked when a call is recorded, so they never reach memory, disk, a notification or an export. The only request Flutwire makes is the one you edit and send again from a call, and it leaves out any value that was masked.
 
 In a release build `Flutwire.init` does nothing: no call is recorded, no file is written and no notification is posted. The plugin's native code still ships in the app, like any other plugin's, and on Android its manifest adds the notification permission to the merged one.
 

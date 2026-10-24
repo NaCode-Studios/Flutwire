@@ -6,7 +6,7 @@
 
 **A network inspector for Flutter that opens from the notification shade.**
 
-Flutwire records the HTTP calls an app makes, keeps them on the device and lists the latest ones in the notification shade. Tapping it opens the inspector, and each call opens in full: URL, timings, headers, cookies, and the request and response bodies as a JSON tree, indented text, form fields, an image or a hex dump.
+Flutwire records the HTTP calls an app makes, keeps them on the device and lists the latest ones in the notification shade. Tapping it opens the inspector, and each call opens in full: URL, timings, headers, cookies, and the request and response bodies as a JSON tree, indented text, form fields, an image or a hex dump. A call can be edited and sent again from the same screen.
 
 <p align="center">
   <a href="https://github.com/NaCode-Studios/Flutwire/blob/main/docs/media/flutwire-demo.mp4"><img src="https://raw.githubusercontent.com/NaCode-Studios/Flutwire/main/docs/media/flutwire-demo.gif" alt="The notification in the shade lists the latest calls, and tapping it opens the inspector, where a call opens as a JSON tree" width="300"></a><br>
@@ -48,6 +48,12 @@ MaterialApp(
   home: const Home(),
 );
 ```
+
+## Sending a call again
+
+Open a call and tap the replay button in the top bar. The method, the address, the header fields and the body can all be changed, and Send makes the request. What goes out is recorded as a new call that names the one it repeats.
+
+A value the redaction masked was never kept, so it is flagged and sent only if you type it again. A body that is not text goes out as it was recorded, unless only part of it was kept. Sending needs `dart:io`, so the web does not offer it.
 
 ## Configuration
 

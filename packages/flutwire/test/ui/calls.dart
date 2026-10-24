@@ -27,6 +27,9 @@ FlutwireCall makeCall(
   FlutwireError? error,
   FlutwireGraphql? graphql,
   bool pinned = false,
+  int? resentFrom,
+  FlutwireSource source = FlutwireSource.io,
+  FlutwireBody? requestBodyOf,
 }) {
   final start = DateTime.utc(2026, 10, 23, 12);
   final pending = state == FlutwireCallState.pending;
@@ -34,7 +37,7 @@ FlutwireCall makeCall(
     id: id,
     method: method,
     uri: Uri.parse(url),
-    source: FlutwireSource.io,
+    source: source,
     state: state,
     startedAt: start,
     firstByteAt: pending || status == null
@@ -42,11 +45,14 @@ FlutwireCall makeCall(
         : start.add(Duration(milliseconds: millis ~/ 2)),
     endedAt: pending ? null : start.add(Duration(milliseconds: millis)),
     pinned: pinned,
+    resentFrom: resentFrom,
     error: error,
     graphql: graphql,
     request: FlutwireRequest(
       headers: FlutwireHeaders.fromMap(requestHeaders),
-      body: requestBody == null ? FlutwireBody.empty() : jsonBody(requestBody),
+      body:
+          requestBodyOf ??
+          (requestBody == null ? FlutwireBody.empty() : jsonBody(requestBody)),
     ),
     response: status == null || pending
         ? null

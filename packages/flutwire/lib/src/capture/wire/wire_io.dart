@@ -86,15 +86,28 @@ bool _stillCaptures(FlutwireEngine engine) {
 /// An `HttpClient` that records the calls made through it and delegates the
 /// work to the client it wraps.
 final class FlutwireHttpClient implements HttpClient {
-  /// Wraps [_inner], reporting to [_engine].
-  FlutwireHttpClient(this._inner, this._engine);
+  /// Wraps [_inner], reporting to [_engine]. Every request made through the
+  /// client is recorded as a repeat of the call with the id [resentFrom] when
+  /// one is given.
+  FlutwireHttpClient(this._inner, this._engine, {this.resentFrom});
 
   final HttpClient _inner;
   final FlutwireEngine _engine;
   final Set<FlutwireCallRecorder> _open = {};
+  FlutwireCallRecorder? _last;
 
   /// The engine this client reports to.
   FlutwireEngine get engine => _engine;
+
+  /// The call this client's requests repeat, if they do.
+  final int? resentFrom;
+
+  /// The client this one wraps, without the recording.
+  HttpClient get unwrapped => _inner;
+
+  /// The recorder of the latest request opened through this client, which is
+  /// null when that request was not recorded.
+  FlutwireCallRecorder? get lastRecorder => _last;
 
   @override
   bool get autoUncompress => _inner.autoUncompress;
@@ -174,7 +187,9 @@ final class FlutwireHttpClient implements HttpClient {
       method: method,
       uri: url,
       source: FlutwireSource.io,
+      resentFrom: resentFrom,
     );
+    _last = recorder;
     final HttpClientRequest request;
     try {
       request = await open();
