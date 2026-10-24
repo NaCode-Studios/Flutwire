@@ -65,6 +65,12 @@ class FakeSession implements FlutwireSession {
   final ValueNotifier<FlutwireNotificationPermission> _permission;
   final ValueNotifier<bool> _inspectorOpen = ValueNotifier(false);
 
+  /// What the screens show about Flutwire's blind spots. Tests put notes here.
+  @override
+  final ValueNotifier<List<FlutwireCoverageNote>> coverage = ValueNotifier(
+    const [],
+  );
+
   /// How many times the screens asked to open the inspector.
   int inspectorOpened = 0;
 

@@ -1,9 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show RootIsolateToken;
 
 import 'capture/recorder.dart';
 import 'config.dart';
+import 'coverage.dart';
 import 'diagnostics.dart';
+import 'engine.dart' show FlutwireStandDown;
+import 'isolate_bridge.dart';
 import 'model/call.dart';
 import 'model/headers.dart';
 import 'runtime.dart';
@@ -27,6 +31,8 @@ abstract final class Flutwire {
   static final ValueNotifier<List<FlutwireCall>> _none = ValueNotifier(
     const [],
   );
+  static final ValueNotifier<List<FlutwireCoverageNote>> _noNotes =
+      ValueNotifier(const []);
   static Future<void>? _starting;
 
   /// Give this to the app's navigator so the inspector opens above the app's
@@ -107,12 +113,50 @@ abstract final class Flutwire {
     required Uri uri,
     required FlutwireSource source,
     FlutwireHeaders requestHeaders = FlutwireHeaders.empty,
-  }) => _runtime.value?.engine.begin(
+  }) {
+    final runtime = _runtime.value;
+    if (runtime == null) {
+      // An adapter running where nothing records: in a release build, or in an
+      // isolate other than the one the app runs in. Only the second is news.
+      if (!isRootIsolate()) FlutwireIsolateBridge.tell(source);
+      return null;
+    }
+    return runtime.engine.begin(
+      method: method,
+      uri: uri,
+      source: source,
+      requestHeaders: requestHeaders,
+    );
+  }
+
+  /// Whether this code runs in the isolate the app runs in. Replaced in tests,
+  /// which have no second isolate with Flutter in it.
+  @visibleForTesting
+  static bool Function() isRootIsolate = () =>
+      RootIsolateToken.instance != null;
+
+  /// Starts watching a call that a client adapter stands down for because the
+  /// `dart:io` capture records it. This is what an adapter calls; an app never
+  /// needs it.
+  ///
+  /// Call [FlutwireStandDown.finish] on the result when the call is over,
+  /// whatever its outcome. If the capture never saw the call, the inspector
+  /// says that Flutwire may be missing calls and why. Returns null when there
+  /// is nothing to watch.
+  static FlutwireStandDown? watchStandDown({
+    required String method,
+    required Uri uri,
+    required String client,
+  }) => _runtime.value?.engine.watchStandDown(
     method: method,
     uri: uri,
-    source: source,
-    requestHeaders: requestHeaders,
+    client: client,
   );
+
+  /// What Flutwire has noticed about its own blind spots. Empty while nothing
+  /// is wrong, which is also what it is while Flutwire is not recording.
+  static ValueListenable<List<FlutwireCoverageNote>> get coverage =>
+      _runtime.value?.engine.coverage.notes ?? _noNotes;
 
   /// Removes every recorded call, except the pinned ones when [keepPinned] is
   /// true.

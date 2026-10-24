@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 
 import 'capture/wire/wire.dart';
 import 'config.dart';
+import 'coverage.dart';
 import 'engine.dart';
+import 'isolate_bridge.dart';
 import 'l10n/lookup.dart';
 import 'notify/notifier.dart';
 import 'platform/native.dart';
@@ -98,6 +100,13 @@ final class FlutwireRuntime implements FlutwireSession {
       );
     }
     runtime._actions = native.actions.listen(runtime._onAction);
+    runtime._isolates = FlutwireIsolateBridge.listen(
+      (subject) => engine.coverage.report(
+        FlutwireGap.otherIsolate,
+        subject,
+        engine.now(),
+      ),
+    );
     switch (await native.consumeInitialAction()) {
       case 'open':
         launcher.openWhenReady(runtime);
@@ -115,6 +124,7 @@ final class FlutwireRuntime implements FlutwireSession {
   final InspectorLauncher _launcher;
   final void Function()? _uninstallWire;
   StreamSubscription<String>? _actions;
+  FlutwireIsolateBridge? _isolates;
   bool _disposed = false;
 
   static Locale _deviceLocale() =>
@@ -150,11 +160,19 @@ final class FlutwireRuntime implements FlutwireSession {
   Future<void> openNotificationSettings() => _notifier.openSettings();
 
   @override
+  ValueListenable<List<FlutwireCoverageNote>> get coverage =>
+      engine.coverage.notes;
+
+  @override
   ValueListenable<bool> get inspectorOpen => _launcher.isOpen;
 
   @override
-  Future<void> openInspector([BuildContext? context]) =>
-      _launcher.open(this, context);
+  Future<void> openInspector([BuildContext? context]) {
+    // Looking is cheap, and the person opening the inspector is about to read
+    // what it says about what it missed.
+    engine.verifyCapture();
+    return _launcher.open(this, context);
+  }
 
   @override
   Future<void> clear({bool keepPinned = true}) =>
@@ -174,6 +192,7 @@ final class FlutwireRuntime implements FlutwireSession {
     if (_disposed) return;
     _disposed = true;
     _uninstallWire?.call();
+    _isolates?.close();
     await _actions?.cancel();
     await _notifier.dispose();
     await _native.dispose();

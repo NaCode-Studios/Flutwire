@@ -55,12 +55,32 @@ void Function() installWireCapture(FlutwireEngine engine) {
   final installed = FlutwireHttpOverrides(engine, previous: current);
   HttpOverrides.global = installed;
   engine.wireCaptureActive = true;
+  engine.wireCaptureProbe = () => _stillCaptures(engine);
   return () {
     if (identical(HttpOverrides.current, installed)) {
       HttpOverrides.global = current;
     }
     engine.wireCaptureActive = false;
+    engine.wireCaptureProbe = null;
   };
+}
+
+/// Whether a client made now would be one of Flutwire's.
+///
+/// An app's own overrides may sit on top of the capture and still chain to it,
+/// so the overrides in force are not enough to tell: the answer is what
+/// `HttpClient()` hands out.
+bool _stillCaptures(FlutwireEngine engine) {
+  final current = HttpOverrides.current;
+  if (current is FlutwireHttpOverrides && identical(current.engine, engine)) {
+    return true;
+  }
+  final probe = HttpClient();
+  try {
+    return probe is FlutwireHttpClient && identical(probe.engine, engine);
+  } finally {
+    probe.close(force: true);
+  }
 }
 
 /// An `HttpClient` that records the calls made through it and delegates the
@@ -72,6 +92,9 @@ final class FlutwireHttpClient implements HttpClient {
   final HttpClient _inner;
   final FlutwireEngine _engine;
   final Set<FlutwireCallRecorder> _open = {};
+
+  /// The engine this client reports to.
+  FlutwireEngine get engine => _engine;
 
   @override
   bool get autoUncompress => _inner.autoUncompress;
