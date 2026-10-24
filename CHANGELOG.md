@@ -9,9 +9,36 @@ board can be cross-checked against what actually shipped.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-24
+
 ### Added
 
+- A stability policy, `STABILITY.md`. It says what is public, what a version bump means for the API, the history on disk and the JSON export, how long a deprecated member stays, which versions get fixes, and which platforms and toolchains are supported. It also holds three promises about behaviour: recording does not change traffic unless `interception` is turned on, a release build records nothing unless it is asked to, and the default redaction masks credentials (M25)
+- The history on disk records its layout in a file called `layout`. A folder with none is a new one, or one that 0.1.0 or 0.2.0 wrote, and is read as layout 1. A folder with a layout this release does not know is left exactly as it is while the history is kept in memory, where an older release would have deleted every summary it could not read (M40)
 - A second tour in the README, with a 74 second video, and four more screenshots on the pub.dev page of `flutwire`, for what 0.2.0 added: two calls compared, the statistics, the dock, and the mocks and breakpoints with the marks they leave on the list. The page now shows ten screenshots, with the light list and the XML body making room (M37)
+
+### Changed
+
+- Every export of a package names what it makes public. `parseFormEncoded` and `prettyXml` were exported with the body model by accident and no longer are: `FlutwireBody.formFields` and `FlutwireBody.prettyText` are how to reach what they do (M25)
+- `FlutwireCallRecorder.observeRequest` is removed. Nothing called it, and a client that has a request body as a stream reports it with `requestBody` (M25)
+- `FlutwireStore`, `MemoryFlutwireStore` and `FlutwirePreferences` are `base` classes, so none can be implemented outside the package, and `FlutwireClient` in `flutwire_http` is `final`. None was meant to be implemented or extended by an app, and each can now gain a member without breaking one. `FlutwireBodyDecoder` stays an interface to implement. The API comparison does not see a change of class modifier, so it is listed here (M25)
+- `FlutwireExportFormat.render` writes this package's version as the creator of a HAR where it wrote `0` (M25)
+- On a screen narrower than 600 logical pixels the docked inspector always sits under the app, and its menu does not offer the right side there, because beside the app it left neither of them a usable width (M39)
+
+### Fixed
+
+- A Protobuf enum with a negative value showed as a number instead of its name, because a descriptor writes such a value as ten bytes and the reader dropped it (M38)
+- A Protobuf float showed the 17 digits of the double it widens to, `0.10000000149011612` for `0.1`. It shows the shortest decimal that reads back as the same float (M38)
+- The four numbers above the list ran into each other in a narrow panel and at a large text size. They stand in two rows of two when four do not fit, and the title of a selection shrinks to the room the buttons leave instead of being cut off (M39)
+
+### Internal
+
+- CI compares the public API of each package with its latest release on pub.dev, and fails when the API breaks and the pubspec has not moved to a version that allows it (M41)
+- CI builds the example for the web, which no job did before (M39)
+- The Protobuf decoder is tested against a descriptor set and messages that `protoc` and the code it generates wrote. Its other tests build their input by hand (M38)
+- A history written by the 0.2.0 code, with a summary in the 0.1.0 shape, is read back in a test (M40)
+- `integration_test/features_smoke_test.dart` records a call through `dart:io` and opens the comparison, the statistics and the dock on the platform it is started on. It was run on macOS and on an iOS simulator, and the example was run by hand on the web (M39)
+- The example adds no button of its own where Flutwire floats one, so on the web the two no longer overlap (M39)
 
 ## [0.2.0] - 2026-10-24
 
@@ -70,6 +97,7 @@ board can be cross-checked against what actually shipped.
 - The screens of the inspector work on an injected session instead of reading a global, which lets them be tested against a fake (M33)
 - Analysis rules for open subscriptions and sinks, dropped futures, catch clauses that name no type, positional booleans and dynamic calls (M33)
 
-[Unreleased]: https://github.com/NaCode-Studios/Flutwire/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/NaCode-Studios/Flutwire/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/NaCode-Studios/Flutwire/compare/v0.2.0...v1.0.0
 [0.2.0]: https://github.com/NaCode-Studios/Flutwire/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/NaCode-Studios/Flutwire/releases/tag/v0.1.0

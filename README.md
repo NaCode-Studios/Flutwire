@@ -76,7 +76,7 @@ Flutwire reads traffic and changes it only through the mocks and breakpoints the
 
 In a release build `Flutwire.init` does nothing: no call is recorded, no file is written and no notification is posted. The plugin's native code still ships in the app, like any other plugin's, and stays idle until Flutwire starts: on iOS and macOS it leaves the app's notification delegate alone, and on Android its manifest adds the notification permission to the merged one.
 
-> **Status — `0.2`, alpha.** Minor versions may still break the API until `1.0`. The plan is on [the project board](https://github.com/orgs/NaCode-Studios/projects/13).
+> **Status — `1.0`, stable.** The public API follows [Semantic Versioning](STABILITY.md): a breaking change needs a new major version, and a deprecated member stays for at least two minor releases. The plan is on [the project board](https://github.com/orgs/NaCode-Studios/projects/13).
 
 ## Why Flutwire
 
@@ -131,11 +131,13 @@ Flutwire
 
 ## Roadmap
 
+**Shipped (`1.0.0`).** A review of the public API, so that every export names what it makes public and the types that were never meant to be implemented are closed to it, a written [stability policy](STABILITY.md) with its deprecation window, a layout number on the history kept on disk, and a Protobuf decoder checked against what `protoc` writes. [`CHANGELOG.md`](CHANGELOG.md) has the detail.
+
 **Shipped (`0.2.0`).** Editing a call and sending it again, the messages of a WebSocket and of an event stream, comparing two calls, statistics and a timeline, a dock beside the app, mocks and breakpoints, calls made in other isolates, Protobuf and MessagePack bodies, and a note above the list when calls may have gone unseen. [`CHANGELOG.md`](CHANGELOG.md) has the detail.
 
 **Shipped (`0.1.0`).** Capture, the history on disk, the notification on Android, iOS and macOS, the inspector with the body viewer, export, the adapters and the example app.
 
-**Next, `1.0.0`: stabilisation.** A review of the public API so that every public member is documented or made private, and a written stability policy with its deprecation window. gRPC capture comes after `1.0`. The ideas that were turned down, with the reason, are on the board too.
+**Next.** gRPC capture. gRPC in Dart opens its own sockets, so the `HttpClient` wrapper cannot see it, and it needs an interceptor for the `grpc` package. It has no date yet. The ideas that were turned down, with the reason, are on the board too.
 
 The plan lives on [the project board](https://github.com/orgs/NaCode-Studios/projects/13) and is mirrored as [milestones](https://github.com/NaCode-Studios/Flutwire/milestones).
 
