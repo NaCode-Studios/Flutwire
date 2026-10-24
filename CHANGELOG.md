@@ -12,6 +12,7 @@ board can be cross-checked against what actually shipped.
 ### Added
 
 - An example for each adapter, so the package page on pub.dev has one to show (M34)
+- A demo video, screenshots and two diagrams in the README and on the pub.dev page of `flutwire`, taken from the example app running on a device (M36)
 
 ### Fixed
 
