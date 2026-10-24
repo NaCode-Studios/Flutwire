@@ -2,7 +2,7 @@ import 'dart:io';
 
 import '../config.dart';
 import '../diagnostics.dart';
-import 'disk_store.dart';
+import 'disk_store_io.dart';
 import 'store.dart';
 
 /// Opens the store the configuration asks for.

@@ -4,7 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import '../../model/message.dart';
-import '../messages/websocket_reader.dart';
+import '../messages/websocket_reader_io.dart';
 import '../recorder.dart';
 
 /// A socket that was an HTTP connection and became a WebSocket. It hands the
