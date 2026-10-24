@@ -66,7 +66,7 @@ Authorization headers and the values of cookies are masked by default; the names
 
 ## What it does not do
 
-Flutwire reads traffic and never changes it. It does not proxy other apps, and it cannot see what never passes through Dart: Firestore, Auth and Storage speak their own protocols through native SDKs.
+Flutwire reads traffic and never changes it. It does not proxy other apps, and it cannot see what never passes through Dart: Firestore, Auth and Storage speak their own protocols through native SDKs. When a call may have gone unseen, because a client does not use `dart:io`, because an adapter ran in another isolate or because something replaced the capture, the inspector says so above the list and says what to change.
 
 ## More
 

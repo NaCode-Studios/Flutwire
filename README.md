@@ -50,7 +50,7 @@ curl -X POST 'https://api.example.com/v1/orders' \
   --data-raw '{"items":[{"sku":"A-12","qty":2}]}'
 ```
 
-Flutwire reads traffic and never changes it. It does not proxy other apps, and it cannot see what never passes through Dart: Firestore, Auth and Storage speak their own protocols through native SDKs. Authorization and cookie values are masked when a call is recorded, so they never reach memory, disk, a notification or an export.
+Flutwire reads traffic and never changes it. It does not proxy other apps, and it cannot see what never passes through Dart: Firestore, Auth and Storage speak their own protocols through native SDKs. When a call may have gone unseen, because a client does not use `dart:io`, because an adapter ran in another isolate or because something replaced the capture, the inspector says so above the list and says what to change. Authorization and cookie values are masked when a call is recorded, so they never reach memory, disk, a notification or an export.
 
 In a release build `Flutwire.init` does nothing: no call is recorded, no file is written and no notification is posted. The plugin's native code still ships in the app, like any other plugin's, and on Android its manifest adds the notification permission to the merged one.
 

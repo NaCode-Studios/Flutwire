@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -209,6 +210,52 @@ final List<(String, List<Probe>)> groups = [
   ),
 ];
 
+/// What Flutwire cannot see, so that the inspector has something to say about
+/// it. These are left out of "Run everything": replacing the capture stops the
+/// recording of everything after it.
+final List<Probe> blindSpots = [
+  Probe('Another isolate', () => _safe(() => Isolate.run(_fromAnotherIsolate))),
+  Probe(
+    'Off the wire',
+    () => _safe(
+      () => FlutwireClient(_OffTheWire()).get(Uri.parse('$_todos/todos/3')),
+    ),
+  ),
+  Probe('Replace the capture', () async {
+    _kept ??= HttpOverrides.current;
+    HttpOverrides.global = _Replacing();
+  }),
+  Probe('Restore the capture', () async => HttpOverrides.global = _kept),
+];
+
+HttpOverrides? _kept;
+
+/// A call from an isolate that Flutwire does not run in. Overrides belong to
+/// one isolate, so nothing records it.
+Future<void> _fromAnotherIsolate() async {
+  try {
+    await FlutwireClient(http.Client()).get(Uri.parse('$_todos/todos/2'));
+  } on Object {
+    // The point is the note in the inspector, not the answer.
+  }
+}
+
+/// A client with a transport of its own, as `cronet_http` has: it never
+/// reaches dart:io, so the capture cannot see what it sends.
+class _OffTheWire extends http.BaseClient {
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async =>
+      http.StreamedResponse(
+        Stream.value(utf8.encode('{"from":"a client that is off the wire"}')),
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+}
+
+/// Overrides that know nothing of Flutwire's, as an app's own do when it sets
+/// them after `Flutwire.init` and does not chain to what was there.
+class _Replacing extends HttpOverrides {}
+
 class Home extends StatelessWidget {
   const Home({super.key});
 
@@ -264,6 +311,25 @@ class Home extends StatelessWidget {
               ],
             ),
           ],
+          const SizedBox(height: 20),
+          Text(
+            'Blind spots',
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(color: scheme.primary),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final probe in blindSpots)
+                OutlinedButton(
+                  onPressed: () => unawaited(probe.run()),
+                  child: Text(probe.label),
+                ),
+            ],
+          ),
         ],
       ),
     );
