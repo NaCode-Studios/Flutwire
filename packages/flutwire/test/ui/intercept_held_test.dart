@@ -135,7 +135,7 @@ void main() {
       expect(sent.method, 'POST');
       expect(sent.headers.first('x-demo'), '1');
       expect(find.byType(ResendPage), findsNothing);
-      expect(session.interception!.breakpoints.isHolding, isFalse);
+      expect(session.interception!.breakpoints.held, isEmpty);
     });
 
     testWidgets('goes on as it was when nothing was changed', (tester) async {
@@ -149,7 +149,10 @@ void main() {
       await settle(tester);
 
       final sent = (await held.answer)!;
-      expect(sent.sameRequestAs(request), isTrue);
+      expect(sent.method, request.method);
+      expect(sent.uri, request.uri);
+      expect(sent.headers, request.headers);
+      expect(sent.body, request.body);
     });
 
     testWidgets('is stopped from its editor', (tester) async {
@@ -178,6 +181,52 @@ void main() {
 
       expect(find.byType(ResendPage), findsNothing);
       expect(find.text('This request is not held any more.'), findsOneWidget);
+    });
+
+    testWidgets('hands over to the next one when it is sent', (tester) async {
+      final session = _session();
+      final first = _hold(session, url: 'https://api.test/first');
+      _hold(session, url: 'https://api.test/second');
+      await _openInspector(tester, session);
+      expect(find.text('https://api.test/first'), findsOneWidget);
+
+      await tester.tap(find.text('Send'));
+      await settle(tester);
+
+      expect((await first.answer)!.uri.path, '/first');
+      expect(find.byType(ResendPage, skipOffstage: false), findsOneWidget);
+      expect(find.text('https://api.test/second'), findsOneWidget);
+    });
+
+    testWidgets('hands over to the next one when it is stopped', (
+      tester,
+    ) async {
+      final session = _session();
+      final first = _hold(session, url: 'https://api.test/first');
+      _hold(session, url: 'https://api.test/second');
+      await _openInspector(tester, session);
+
+      await tester.tap(find.text('Stop the request'));
+      await settle(tester);
+
+      expect(await first.answer, isNull);
+      expect(find.byType(ResendPage, skipOffstage: false), findsOneWidget);
+      expect(find.text('https://api.test/second'), findsOneWidget);
+    });
+
+    testWidgets('leaves only its own page when it is let go from outside', (
+      tester,
+    ) async {
+      final session = _session();
+      final first = _hold(session, url: 'https://api.test/first');
+      _hold(session, url: 'https://api.test/second');
+      await _openInspector(tester, session);
+
+      session.interception!.breakpoints.stop(first.id);
+      await settle(tester);
+
+      expect(find.byType(ResendPage, skipOffstage: false), findsOneWidget);
+      expect(find.text('https://api.test/second'), findsOneWidget);
     });
 
     testWidgets('can be sent with a header taken away', (tester) async {

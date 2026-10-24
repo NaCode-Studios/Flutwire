@@ -299,7 +299,7 @@ void main() {
       await settle(tester);
 
       expect(find.text('Write what the address looks like.'), findsOneWidget);
-      expect(session.interception!.rules.isEmpty, isTrue);
+      expect(session.interception!.rules.all, isEmpty);
       expect(find.byType(RuleEditorPage), findsOneWidget);
     });
 
@@ -321,7 +321,7 @@ void main() {
         find.text('A status is a number from 100 to 599.'),
         findsOneWidget,
       );
-      expect(session.interception!.rules.isEmpty, isTrue);
+      expect(session.interception!.rules.all, isEmpty);
     });
 
     testWidgets('keeps a body that is not text as it was recorded', (
@@ -408,7 +408,7 @@ void main() {
       await tester.tap(find.text('Delete').last);
       await settle(tester);
 
-      expect(session.interception!.rules.isEmpty, isTrue);
+      expect(session.interception!.rules.all, isEmpty);
     });
 
     testWidgets('changes the method a rule is about', (tester) async {

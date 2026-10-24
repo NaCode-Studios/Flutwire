@@ -91,7 +91,7 @@ void main() {
       rules.remove(rule.id);
 
       expect(told, 4);
-      expect(rules.isEmpty, isTrue);
+      expect(rules.all, isEmpty);
     });
 
     test('says nothing for what changes nothing', () {
@@ -166,10 +166,10 @@ void main() {
     test('are none when what was kept is not even JSON', () {
       final preferences = MemoryFlutwirePreferences({'rules': '{{{'});
 
-      expect(FlutwireRules(preferences).isEmpty, isTrue);
+      expect(FlutwireRules(preferences).all, isEmpty);
       expect(
-        FlutwireRules(MemoryFlutwirePreferences({'rules': '"text"'})).isEmpty,
-        isTrue,
+        FlutwireRules(MemoryFlutwirePreferences({'rules': '"text"'})).all,
+        isEmpty,
       );
     });
   });

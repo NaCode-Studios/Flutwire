@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../model/body.dart';
 import '../scope.dart';
 import '../theme/tokens.dart';
 
@@ -19,6 +20,64 @@ const EdgeInsets fieldPadding = EdgeInsets.symmetric(
   horizontal: 10,
   vertical: 12,
 );
+
+/// How the body of a request or a response is offered for editing.
+enum BodyEditMode {
+  /// Text, edited in place. An empty body is text with nothing in it.
+  text,
+
+  /// Bytes that are not text, or not loaded, which can only be kept as they
+  /// were recorded.
+  recorded;
+
+  /// The way to edit [body].
+  static BodyEditMode of(FlutwireBody body) {
+    if (!body.loaded) return recorded;
+    return switch (body.kind) {
+      FlutwireBodyKind.empty ||
+      FlutwireBodyKind.json ||
+      FlutwireBodyKind.xml ||
+      FlutwireBodyKind.html ||
+      FlutwireBodyKind.text ||
+      FlutwireBodyKind.form => text,
+      FlutwireBodyKind.multipart ||
+      FlutwireBodyKind.image ||
+      FlutwireBodyKind.binary => recorded,
+    };
+  }
+}
+
+/// The bar at the foot of an editor, which holds the action that ends it.
+class EditorBottomBar extends StatelessWidget {
+  /// Creates a bar around [child].
+  const EditorBottomBar({super.key, required this.child});
+
+  /// The actions.
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.fw;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: t.ground,
+        border: Border(top: BorderSide(color: t.line)),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          child: Center(
+            heightFactor: 1,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: child,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 /// The two text fields of one header field being edited.
 class HeaderRowControllers {

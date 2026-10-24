@@ -16,7 +16,8 @@ import 'wire_socket_io.dart';
 /// `package:http`, Dio's default adapter, Chopper, `Image.network` and most
 /// SDKs that talk HTTP from Dart create their client with `HttpClient()`. This
 /// override hands each of them a thin wrapper around the real client, which
-/// observes the request and the response and changes neither.
+/// observes the request and the response and changes neither, except for the
+/// requests that a mock or a breakpoint of the user's takes over.
 ///
 /// Compose it with overrides the app already has through [previous]; calls
 /// that Flutwire does not record, such as ignored ones, get the real request

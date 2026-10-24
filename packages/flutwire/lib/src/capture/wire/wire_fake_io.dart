@@ -8,6 +8,7 @@ import '../../model/call.dart';
 import '../../model/headers.dart';
 import '../../util/format.dart';
 import '../recorder.dart';
+import 'wire_forward_io.dart';
 
 /// The header fields of a request or a response that never touched the network.
 ///
@@ -201,7 +202,9 @@ final class FakeHttpHeaders implements HttpHeaders {
 /// when the app closes it, it gets the stored response instead of an answer
 /// from the network. It never opens a connection, so it answers just as well
 /// when the host cannot be reached.
-final class MockHttpClientRequest implements HttpClientRequest {
+final class MockHttpClientRequest
+    with HttpClientRequestWrites
+    implements HttpClientRequest {
   /// Creates a request for [method] to [uri] that [rule] answers.
   ///
   /// The fields that `dart:io` would add by itself are added here, so that the
@@ -276,7 +279,7 @@ final class MockHttpClientRequest implements HttpClientRequest {
 
   @override
   void abort([Object? exception, StackTrace? stackTrace]) {
-    if (_closing != null) return;
+    if (_closing != null || _done.isCompleted) return;
     _failure = exception ?? const HttpException('The request was aborted');
     _failureStack = stackTrace;
     _recorder?.cancel();
@@ -304,31 +307,6 @@ final class MockHttpClientRequest implements HttpClientRequest {
 
   @override
   Future<dynamic> flush() => Future.value();
-
-  @override
-  void write(Object? object) {
-    final text = '$object';
-    if (text.isNotEmpty) add(encoding.encode(text));
-  }
-
-  @override
-  void writeAll(Iterable<Object?> objects, [String separator = '']) {
-    var first = true;
-    for (final object in objects) {
-      if (!first && separator.isNotEmpty) write(separator);
-      first = false;
-      write(object);
-    }
-  }
-
-  @override
-  void writeCharCode(int charCode) => write(String.fromCharCode(charCode));
-
-  @override
-  void writeln([Object? object = '']) {
-    write(object);
-    write('\n');
-  }
 
   Future<HttpClientResponse> _answer() async {
     final recorder = _recorder;

@@ -8,6 +8,7 @@ import '../../model/call.dart';
 import '../../model/cookies.dart';
 import '../../model/headers.dart';
 import '../../model/message.dart';
+import '../../session.dart';
 import '../../store/store.dart';
 import '../../util/format.dart';
 import '../actions.dart';
@@ -29,6 +30,13 @@ import 'overview_tab.dart';
 enum _Tab { overview, request, response, messages }
 
 enum _Part { body, headers, cookies }
+
+/// The route that opens the call with [id].
+Route<void> callRoute(FlutwireSession session, int id) => shellRoute(
+  session,
+  name: 'flutwire/call',
+  child: CallDetailPage(callId: id),
+);
 
 /// One call in full: an overview, then the request and the response, each as a
 /// body, header fields and cookies.
@@ -103,25 +111,17 @@ class _CallDetailPageState extends State<CallDetailPage> {
   }
 
   void _openCall(int id) {
-    unawaited(
-      Navigator.of(context).push(
-        shellRoute(
-          context.session,
-          name: 'flutwire/call',
-          child: CallDetailPage(callId: id),
-        ),
-      ),
-    );
+    unawaited(Navigator.of(context).push(callRoute(context.session, id)));
   }
 
   /// Sets the call this one repeats beside it, the original on the left.
   void _compareWith(int originalId) {
     unawaited(
       Navigator.of(context).push(
-        shellRoute(
+        compareRoute(
           context.session,
-          name: 'flutwire/compare',
-          child: ComparePage(leftId: originalId, rightId: widget.callId),
+          leftId: originalId,
+          rightId: widget.callId,
         ),
       ),
     );
@@ -130,13 +130,9 @@ class _CallDetailPageState extends State<CallDetailPage> {
   /// Opens the editor of a new rule that starts from [call].
   void _makeRule(FlutwireCall call, FlutwireRuleKind kind) {
     unawaited(
-      Navigator.of(context).push(
-        shellRoute(
-          context.session,
-          name: 'flutwire/rule',
-          child: RuleEditorPage(kind: kind, from: call),
-        ),
-      ),
+      Navigator.of(
+        context,
+      ).push(ruleEditorRoute(context.session, kind: kind, from: call)),
     );
   }
 

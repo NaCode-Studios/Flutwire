@@ -56,14 +56,6 @@ final class FlutwireHeldRequest {
     since: since,
     rule: rule,
   );
-
-  /// Whether [other] asks for the same thing: the method, the address, the
-  /// header fields and the body.
-  bool sameRequestAs(FlutwireHeldRequest other) =>
-      method == other.method &&
-      uri == other.uri &&
-      headers == other.headers &&
-      listEquals(body, other.body);
 }
 
 /// A request that was put on hold: its number, and what becomes of it.
@@ -99,9 +91,6 @@ final class FlutwireBreakpoints extends ChangeNotifier {
   List<FlutwireHeldRequest> get held => [
     for (final hold in _holds.values) hold.request,
   ];
-
-  /// Whether any request is held.
-  bool get isHolding => _holds.isNotEmpty;
 
   /// The held request with [id], or null.
   FlutwireHeldRequest? find(int id) => _holds[id]?.request;
@@ -142,9 +131,6 @@ final class FlutwireBreakpoints extends ChangeNotifier {
   /// Lets the request with [id] go as [edited], which has its id and may differ
   /// from what was held in anything else.
   void resume(int id, FlutwireHeldRequest edited) => _release(id, edited);
-
-  /// Lets the request with [id] go as it was held.
-  void resumeUnchanged(int id) => _release(id, _holds[id]?.request);
 
   /// Stops the request with [id]: the app's call fails.
   void stop(int id) => _release(id, null);

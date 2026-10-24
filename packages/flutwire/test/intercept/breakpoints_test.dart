@@ -19,6 +19,10 @@ Future<FlutwireHeldRequest?> _hold(
     )
     .answer;
 
+/// Lets a held request go as it was held.
+void _sendOn(FlutwireBreakpoints breakpoints, int id) =>
+    breakpoints.resume(id, breakpoints.find(id)!);
+
 void main() {
   late FlutwireBreakpoints breakpoints;
 
@@ -33,7 +37,7 @@ void main() {
     });
     await Future<void>.delayed(Duration.zero);
 
-    expect(breakpoints.isHolding, isTrue);
+    expect(breakpoints.held, isNotEmpty);
     expect(released, isFalse);
     final held = breakpoints.held.single;
     expect(held.method, 'POST');
@@ -41,11 +45,11 @@ void main() {
     expect(held.headers.first('x-id'), '1');
     expect(held.body, [1, 2]);
 
-    breakpoints.resumeUnchanged(held.id);
+    _sendOn(breakpoints, held.id);
 
     final sent = (await future)!;
-    expect(sent.sameRequestAs(held), isTrue);
-    expect(breakpoints.isHolding, isFalse);
+    expect(sent, same(held));
+    expect(breakpoints.held, isEmpty);
   });
 
   test('lets it go as it was changed', () async {
@@ -67,7 +71,6 @@ void main() {
     expect(sent.uri.host, 'staging.test');
     expect(sent.headers.first('x-id'), '2');
     expect(sent.body, [9]);
-    expect(sent.sameRequestAs(held), isFalse);
     expect(sent.id, held.id);
   });
 
@@ -92,7 +95,7 @@ void main() {
       breakpoints.stop(ids[1]);
       expect(await second, isNull);
       expect(breakpoints.held.single.uri.path, '/first');
-      breakpoints.resumeUnchanged(ids[0]);
+      _sendOn(breakpoints, ids[0]);
       expect((await first)!.uri.path, '/first');
     },
   );
@@ -147,8 +150,19 @@ void main() {
     var told = 0;
     breakpoints.addListener(() => told++);
 
-    breakpoints.stop(42);
-    breakpoints.resumeUnchanged(42);
+    breakpoints
+      ..stop(42)
+      ..resume(
+        42,
+        FlutwireHeldRequest(
+          id: 42,
+          method: 'GET',
+          uri: Uri.parse('https://api.test/x'),
+          headers: FlutwireHeaders.empty,
+          body: Uint8List(0),
+          since: DateTime(2026),
+        ),
+      );
 
     expect(told, 0);
   });
@@ -161,7 +175,7 @@ void main() {
 
     expect(await a, isNull);
     expect(await b, isNull);
-    expect(breakpoints.isHolding, isFalse);
+    expect(breakpoints.held, isEmpty);
   });
 
   test(
@@ -172,32 +186,9 @@ void main() {
 
       expect(await pending, isNull);
       expect(await _hold(breakpoints), isNull);
-      expect(breakpoints.isHolding, isFalse);
+      expect(breakpoints.held, isEmpty);
       // The tear-down disposes it again.
       breakpoints = FlutwireBreakpoints();
     },
   );
-
-  test('takes a request for the same one when nothing about it changed', () {
-    final a = FlutwireHeldRequest(
-      id: 1,
-      method: 'GET',
-      uri: Uri.parse('https://api.test/a'),
-      headers: FlutwireHeaders.fromMap({'a': '1'}),
-      body: Uint8List(0),
-      since: DateTime(2026),
-    );
-
-    expect(a.sameRequestAs(a.copyWith()), isTrue);
-    expect(a.sameRequestAs(a.copyWith(method: 'POST')), isFalse);
-    expect(
-      a.sameRequestAs(a.copyWith(uri: Uri.parse('https://api.test/b'))),
-      isFalse,
-    );
-    expect(
-      a.sameRequestAs(a.copyWith(headers: FlutwireHeaders.fromMap({'a': '2'}))),
-      isFalse,
-    );
-    expect(a.sameRequestAs(a.copyWith(body: Uint8List.fromList([1]))), isFalse);
-  });
 }

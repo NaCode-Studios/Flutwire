@@ -53,6 +53,10 @@ HttpClient _unwrapped() {
   return client is FlutwireHttpClient ? client.unwrapped : client;
 }
 
+/// Lets a held request go as it was held.
+void _sendOn(FlutwireBreakpoints breakpoints, int id) =>
+    breakpoints.resume(id, breakpoints.find(id)!);
+
 void main() {
   setUpAll(() async {
     server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
@@ -379,6 +383,37 @@ void main() {
       expect((await settled()).single.state, FlutwireCallState.cancelled);
     });
 
+    test('takes a second abort of the request as nothing', () async {
+      start();
+      mock('127.0.0.1:*/echo', body: 'fake');
+      final client = HttpClient();
+
+      final request = await client.getUrl(Uri.parse('$base/echo'));
+      request
+        ..abort()
+        ..abort(StateError('again'));
+
+      await expectLater(request.close(), throwsA(isA<HttpException>()));
+      expect((await settled()).single.state, FlutwireCallState.cancelled);
+    });
+
+    test('writes text to the request the way a request does', () async {
+      start();
+      mock('127.0.0.1:*/echo', body: 'fake');
+      final client = HttpClient();
+
+      final request = await client.postUrl(Uri.parse('$base/echo'));
+      request
+        ..write('a')
+        ..writeAll([1, 2], ',')
+        ..writeCharCode(0x21)
+        ..writeln('!');
+      await utf8.decodeStream(await request.close());
+
+      final call = (await settled()).single;
+      expect(utf8.decode(call.request.body.bytes), 'a1,2!!\n');
+    });
+
     test('answers once the interception is off for the app', () async {
       start(const FlutwireConfig(enabled: true));
       engine = FlutwireEngine(
@@ -403,7 +438,7 @@ void main() {
       final client = HttpClient();
 
       final answer = post(client, '/echo');
-      await until(() => interception.breakpoints.isHolding);
+      await until(() => interception.breakpoints.held.isNotEmpty);
 
       // The app is waiting and nothing has left.
       expect(received, isEmpty);
@@ -414,7 +449,7 @@ void main() {
       expect(held.headers.first('x-demo'), '1');
       expect(held.headers.first('host'), startsWith('127.0.0.1:'));
 
-      interception.breakpoints.resumeUnchanged(held.id);
+      _sendOn(interception.breakpoints, held.id);
       final text = await answer;
 
       expect(jsonDecode(text), containsPair('body', 'hello'));
@@ -433,7 +468,7 @@ void main() {
       final client = HttpClient();
 
       final answer = post(client, '/echo');
-      await until(() => interception.breakpoints.isHolding);
+      await until(() => interception.breakpoints.held.isNotEmpty);
       final held = interception.breakpoints.held.single;
       interception.breakpoints.resume(
         held.id,
@@ -479,7 +514,7 @@ void main() {
       final client = HttpClient();
 
       final answer = post(client, '/echo');
-      await until(() => interception.breakpoints.isHolding);
+      await until(() => interception.breakpoints.held.isNotEmpty);
       final held = interception.breakpoints.held.single;
       interception.breakpoints.resume(
         held.id,
@@ -498,7 +533,7 @@ void main() {
 
       final answer = post(client, '/echo');
       final failure = expectLater(answer, throwsA(isA<HttpException>()));
-      await until(() => interception.breakpoints.isHolding);
+      await until(() => interception.breakpoints.held.isNotEmpty);
       interception.breakpoints.stop(interception.breakpoints.held.single.id);
       await failure;
 
@@ -518,9 +553,10 @@ void main() {
         final request = await client.getUrl(Uri.parse('$base/echo'));
         return utf8.decodeStream(await request.close());
       }();
-      await until(() => interception.breakpoints.isHolding);
+      await until(() => interception.breakpoints.held.isNotEmpty);
       expect(interception.breakpoints.held.single.body, isEmpty);
-      interception.breakpoints.resumeUnchanged(
+      _sendOn(
+        interception.breakpoints,
         interception.breakpoints.held.single.id,
       );
 
@@ -544,13 +580,13 @@ void main() {
         body: '{"password":"hunter2"}',
         headers: {'authorization': 'Bearer secret', 'x-demo': '1'},
       );
-      await until(() => interception.breakpoints.isHolding);
+      await until(() => interception.breakpoints.held.isNotEmpty);
       final held = interception.breakpoints.held.single;
 
       // Whoever holds the request sees what it says, secrets included.
       expect(held.headers.first('authorization'), 'Bearer secret');
       expect(utf8.decode(held.body), contains('hunter2'));
-      interception.breakpoints.resumeUnchanged(held.id);
+      _sendOn(interception.breakpoints, held.id);
       await answer;
 
       // The record of it hides them.
@@ -569,7 +605,7 @@ void main() {
         final client = HttpClient();
 
         final answer = post(client, '/echo');
-        await until(() => interception.breakpoints.isHolding);
+        await until(() => interception.breakpoints.held.isNotEmpty);
         final held = interception.breakpoints.held.single;
         interception.breakpoints.resume(
           held.id,
@@ -594,8 +630,9 @@ void main() {
       final client = http.Client();
 
       final answer = client.post(Uri.parse('$base/echo'), body: 'from http');
-      await until(() => interception.breakpoints.isHolding);
-      interception.breakpoints.resumeUnchanged(
+      await until(() => interception.breakpoints.held.isNotEmpty);
+      _sendOn(
+        interception.breakpoints,
         interception.breakpoints.held.single.id,
       );
       final response = await answer;
@@ -610,7 +647,7 @@ void main() {
       final dio = Dio();
 
       final answer = dio.post<Object?>('$base/echo', data: 'from dio');
-      await until(() => interception.breakpoints.isHolding);
+      await until(() => interception.breakpoints.held.isNotEmpty);
       final held = interception.breakpoints.held.single;
       interception.breakpoints.resume(
         held.id,
@@ -633,10 +670,10 @@ void main() {
       final secondId = held.firstWhere((r) => utf8.decode(r.body) == 'second');
       final firstId = held.firstWhere((r) => utf8.decode(r.body) == 'first');
 
-      interception.breakpoints.resumeUnchanged(secondId.id);
+      _sendOn(interception.breakpoints, secondId.id);
       expect(jsonDecode(await second), containsPair('body', 'second'));
       expect(interception.breakpoints.held.single.id, firstId.id);
-      interception.breakpoints.resumeUnchanged(firstId.id);
+      _sendOn(interception.breakpoints, firstId.id);
       expect(jsonDecode(await first), containsPair('body', 'first'));
     });
 
@@ -649,7 +686,7 @@ void main() {
       final text = await utf8.decodeStream(await request.close());
 
       expect(jsonDecode(text), containsPair('method', 'GET'));
-      expect(interception.breakpoints.isHolding, isFalse);
+      expect(interception.breakpoints.held, isEmpty);
     });
 
     test('holds what is not recorded too', () async {
@@ -659,8 +696,9 @@ void main() {
       final client = HttpClient();
 
       final answer = post(client, '/echo');
-      await until(() => interception.breakpoints.isHolding);
-      interception.breakpoints.resumeUnchanged(
+      await until(() => interception.breakpoints.held.isNotEmpty);
+      _sendOn(
+        interception.breakpoints,
         interception.breakpoints.held.single.id,
       );
 
@@ -678,7 +716,7 @@ void main() {
       final text = await utf8.decodeStream(await request.close());
 
       expect(text, 'fake');
-      expect(interception.breakpoints.isHolding, isFalse);
+      expect(interception.breakpoints.held, isEmpty);
     });
 
     test(
@@ -690,11 +728,11 @@ void main() {
 
         final answer = post(client, '/echo');
         final failure = expectLater(answer, throwsA(isA<HttpException>()));
-        await until(() => interception.breakpoints.isHolding);
+        await until(() => interception.breakpoints.held.isNotEmpty);
         client.close(force: true);
         await failure;
 
-        expect(interception.breakpoints.isHolding, isFalse);
+        expect(interception.breakpoints.held, isEmpty);
         expect(received, isEmpty);
       },
     );
@@ -708,11 +746,11 @@ void main() {
       request.write('hello');
       final closing = request.close();
       final failure = expectLater(closing, throwsA(isA<HttpException>()));
-      await until(() => interception.breakpoints.isHolding);
+      await until(() => interception.breakpoints.held.isNotEmpty);
       request.abort();
       await failure;
 
-      expect(interception.breakpoints.isHolding, isFalse);
+      expect(interception.breakpoints.held, isEmpty);
       expect(received, isEmpty);
     });
 
@@ -725,7 +763,7 @@ void main() {
 
         final answer = post(client, '/echo');
         final failure = expectLater(answer, throwsA(isA<HttpException>()));
-        await until(() => interception.breakpoints.isHolding);
+        await until(() => interception.breakpoints.held.isNotEmpty);
         await engine.dispose();
         await failure;
 
@@ -742,7 +780,7 @@ void main() {
       final text = await post(client, '/echo');
 
       expect(jsonDecode(text), containsPair('body', 'hello'));
-      expect(interception.breakpoints.isHolding, isFalse);
+      expect(interception.breakpoints.held, isEmpty);
     });
 
     test('leaves a request that does not match alone', () async {
@@ -771,7 +809,7 @@ void main() {
         final client = HttpClient();
 
         final answer = post(client, '/echo');
-        await until(() => interception.breakpoints.isHolding);
+        await until(() => interception.breakpoints.held.isNotEmpty);
         final held = interception.breakpoints.held.single;
         interception.breakpoints.resume(
           held.id,
@@ -790,7 +828,7 @@ void main() {
       final client = HttpClient();
 
       final answer = post(client, '/echo');
-      await until(() => interception.breakpoints.isHolding);
+      await until(() => interception.breakpoints.held.isNotEmpty);
 
       expect(interception.breakpoints.held.single.rule, 'ANY 127.0.0.1:*/echo');
       interception.breakpoints.stopAll();

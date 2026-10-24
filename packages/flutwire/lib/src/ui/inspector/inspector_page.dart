@@ -117,15 +117,7 @@ class _InspectorPageState extends State<InspectorPage> {
       setState(() => _openId = call.id);
       return;
     }
-    unawaited(
-      Navigator.of(context).push(
-        shellRoute(
-          _session,
-          name: 'flutwire/call',
-          child: CallDetailPage(callId: call.id),
-        ),
-      ),
-    );
+    unawaited(Navigator.of(context).push(callRoute(_session, call.id)));
   }
 
   Future<void> _confirmClear() async {
@@ -192,11 +184,7 @@ class _InspectorPageState extends State<InspectorPage> {
   }
 
   void _openRules() {
-    unawaited(
-      Navigator.of(context).push(
-        shellRoute(_session, name: 'flutwire/rules', child: const RulesPage()),
-      ),
-    );
+    unawaited(Navigator.of(context).push(rulesRoute(_session)));
   }
 
   /// A request held at a breakpoint is what the app is waiting for, so its
@@ -230,13 +218,9 @@ class _InspectorPageState extends State<InspectorPage> {
     final ids = _controller.selection.toList()..sort();
     if (ids.length != 2) return;
     unawaited(
-      Navigator.of(context).push(
-        shellRoute(
-          _session,
-          name: 'flutwire/compare',
-          child: ComparePage(leftId: ids.first, rightId: ids.last),
-        ),
-      ),
+      Navigator.of(
+        context,
+      ).push(compareRoute(_session, leftId: ids.first, rightId: ids.last)),
     );
   }
 

@@ -252,6 +252,7 @@ final class FlutwireCallRecorder {
   }
 
   /// Says how a rule of the user's touched the call, which the list marks.
+  @internal
   void intercepted(FlutwireIntercept how) => _guard(() {
     if (_finished) return;
     _call = _call.copyWith(intercept: how);
@@ -262,6 +263,7 @@ final class FlutwireCallRecorder {
   /// made it, for the reason in [message]. It ends in [state], which is
   /// `failed` when the app is told the request did not work and `cancelled`
   /// when a changed copy took its place.
+  @internal
   void endHeld(String message, {required FlutwireCallState state}) =>
       _guard(() {
         if (_finished) return;

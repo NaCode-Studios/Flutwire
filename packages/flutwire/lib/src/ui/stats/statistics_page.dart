@@ -6,7 +6,6 @@ import '../../stats/stats.dart';
 import '../../store/store.dart';
 import '../detail/call_detail_page.dart';
 import '../scope.dart';
-import '../shell.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/segmented_control.dart';
 import '../widgets/wire_rule.dart';
@@ -76,15 +75,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
   }
 
   void _open(int id) {
-    unawaited(
-      Navigator.of(context).push(
-        shellRoute(
-          context.session,
-          name: 'flutwire/call',
-          child: CallDetailPage(callId: id),
-        ),
-      ),
-    );
+    unawaited(Navigator.of(context).push(callRoute(context.session, id)));
   }
 
   @override

@@ -8,20 +8,29 @@ import '../../intercept/rule.dart';
 import '../../model/body.dart';
 import '../../model/call.dart';
 import '../../model/headers.dart';
+import '../../session.dart';
 import '../../util/format.dart';
 import '../scope.dart';
+import '../shell.dart';
 import '../theme/tokens.dart';
 import '../widgets/method_chip.dart';
 import '../widgets/request_fields.dart';
 
-/// How the body of a mock is offered for editing.
-enum _BodyMode {
-  /// Text, edited in place.
-  text,
+/// The longest a mock may wait before it answers.
+const Duration _longestDelay = Duration(minutes: 10);
 
-  /// Bytes that are not text, which are served as they were recorded.
-  recorded,
-}
+/// The route that opens the editor of [rule], or of a new rule of [kind] that
+/// starts from [from].
+Route<void> ruleEditorRoute(
+  FlutwireSession session, {
+  required FlutwireRuleKind kind,
+  FlutwireRule? rule,
+  FlutwireCall? from,
+}) => shellRoute(
+  session,
+  name: 'flutwire/rule',
+  child: RuleEditorPage(kind: kind, rule: rule, from: from),
+);
 
 /// The editor of a rule: which requests it is about, and for a mock, the
 /// response it gives.
@@ -52,7 +61,7 @@ class _RuleEditorPageState extends State<RuleEditorPage> {
   late final TextEditingController _status;
   late final TextEditingController _delay;
   late final TextEditingController _body;
-  late final _BodyMode _mode;
+  late final BodyEditMode _mode;
   final List<HeaderRowControllers> _headers = [];
   Uint8List _recordedBytes = Uint8List(0);
   FlutwireBody? _fromBody;
@@ -70,7 +79,7 @@ class _RuleEditorPageState extends State<RuleEditorPage> {
     _name = TextEditingController(text: rule?.name ?? '')
       ..addListener(_changed);
     _pattern = TextEditingController(
-      text: rule?.pattern ?? (call == null ? '' : patternFor(call)),
+      text: rule?.pattern ?? (call == null ? '' : _patternFor(call)),
     )..addListener(_changed);
     _method = rule == null ? call?.method : rule.method;
     _status = TextEditingController(text: '${response?.statusCode ?? 200}')
@@ -82,9 +91,9 @@ class _RuleEditorPageState extends State<RuleEditorPage> {
         ? call?.response?.body
         : FlutwireBody(bytes: response?.body ?? Uint8List(0));
     _fromBody = body;
-    _mode = body == null || _isText(body) ? _BodyMode.text : _BodyMode.recorded;
+    _mode = body == null ? BodyEditMode.text : BodyEditMode.of(body);
     _body = TextEditingController(
-      text: _mode == _BodyMode.text && body != null
+      text: _mode == BodyEditMode.text && body != null
           ? body.prettyText ?? body.text ?? ''
           : '',
     );
@@ -121,23 +130,8 @@ class _RuleEditorPageState extends State<RuleEditorPage> {
     );
   }
 
-  static bool _isText(FlutwireBody body) {
-    if (!body.loaded) return false;
-    return switch (body.kind) {
-      FlutwireBodyKind.empty ||
-      FlutwireBodyKind.json ||
-      FlutwireBodyKind.xml ||
-      FlutwireBodyKind.html ||
-      FlutwireBodyKind.text ||
-      FlutwireBodyKind.form => true,
-      FlutwireBodyKind.multipart ||
-      FlutwireBodyKind.image ||
-      FlutwireBodyKind.binary => false,
-    };
-  }
-
   /// A pattern for requests like [call]: its host and path, and any query.
-  static String patternFor(FlutwireCall call) {
+  static String _patternFor(FlutwireCall call) {
     final port = call.uri.hasPort && call.uri.port != 0
         ? ':${call.uri.port}'
         : '';
@@ -168,7 +162,7 @@ class _RuleEditorPageState extends State<RuleEditorPage> {
 
   bool get _patternOk => _pattern.text.trim().isNotEmpty;
 
-  Uint8List get _bodyBytes => _mode == _BodyMode.text
+  Uint8List get _bodyBytes => _mode == BodyEditMode.text
       ? Uint8List.fromList(utf8.encode(_body.text))
       : _recordedBytes;
 
@@ -192,7 +186,7 @@ class _RuleEditorPageState extends State<RuleEditorPage> {
             delay: Duration(
               milliseconds: (int.tryParse(_delay.text.trim()) ?? 0).clamp(
                 0,
-                600000,
+                _longestDelay.inMilliseconds,
               ),
             ),
           )
@@ -308,29 +302,11 @@ class _RuleEditorPageState extends State<RuleEditorPage> {
           ),
         ),
       ),
-      bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(
-          color: t.ground,
-          border: Border(top: BorderSide(color: t.line)),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-            child: Center(
-              heightFactor: 1,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 720),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: _save,
-                    icon: const Icon(Icons.check_rounded, size: 18),
-                    label: Text(s.save),
-                  ),
-                ),
-              ),
-            ),
-          ),
+      bottomNavigationBar: EditorBottomBar(
+        child: FilledButton.icon(
+          onPressed: _save,
+          icon: const Icon(Icons.check_rounded, size: 18),
+          label: Text(s.save),
         ),
       ),
     );
@@ -403,7 +379,7 @@ class _RuleEditorPageState extends State<RuleEditorPage> {
         ),
         const SizedBox(height: 8),
       ],
-      if (_mode == _BodyMode.text)
+      if (_mode == BodyEditMode.text)
         TextField(
           controller: _body,
           minLines: 6,

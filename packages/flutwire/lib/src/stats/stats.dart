@@ -56,8 +56,9 @@ final class SessionStats {
     }
     final durations = [for (final call in timed) call.duration.inMicroseconds]
       ..sort();
-    final slowestFirst = [...timed]
-      ..sort((a, b) => b.duration.compareTo(a.duration));
+    final slowestFirst = slowest <= 0
+        ? const <FlutwireCall>[]
+        : ([...timed]..sort((a, b) => b.duration.compareTo(a.duration)));
     final hosts = [
       for (final entry in byHost.entries)
         HostStats._(

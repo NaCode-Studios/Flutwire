@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../../intercept/interception.dart';
 import '../scope.dart';
-import '../shell.dart';
 import '../theme/tokens.dart';
 import 'held.dart';
 import 'rules_page.dart';
@@ -59,15 +58,8 @@ class InterceptBanner extends StatelessWidget {
               icon: Icons.auto_fix_high_rounded,
               tone: t.copperTone,
               text: s.interceptRulesActive(active),
-              onTap: () => unawaited(
-                Navigator.of(context).push(
-                  shellRoute(
-                    session,
-                    name: 'flutwire/rules',
-                    child: const RulesPage(),
-                  ),
-                ),
-              ),
+              onTap: () =>
+                  unawaited(Navigator.of(context).push(rulesRoute(session))),
             ),
         ],
       ),

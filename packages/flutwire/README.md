@@ -113,7 +113,7 @@ A mock answers the request with a stored response and sends nothing. Open a call
 
 A breakpoint holds a request before it leaves, while the app waits for the answer, and opens it in the editor used for sending a call again. Send it on as it is or with changes, or stop it, and the app gets an error. A request that went out changed is recorded as a call that repeats the one the app made, and the first call ends as held. Nothing has been recorded when the request is held, so the editor shows its real header fields, authorization included; the call that is recorded afterwards is masked as usual.
 
-A line above the list says how many rules are in force and how many requests are held, and a call that a rule touched is marked in the list. Both work through the `dart:io` capture, so they cover Dio and `package:http` wherever `dart:io` exists and do nothing on the web or with `captureDartIo` off.
+A line above the list says how many rules are in force and how many requests are held, and a call that a rule touched is marked in the list. Both work through the `dart:io` capture, so they cover Dio and `package:http` wherever `dart:io` exists and do nothing on the web or with `captureDartIo` off. A call made in another isolate is recorded but never mocked or held, and a mocked redirect is handed to the app as it is, not followed.
 
 ## Configuration
 

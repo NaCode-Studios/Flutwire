@@ -12,19 +12,9 @@ import '../../util/format.dart';
 import '../actions.dart';
 import '../detail/call_detail_page.dart';
 import '../scope.dart';
-import '../shell.dart';
 import '../theme/tokens.dart';
 import '../widgets/method_chip.dart';
 import '../widgets/request_fields.dart';
-
-/// How the body of the call is offered for editing.
-enum _BodyMode {
-  /// Text, edited in place. An empty body is text with nothing in it.
-  text,
-
-  /// Bytes that are not text, which can only be sent as they were recorded.
-  recorded,
-}
 
 /// A request opened for changes: a recorded call to be sent again, or a request
 /// that a breakpoint holds before it leaves.
@@ -54,7 +44,7 @@ class ResendPage extends StatefulWidget {
 class _ResendPageState extends State<ResendPage> {
   late final TextEditingController _url;
   late final TextEditingController _body;
-  late final _BodyMode _mode;
+  late final BodyEditMode _mode;
   final List<HeaderRowControllers> _headers = [];
   late String _method;
   bool _sendRecordedBody = true;
@@ -81,9 +71,9 @@ class _ResendPageState extends State<ResendPage> {
     _method = call.method;
     _url = TextEditingController(text: call.uri.toString())
       ..addListener(_changed);
-    _mode = _modeOf(_recorded);
+    _mode = BodyEditMode.of(_recorded);
     _body = TextEditingController(
-      text: _mode == _BodyMode.text ? _recorded.text ?? '' : '',
+      text: _mode == BodyEditMode.text ? _recorded.text ?? '' : '',
     );
     for (final field in call.request.headers.entries) {
       if (clientManagedHeaders.contains(field.key.toLowerCase())) continue;
@@ -100,21 +90,6 @@ class _ResendPageState extends State<ResendPage> {
       row.dispose();
     }
     super.dispose();
-  }
-
-  static _BodyMode _modeOf(FlutwireBody body) {
-    if (!body.loaded) return _BodyMode.recorded;
-    return switch (body.kind) {
-      FlutwireBodyKind.empty ||
-      FlutwireBodyKind.json ||
-      FlutwireBodyKind.xml ||
-      FlutwireBodyKind.html ||
-      FlutwireBodyKind.text ||
-      FlutwireBodyKind.form => _BodyMode.text,
-      FlutwireBodyKind.multipart ||
-      FlutwireBodyKind.image ||
-      FlutwireBodyKind.binary => _BodyMode.recorded,
-    };
   }
 
   HeaderRowControllers _row(String name, String value) =>
@@ -154,10 +129,12 @@ class _ResendPageState extends State<ResendPage> {
   }
 
   bool get _canSendRecordedBody =>
-      _mode == _BodyMode.recorded && _recorded.loaded && !_recorded.truncated;
+      _mode == BodyEditMode.recorded &&
+      _recorded.loaded &&
+      !_recorded.truncated;
 
   Uint8List? get _bodyBytes {
-    if (_mode == _BodyMode.text) {
+    if (_mode == BodyEditMode.text) {
       final text = _body.text;
       return text.isEmpty ? null : Uint8List.fromList(utf8.encode(text));
     }
@@ -183,15 +160,30 @@ class _ResendPageState extends State<ResendPage> {
   void _heldChanged() {
     final held = widget.held;
     if (_leaving || held == null || _breakpoints?.find(held.id) != null) return;
-    _leaving = true;
     showToast(context, context.strings.heldGone);
-    Navigator.of(context).pop();
+    _leave();
+  }
+
+  /// Takes this page off the stack. The editor of the next held request can be
+  /// pushed over it at the very moment this one is let go, and that one stays:
+  /// this page is removed where it is.
+  void _leave() {
+    _leaving = true;
+    final navigator = Navigator.of(context);
+    final route = ModalRoute.of(context);
+    if (route == null || route.isCurrent) {
+      navigator.pop();
+    } else {
+      navigator.removeRoute(route);
+    }
   }
 
   /// Lets the held request go as it is written, and goes back.
   void _resume(FlutwireHeldRequest held, Uri target) {
     final request = _request(target, withBody: true);
-    _leaving = true;
+    // The page goes first, because letting the request go can bring up the
+    // editor of the next one.
+    _leave();
     _breakpoints?.resume(
       held.id,
       held.copyWith(
@@ -201,14 +193,12 @@ class _ResendPageState extends State<ResendPage> {
         body: request.body ?? Uint8List(0),
       ),
     );
-    Navigator.of(context).pop();
   }
 
   /// Stops the held request, so that the app's call fails, and goes back.
   void _stop(FlutwireHeldRequest held) {
-    _leaving = true;
+    _leave();
     _breakpoints?.stop(held.id);
-    Navigator.of(context).pop();
   }
 
   Future<void> _send() async {
@@ -242,15 +232,7 @@ class _ResendPageState extends State<ResendPage> {
       navigator.pop();
       return;
     }
-    unawaited(
-      navigator.pushReplacement(
-        shellRoute(
-          session,
-          name: 'flutwire/call',
-          child: CallDetailPage(callId: id),
-        ),
-      ),
-    );
+    unawaited(navigator.pushReplacement(callRoute(session, id)));
   }
 
   @override
@@ -341,62 +323,40 @@ class _ResendPageState extends State<ResendPage> {
           ),
         ),
       ),
-      bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(
-          color: t.ground,
-          border: Border(top: BorderSide(color: t.line)),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-            child: Center(
-              heightFactor: 1,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 720),
-                // The stop button keeps its own width until it would crowd out
-                // the one that sends, as it does in a long translation or with
-                // a large text size.
-                child: LayoutBuilder(
-                  builder: (context, box) => Row(
-                    children: [
-                      if (widget.held case final held?) ...[
-                        ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxWidth: box.maxWidth * 0.6,
-                          ),
-                          child: OutlinedButton.icon(
-                            onPressed: () => _stop(held),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: t.error,
-                              side: BorderSide(
-                                color: t.error.withValues(alpha: 0.5),
-                              ),
-                            ),
-                            icon: const Icon(Icons.stop_rounded, size: 18),
-                            label: Text(s.heldStop),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                      ],
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: _sending ? null : _send,
-                          icon: _sending
-                              ? const SizedBox.square(
-                                  dimension: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.send_rounded, size: 18),
-                          label: Text(_sending ? s.sending : s.send),
-                        ),
-                      ),
-                    ],
+      // The stop button keeps its own width until it would crowd out the one
+      // that sends, as it does in a long translation or with a large text size.
+      bottomNavigationBar: EditorBottomBar(
+        child: LayoutBuilder(
+          builder: (context, box) => Row(
+            children: [
+              if (widget.held case final held?) ...[
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: box.maxWidth * 0.6),
+                  child: OutlinedButton.icon(
+                    onPressed: () => _stop(held),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: t.error,
+                      side: BorderSide(color: t.error.withValues(alpha: 0.5)),
+                    ),
+                    icon: const Icon(Icons.stop_rounded, size: 18),
+                    label: Text(s.heldStop),
                   ),
                 ),
+                const SizedBox(width: 10),
+              ],
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: _sending ? null : _send,
+                  icon: _sending
+                      ? const SizedBox.square(
+                          dimension: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.send_rounded, size: 18),
+                  label: Text(_sending ? s.sending : s.send),
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -406,7 +366,7 @@ class _ResendPageState extends State<ResendPage> {
   List<Widget> _bodySection(BuildContext context) {
     final s = context.strings;
     final t = context.fw;
-    if (_mode == _BodyMode.text) {
+    if (_mode == BodyEditMode.text) {
       final mask = _mask;
       return [
         // Typing over the mask takes the note away, so it follows the text.

@@ -1,6 +1,36 @@
 import 'dart:convert';
 import 'dart:io';
 
+/// The text writes of a request. They come down to [add] and to the request's
+/// [encoding], which is all the request itself has to provide.
+mixin HttpClientRequestWrites implements HttpClientRequest {
+  @override
+  void write(Object? object) {
+    final text = '$object';
+    if (text.isEmpty) return;
+    add(encoding.encode(text));
+  }
+
+  @override
+  void writeAll(Iterable<Object?> objects, [String separator = '']) {
+    var first = true;
+    for (final object in objects) {
+      if (!first && separator.isNotEmpty) write(separator);
+      first = false;
+      write(object);
+    }
+  }
+
+  @override
+  void writeCharCode(int charCode) => write(String.fromCharCode(charCode));
+
+  @override
+  void writeln([Object? object = '']) {
+    write(object);
+    write('\n');
+  }
+}
+
 /// A request that is the one it wraps, until a subclass changes what it does
 /// with what the app writes and with the end of the request.
 ///
@@ -9,7 +39,9 @@ import 'dart:io';
 /// request underneath, so that the app finds there what it put there. A
 /// subclass decides what happens to [add], [addStream], [close], [done] and
 /// [abort].
-abstract class ForwardingHttpClientRequest implements HttpClientRequest {
+abstract class ForwardingHttpClientRequest
+    with HttpClientRequestWrites
+    implements HttpClientRequest {
   /// Wraps [inner].
   ForwardingHttpClientRequest(this.inner);
 
@@ -57,30 +89,4 @@ abstract class ForwardingHttpClientRequest implements HttpClientRequest {
 
   @override
   Future<dynamic> flush() => inner.flush();
-
-  @override
-  void write(Object? object) {
-    final text = '$object';
-    if (text.isEmpty) return;
-    add(encoding.encode(text));
-  }
-
-  @override
-  void writeAll(Iterable<Object?> objects, [String separator = '']) {
-    var first = true;
-    for (final object in objects) {
-      if (!first && separator.isNotEmpty) write(separator);
-      first = false;
-      write(object);
-    }
-  }
-
-  @override
-  void writeCharCode(int charCode) => write(String.fromCharCode(charCode));
-
-  @override
-  void writeln([Object? object = '']) {
-    write(object);
-    write('\n');
-  }
 }

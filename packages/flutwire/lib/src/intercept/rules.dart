@@ -30,9 +30,6 @@ final class FlutwireRules extends ChangeNotifier {
   /// How many rules are in force.
   int get activeCount => _rules.where((rule) => rule.enabled).length;
 
-  /// Whether there is no rule at all.
-  bool get isEmpty => _rules.isEmpty;
-
   /// The rule with [id], or null.
   FlutwireRule? find(String id) {
     for (final rule in _rules) {

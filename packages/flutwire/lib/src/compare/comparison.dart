@@ -60,7 +60,7 @@ final class Comparison {
         ComparisonSection(
           title: title,
           rows: rows,
-          differences: rows.where((row) => row.differs).length,
+          differences: _differing(rows),
         );
 
     final query = diffFields(_query(left), _query(right), ignoreCase: false);
@@ -95,6 +95,8 @@ final class Comparison {
   /// How many things differ in all of it.
   int get differences => sections.fold(0, (sum, s) => sum + s.differences);
 }
+
+int _differing(List<DiffRow> rows) => rows.where((row) => row.differs).length;
 
 List<MapEntry<String, String>> _query(FlutwireCall call) => [
   for (final entry in call.uri.queryParametersAll.entries)
@@ -222,7 +224,7 @@ ComparisonSection? _bodies(
     return ComparisonSection(
       title: title,
       rows: rows,
-      differences: rows.where((row) => row.differs).length,
+      differences: _differing(rows),
       notes: notes,
     );
   }
@@ -231,7 +233,7 @@ ComparisonSection? _bodies(
   return ComparisonSection(
     title: title,
     rows: rows,
-    differences: rows.where((row) => row.differs).length,
+    differences: _differing(rows),
     notes: notes,
     lines: true,
   );

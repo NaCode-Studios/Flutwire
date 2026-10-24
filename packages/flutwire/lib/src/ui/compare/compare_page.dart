@@ -6,6 +6,7 @@ import '../../compare/comparison.dart';
 import '../../compare/diff.dart';
 import '../../l10n/strings.dart';
 import '../../model/call.dart';
+import '../../session.dart';
 import '../../store/store.dart';
 import '../../util/format.dart';
 import '../detail/call_detail_page.dart';
@@ -17,6 +18,17 @@ import '../widgets/status_pill.dart';
 import '../widgets/toggle_chip.dart';
 import '../widgets/wire_rule.dart';
 import 'diff_rows.dart';
+
+/// The route that sets two calls side by side, [leftId] on the left.
+Route<void> compareRoute(
+  FlutwireSession session, {
+  required int leftId,
+  required int rightId,
+}) => shellRoute(
+  session,
+  name: 'flutwire/compare',
+  child: ComparePage(leftId: leftId, rightId: rightId),
+);
 
 /// Two calls side by side: the overview, the query, the header fields and the
 /// bodies, with what differs marked.
@@ -129,15 +141,7 @@ class _ComparePageState extends State<ComparePage> {
   }
 
   void _open(int id) {
-    unawaited(
-      Navigator.of(context).push(
-        shellRoute(
-          context.session,
-          name: 'flutwire/call',
-          child: CallDetailPage(callId: id),
-        ),
-      ),
-    );
+    unawaited(Navigator.of(context).push(callRoute(context.session, id)));
   }
 
   @override

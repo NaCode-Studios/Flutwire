@@ -4,13 +4,19 @@ import 'package:flutter/material.dart';
 
 import '../../intercept/rule.dart';
 import '../../intercept/rules.dart';
+import '../../session.dart';
 import '../actions.dart';
 import '../scope.dart';
 import '../shell.dart';
 import '../theme/tokens.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/request_fields.dart';
 import '../widgets/wire_rule.dart';
 import 'rule_editor_page.dart';
+
+/// The route that opens the rules.
+Route<void> rulesRoute(FlutwireSession session) =>
+    shellRoute(session, name: 'flutwire/rules', child: const RulesPage());
 
 /// The rules that answer a request or hold it: which are in force, which are
 /// off, and a way to make and change them.
@@ -125,12 +131,17 @@ class _Rules extends StatelessWidget {
             message: s.interceptEmptyBody,
           );
         }
-        return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          itemCount: all.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 10),
-          itemBuilder: (context, index) =>
-              _RuleTile(rule: all[index], rules: rules),
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              itemCount: all.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 10),
+              itemBuilder: (context, index) =>
+                  _RuleTile(rule: all[index], rules: rules),
+            ),
+          ),
         );
       },
     );
@@ -163,11 +174,7 @@ class _RuleTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(FlutwireTokens.radiusMd),
           onTap: () => unawaited(
             Navigator.of(context).push(
-              shellRoute(
-                context.session,
-                name: 'flutwire/rule',
-                child: RuleEditorPage(kind: rule.kind, rule: rule),
-              ),
+              ruleEditorRoute(context.session, kind: rule.kind, rule: rule),
             ),
           ),
           child: Container(
@@ -243,47 +250,28 @@ class _AddBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.strings;
-    final t = context.fw;
     void add(FlutwireRuleKind kind) => unawaited(
-      Navigator.of(context).push(
-        shellRoute(
-          context.session,
-          name: 'flutwire/rule',
-          child: RuleEditorPage(kind: kind),
-        ),
-      ),
+      Navigator.of(context).push(ruleEditorRoute(context.session, kind: kind)),
     );
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: t.ground,
-        border: Border(top: BorderSide(color: t.line)),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => add(FlutwireRuleKind.mock),
-                  icon: const Icon(Icons.auto_fix_high_rounded, size: 18),
-                  label: Text(s.interceptNewMock),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: () => add(FlutwireRuleKind.breakpoint),
-                  icon: const Icon(
-                    Icons.pause_circle_outline_rounded,
-                    size: 18,
-                  ),
-                  label: Text(s.interceptNewBreakpoint),
-                ),
-              ),
-            ],
+    return EditorBottomBar(
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => add(FlutwireRuleKind.mock),
+              icon: const Icon(Icons.auto_fix_high_rounded, size: 18),
+              label: Text(s.interceptNewMock),
+            ),
           ),
-        ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: FilledButton.icon(
+              onPressed: () => add(FlutwireRuleKind.breakpoint),
+              icon: const Icon(Icons.pause_circle_outline_rounded, size: 18),
+              label: Text(s.interceptNewBreakpoint),
+            ),
+          ),
+        ],
       ),
     );
   }
