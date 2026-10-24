@@ -12,6 +12,7 @@ board can be cross-checked against what actually shipped.
 ### Fixed
 
 - A call whose answer has no body stayed pending, with a duration that kept growing, when the app never read the answer, as it does not after looking at the status of a conditional request. The call now ends when the head arrives, for the answer to a HEAD request, a 204, a 304 and an answer that says it is empty. A redirect still waits, because the client may follow it
+- The recording dot, and the status and the time of a call that is still running, pulsed for as long as they were on screen, which kept the app drawing a frame on every refresh with nothing else changing. A pulse now beats three times when it appears, the recording dot beats again when the history changes, and then it holds still. It also no longer starts when the system asks for reduced motion, where it ran without being seen
 
 ### Internal
 

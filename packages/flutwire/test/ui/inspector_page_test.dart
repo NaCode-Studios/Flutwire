@@ -118,6 +118,71 @@ void main() {
     });
   });
 
+  // The dot pulses while traffic flows and rests when none does. One that
+  // never rests keeps the app drawing a frame on every refresh for as long as
+  // the inspector is open, which on a phone is heat and battery for nothing.
+  group('the pulse', () {
+    const longerThanTheBeats = Duration(seconds: 12);
+
+    testWidgets('rests once nothing is arriving', (tester) async {
+      await open(tester);
+      expect(tester.hasRunningAnimations, isTrue);
+
+      await tester.pump(longerThanTheBeats);
+
+      expect(tester.hasRunningAnimations, isFalse);
+    });
+
+    testWidgets('beats when a call arrives', (tester) async {
+      final session = await open(tester);
+      await tester.pump(longerThanTheBeats);
+      expect(tester.hasRunningAnimations, isFalse);
+
+      session.store
+        ..put(makeCall(5, url: 'https://api.test/new'))
+        ..flush();
+      await tester.pump();
+      expect(tester.hasRunningAnimations, isTrue);
+
+      await tester.pump(longerThanTheBeats);
+      expect(tester.hasRunningAnimations, isFalse);
+    });
+
+    testWidgets('does not beat while recording is paused', (tester) async {
+      final session = await open(tester);
+      session.paused.value = true;
+      await tester.pump(longerThanTheBeats);
+
+      session.store
+        ..put(makeCall(5, url: 'https://api.test/new'))
+        ..flush();
+      await tester.pump();
+
+      expect(tester.hasRunningAnimations, isFalse);
+    });
+
+    testWidgets('a call that is still running does not keep it going', (
+      tester,
+    ) async {
+      await open(
+        tester,
+        calls: [
+          makeCall(
+            1,
+            url: 'https://api.test/stream',
+            status: null,
+            state: FlutwireCallState.pending,
+          ),
+        ],
+      );
+      expect(find.text('···'), findsOneWidget);
+
+      await tester.pump(longerThanTheBeats);
+
+      expect(tester.hasRunningAnimations, isFalse);
+    });
+  });
+
   group('search and filters', () {
     Future<void> type(WidgetTester tester, String text) async {
       await tester.enterText(find.byType(TextField), text);

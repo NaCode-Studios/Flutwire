@@ -72,8 +72,9 @@ Widget inspectorApp(FlutwireSession session, Widget home) => MaterialApp(
   home: FlutwireShell(session: session, child: home),
 );
 
-/// The inspector pulses while it records, so `pumpAndSettle` never settles:
-/// this lets the animations and the short timers run instead.
+/// The inspector pulses when it opens and whenever a call arrives, so
+/// `pumpAndSettle` would also run those beats out: this lets the animations and
+/// the short timers run for a fixed time instead.
 Future<void> settle(WidgetTester tester, [int milliseconds = 500]) async {
   await tester.pump();
   await tester.pump(Duration(milliseconds: milliseconds));
