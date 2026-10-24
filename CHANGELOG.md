@@ -9,6 +9,20 @@ board can be cross-checked against what actually shipped.
 
 ## [Unreleased]
 
+### Added
+
+- An example for each adapter, so the package page on pub.dev has one to show (M34)
+
+### Fixed
+
+- `flutwire_dio` allowed `dio` 5.0 and 5.1 but does not compile against them, because `DioException` arrived with 5.2. The constraint is now `^5.2.0` (M34)
+
+### Internal
+
+- CI checks that every package passes `flutter pub publish --dry-run`, and that it analyzes and passes its tests at the lowest versions its constraints allow, each package resolved on its own (M34)
+- The release workflow publishes the four packages to pub.dev, the core first and the adapters once the core can be resolved. It holds no token, because pub.dev trusts the repository and the tag, the third-party actions it runs are pinned to a commit, and it attests and records each archive (M35)
+- The Apple build runs on every pull request instead of waiting for it to leave draft, now that the repository is public
+
 ## [0.1.0] - 2026-10-24
 
 ### Added
