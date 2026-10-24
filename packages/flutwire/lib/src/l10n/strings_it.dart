@@ -1,3 +1,4 @@
+import '../coverage.dart' show FlutwireGap;
 import 'strings.dart';
 
 /// Italian.
@@ -464,4 +465,50 @@ class FlutwireStringsIt extends FlutwireStrings {
 
   @override
   String get moreActions => 'Altre azioni';
+
+  @override
+  String get coverageBanner => 'Flutwire potrebbe non vedere alcune chiamate';
+
+  @override
+  String get coverageDetails => 'Dettagli';
+
+  @override
+  String get coverageTitle => 'Cosa Flutwire potrebbe non vedere';
+
+  @override
+  String coverageGapTitle(FlutwireGap gap) => switch (gap) {
+    FlutwireGap.clientBypassesDartIo => 'Un client che non usa dart:io',
+    FlutwireGap.captureReplaced => 'La cattura di dart:io è stata sostituita',
+    FlutwireGap.otherIsolate => 'Una chiamata da un altro isolate',
+  };
+
+  @override
+  String coverageGapWhat(FlutwireGap gap, String subject) => switch (gap) {
+    FlutwireGap.clientBypassesDartIo =>
+      '$subject ha fatto una chiamata che la cattura di dart:io non ha mai '
+          "visto. L'adattatore si è fatto da parte, quindi la chiamata non è "
+          "nell'elenco.",
+    FlutwireGap.captureReplaced =>
+      'Qualcosa ha impostato HttpOverrides.global senza passare da quello '
+          'installato da Flutwire, quindi le chiamate di dart:io non vengono '
+          'più registrate.',
+    FlutwireGap.otherIsolate =>
+      "$subject. Gli override appartengono a un solo isolate e in questo non "
+          "registra nessuno, quindi le sue chiamate non sono nell'elenco.",
+  };
+
+  @override
+  String coverageGapFix(FlutwireGap gap) => switch (gap) {
+    FlutwireGap.clientBypassesDartIo =>
+      "Passa force: true all'adattatore, così registra lui la chiamata.",
+    FlutwireGap.captureReplaced =>
+      'Imposta i tuoi override prima di Flutwire.init, oppure costruiscili su '
+          'HttpOverrides.current.',
+    FlutwireGap.otherIsolate =>
+      "Fai la chiamata nell'isolate principale, dove Flutwire registra.",
+  };
+
+  @override
+  String coverageSeen(int count) =>
+      count == 1 ? 'Visto una volta' : 'Visto $count volte';
 }

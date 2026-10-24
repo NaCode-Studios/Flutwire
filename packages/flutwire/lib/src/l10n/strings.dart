@@ -1,3 +1,5 @@
+import '../coverage.dart' show FlutwireGap;
+
 /// Every piece of text Flutwire shows, in one language.
 ///
 /// English and Italian ship with the package, and `stringsFor` picks one for a
@@ -457,4 +459,27 @@ abstract class FlutwireStrings {
 
   /// The label of a menu that holds the less common actions.
   String get moreActions;
+
+  // Coverage
+
+  /// The line above the list that says Flutwire may be missing calls.
+  String get coverageBanner;
+
+  /// The action that opens the reasons.
+  String get coverageDetails;
+
+  /// The title of the list of reasons.
+  String get coverageTitle;
+
+  /// The name of a blind spot.
+  String coverageGapTitle(FlutwireGap gap);
+
+  /// What happened, for a blind spot about [subject].
+  String coverageGapWhat(FlutwireGap gap, String subject);
+
+  /// What to do about a blind spot.
+  String coverageGapFix(FlutwireGap gap);
+
+  /// How often a blind spot was seen.
+  String coverageSeen(int count);
 }

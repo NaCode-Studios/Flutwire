@@ -1,3 +1,4 @@
+import '../coverage.dart' show FlutwireGap;
 import 'strings.dart';
 
 /// English.
@@ -459,4 +460,49 @@ class FlutwireStringsEn extends FlutwireStrings {
 
   @override
   String get moreActions => 'More actions';
+
+  @override
+  String get coverageBanner => 'Flutwire may be missing calls';
+
+  @override
+  String get coverageDetails => 'Details';
+
+  @override
+  String get coverageTitle => 'What Flutwire may not see';
+
+  @override
+  String coverageGapTitle(FlutwireGap gap) => switch (gap) {
+    FlutwireGap.clientBypassesDartIo => 'A client that does not use dart:io',
+    FlutwireGap.captureReplaced => 'The dart:io capture was replaced',
+    FlutwireGap.otherIsolate => 'A call from another isolate',
+  };
+
+  @override
+  String coverageGapWhat(FlutwireGap gap, String subject) => switch (gap) {
+    FlutwireGap.clientBypassesDartIo =>
+      '$subject made a call that the dart:io capture never saw. The adapter '
+          'stood down for it, so the call is not in the list.',
+    FlutwireGap.captureReplaced =>
+      'Something set HttpOverrides.global without chaining to the override '
+          'Flutwire installed, so calls through dart:io are no longer '
+          'recorded.',
+    FlutwireGap.otherIsolate =>
+      '$subject. Overrides belong to one isolate and nothing records in this '
+          'one, so its calls are not in the list.',
+  };
+
+  @override
+  String coverageGapFix(FlutwireGap gap) => switch (gap) {
+    FlutwireGap.clientBypassesDartIo =>
+      'Pass force: true to the adapter, so that it records the call itself.',
+    FlutwireGap.captureReplaced =>
+      'Set your own overrides before Flutwire.init, or build them on '
+          'HttpOverrides.current.',
+    FlutwireGap.otherIsolate =>
+      'Make the call in the main isolate, where Flutwire records.',
+  };
+
+  @override
+  String coverageSeen(int count) =>
+      count == 1 ? 'Seen once' : 'Seen $count times';
 }
