@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutwire/flutwire.dart';
 import 'package:flutwire/src/platform/native.dart';
+import 'package:flutwire/src/resend.dart';
 import 'package:flutwire/src/session.dart';
 import 'package:flutwire/src/share.dart';
 
@@ -70,6 +71,27 @@ class FakeSession implements FlutwireSession {
   final ValueNotifier<List<FlutwireCoverageNote>> coverage = ValueNotifier(
     const [],
   );
+
+  /// Whether the screens may offer to send a call again.
+  @override
+  bool canResend = true;
+
+  /// What the screens asked to send again, oldest first.
+  final List<FlutwireResend> resent = [];
+
+  /// The id `resend` answers with, as if that call had been recorded.
+  int? resendAnswer;
+
+  /// What `resend` does besides remembering the request. A test makes it throw
+  /// to see what the screen does when sending fails.
+  Future<void> Function(FlutwireResend request)? onResend;
+
+  @override
+  Future<int?> resend(FlutwireResend request) async {
+    resent.add(request);
+    await onResend?.call(request);
+    return resendAnswer;
+  }
 
   /// How many times the screens asked to open the inspector.
   int inspectorOpened = 0;
