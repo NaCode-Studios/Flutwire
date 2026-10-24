@@ -8,6 +8,11 @@
 
 Flutwire records the HTTP calls an app makes, keeps them on the device and lists the latest ones in the notification shade. Tapping it opens the inspector, and each call opens in full: URL, timings, headers, cookies, and the request and response bodies as a JSON tree, indented text, form fields, an image or a hex dump.
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/NaCode-Studios/Flutwire/main/docs/media/flutwire-demo.gif" alt="The notification in the shade lists the latest calls, and tapping it opens the inspector, where a call opens as a JSON tree" width="300"><br>
+  <sub><a href="https://raw.githubusercontent.com/NaCode-Studios/Flutwire/main/docs/media/flutwire-demo.mp4">Watch the whole tour</a>, 40 seconds on an Android emulator.</sub>
+</p>
+
 ## Getting started
 
 ```bash
@@ -22,6 +27,13 @@ Future<void> main() async {
 ```
 
 That is the whole integration. From then on every call that goes through `dart:io` is recorded, including the ones made by packages you did not write: `package:http`, Dio's default adapter, Chopper, `Image.network`. In a release build `init` does nothing and nothing is recorded.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/NaCode-Studios/Flutwire/main/docs/media/flutwire-tour-light.png">
+    <img src="https://raw.githubusercontent.com/NaCode-Studios/Flutwire/main/docs/media/flutwire-tour-dark.png" alt="The notification in the shade, the list of calls, a JSON body as a tree and the search across headers and bodies" width="100%">
+  </picture>
+</p>
 
 ## Opening the inspector
 

@@ -15,6 +15,11 @@ When an app misbehaves on a phone, the call that explains it is usually out of r
 
 Flutwire records the calls an app makes, keeps them on the device and lists the latest ones in the notification shade. Tapping it opens the inspector, and each call opens in full: URL, timings, headers, cookies, and the request and response bodies as a JSON tree, indented text, form fields, an image or a hex dump. A debug build needs one line in `main`; a release build records nothing.
 
+<p align="center">
+  <img src="docs/media/flutwire-demo.gif" alt="The notification in the shade lists the latest calls, and tapping it opens the inspector, where a call opens as a JSON tree" width="300"><br>
+  <sub><a href="docs/media/flutwire-demo.mp4">Watch the whole tour</a>, 40 seconds on an Android emulator.</sub>
+</p>
+
 ```bash
 flutter pub add flutwire
 ```
@@ -34,6 +39,13 @@ final client = FlutwireClient(http.Client());     // flutwire_http, for the web
 FlutwireCloudFunctions.install();                 // flutwire_cloud_functions, after Firebase.initializeApp
 MaterialApp(builder: Flutwire.builder);           // a button where there is no notification
 ```
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="docs/media/flutwire-tour-light.png">
+    <img src="docs/media/flutwire-tour-dark.png" alt="The notification in the shade, the list of calls, a JSON body as a tree and the search across headers and bodies" width="100%">
+  </picture>
+</p>
 
 This is what the notification lists, and what a call becomes when it is shared as a command:
 
@@ -67,6 +79,13 @@ In a release build `Flutwire.init` does nothing: no call is recorded, no file is
 **It sees what `dart:io` cannot.** Firebase callable functions travel through the native SDK, so no HTTP-level capture sees them. `flutwire_cloud_functions` sits on the Dart side of the `cloud_functions` plugin and records each callable, by name or by URL, with its payload, its result or error code and how long it took. The app's code does not change.
 
 ## Architecture
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="docs/media/flutwire-flow-light.png">
+    <img src="docs/media/flutwire-flow-dark.png" alt="A call travels from the app through capture, redaction and storage to the notification and the inspector" width="100%">
+  </picture>
+</p>
 
 ```text
 Flutwire
