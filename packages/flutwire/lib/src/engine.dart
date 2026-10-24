@@ -68,15 +68,22 @@ final class FlutwireEngine implements FlutwireRecorderHost {
 
   /// Starts recording a call, or returns null when it should not be recorded:
   /// recording is off or paused, or an ignore rule matches.
+  ///
+  /// A call that repeats the call with the id [resentFrom] is recorded
+  /// whatever the pause and the ignore rules say, because somebody asked for it
+  /// and is waiting to read the answer.
   FlutwireCallRecorder? begin({
     required String method,
     required Uri uri,
     required FlutwireSource source,
     FlutwireHeaders requestHeaders = FlutwireHeaders.empty,
+    int? resentFrom,
   }) {
     try {
       final upper = method.toUpperCase();
-      if (!_shouldRecord(upper, uri)) return null;
+      if (resentFrom == null ? !_shouldRecord(upper, uri) : !config.isActive) {
+        return null;
+      }
       final redaction = config.redaction;
       final call = FlutwireCall(
         id: _nextId(),
@@ -88,6 +95,7 @@ final class FlutwireEngine implements FlutwireRecorderHost {
           headers: redaction.applyToHeaders(requestHeaders),
           body: FlutwireBody.empty(),
         ),
+        resentFrom: resentFrom,
       );
       if (source == FlutwireSource.io) _noteIoCall(call);
       return FlutwireCallRecorder(this, call);
