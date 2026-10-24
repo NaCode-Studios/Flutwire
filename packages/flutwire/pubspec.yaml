@@ -28,10 +28,14 @@ screenshots:
     path: screenshots/search.png
   - description: Credentials are masked when a call is recorded, so they never reach the disk.
     path: screenshots/headers.png
-  - description: XML, HTML and text are colour-coded, and forms, images and bytes have their own views.
-    path: screenshots/body-xml.png
-  - description: The light look.
-    path: screenshots/list-light.png
+  - description: Two calls side by side, with each difference marked where it happens.
+    path: screenshots/compare.png
+  - description: Error rate, percentiles and the slowest calls, with a timeline.
+    path: screenshots/statistics.png
+  - description: The inspector docked under the app, with a request held at a breakpoint.
+    path: screenshots/dock.png
+  - description: Mocks and breakpoints. A line says what is in force and every call a rule touched is marked.
+    path: screenshots/rules.png
   - description: The same notification on iOS, on the lock screen.
     path: screenshots/lock-screen-ios.jpg
 

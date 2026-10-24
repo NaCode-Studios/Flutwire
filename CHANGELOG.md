@@ -9,6 +9,10 @@ board can be cross-checked against what actually shipped.
 
 ## [Unreleased]
 
+### Added
+
+- A second tour in the README, with a 74 second video, and four more screenshots on the pub.dev page of `flutwire`, for what 0.2.0 added: two calls compared, the statistics, the dock, and the mocks and breakpoints with the marks they leave on the list. The page now shows ten screenshots, with the light list and the XML body making room (M37)
+
 ## [0.2.0] - 2026-10-24
 
 ### Added

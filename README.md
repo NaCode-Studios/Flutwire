@@ -47,6 +47,16 @@ MaterialApp(builder: Flutwire.builder);           // a button where there is no 
   </picture>
 </p>
 
+The inspector also sets two calls side by side, adds up the numbers of a history and sits in a panel beside the app. With interception turned on, a rule answers a request with a mock or holds it at a breakpoint.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="docs/media/flutwire-beyond-light.png">
+    <img src="docs/media/flutwire-beyond-dark.png" alt="Two calls side by side with each difference marked, the error rate and the slowest calls, the inspector docked under the app with a request held at a breakpoint, and a list where mocks and breakpoints mark the calls they touched" width="100%">
+  </picture><br>
+  <sub><a href="docs/media/flutwire-beyond.mp4">Watch it work</a>, 74 seconds on an Android emulator.</sub>
+</p>
+
 This is what the notification lists, and what a call becomes when it is shared as a command:
 
 ```text

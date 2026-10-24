@@ -35,6 +35,16 @@ That is the whole integration. From then on every call that goes through `dart:i
   </picture>
 </p>
 
+The inspector also sets two calls side by side, adds up the numbers of a history and sits in a panel beside the app. With interception turned on, a rule answers a request with a mock or holds it at a breakpoint.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/NaCode-Studios/Flutwire/main/docs/media/flutwire-beyond-light.png">
+    <img src="https://raw.githubusercontent.com/NaCode-Studios/Flutwire/main/docs/media/flutwire-beyond-dark.png" alt="Two calls side by side with each difference marked, the error rate and the slowest calls, the inspector docked under the app with a request held at a breakpoint, and a list where mocks and breakpoints mark the calls they touched" width="100%">
+  </picture><br>
+  <sub><a href="https://github.com/NaCode-Studios/Flutwire/blob/main/docs/media/flutwire-beyond.mp4">Watch it work</a>, 74 seconds on an Android emulator.</sub>
+</p>
+
 ## Opening the inspector
 
 On Android, iOS and macOS the notification opens it. On Android 13 and later Flutwire asks for the notification permission the first time there is something to show. If the user declines, `Flutwire.open()` and the "Open Flutwire" shortcut on the app icon still work.
