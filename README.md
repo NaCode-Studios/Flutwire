@@ -16,7 +16,7 @@ When an app misbehaves on a phone, the call that explains it is usually out of r
 Flutwire records the calls an app makes, keeps them on the device and lists the latest ones in the notification shade. Tapping it opens the inspector, and each call opens in full: URL, timings, headers, cookies, and the request and response bodies as a JSON tree, indented text, form fields, an image or a hex dump. A debug build needs one line in `main`; a release build records nothing.
 
 <p align="center">
-  <img src="docs/media/flutwire-demo.gif" alt="The notification in the shade lists the latest calls, and tapping it opens the inspector, where a call opens as a JSON tree" width="300"><br>
+  <a href="docs/media/flutwire-demo.mp4"><img src="docs/media/flutwire-demo.gif" alt="The notification in the shade lists the latest calls, and tapping it opens the inspector, where a call opens as a JSON tree" width="300"></a><br>
   <sub><a href="docs/media/flutwire-demo.mp4">Watch the whole tour</a>, 40 seconds on an Android emulator.</sub>
 </p>
 
