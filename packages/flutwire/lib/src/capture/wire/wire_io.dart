@@ -5,7 +5,9 @@ import 'dart:io';
 import '../../engine.dart';
 import '../../model/call.dart';
 import '../../model/headers.dart';
+import '../messages/websocket_reader.dart';
 import '../recorder.dart';
+import 'wire_socket.dart';
 
 /// Records every call made through `dart:io`, with no setup in the client.
 ///
@@ -200,7 +202,9 @@ final class FlutwireHttpClient implements HttpClient {
     if (recorder == null) return request;
     _open.add(recorder);
     unawaited(recorder.done.then((_) => _open.remove(recorder)));
-    return _WireRequest(request, recorder);
+    // A WebSocket outlives the client that opened it, which an app closes once
+    // the handshake is over.
+    return _WireRequest(request, recorder, () => _open.remove(recorder));
   }
 
   @override
@@ -270,10 +274,11 @@ final class FlutwireHttpClient implements HttpClient {
 }
 
 class _WireRequest implements HttpClientRequest {
-  _WireRequest(this._inner, this._recorder);
+  _WireRequest(this._inner, this._recorder, this._onDetached);
 
   final HttpClientRequest _inner;
   final FlutwireCallRecorder _recorder;
+  final void Function() _onDetached;
   Future<HttpClientResponse>? _closing;
   HttpClientResponse? _wrapped;
 
@@ -316,7 +321,7 @@ class _WireRequest implements HttpClientRequest {
   Future<HttpClientResponse> get done => _inner.done.then(_wrap);
 
   HttpClientResponse _wrap(HttpClientResponse response) =>
-      _wrapped ??= _WireResponse(response, _recorder);
+      _wrapped ??= _WireResponse(response, _recorder, _onDetached);
 
   @override
   void abort([Object? exception, StackTrace? stackTrace]) {
@@ -386,7 +391,7 @@ class _WireRequest implements HttpClientRequest {
 }
 
 class _WireResponse extends Stream<List<int>> implements HttpClientResponse {
-  _WireResponse(this._inner, this._recorder) {
+  _WireResponse(this._inner, this._recorder, this._onDetached) {
     _recorder.responseHead(
       statusCode: _inner.statusCode,
       reasonPhrase: _inner.reasonPhrase,
@@ -412,6 +417,7 @@ class _WireResponse extends Stream<List<int>> implements HttpClientResponse {
 
   final HttpClientResponse _inner;
   final FlutwireCallRecorder _recorder;
+  final void Function() _onDetached;
 
   /// The body as the app reads it: the same bytes, recorded on the way past.
   late final Stream<List<int>> _observed = _recorder.observeResponse(_inner);
@@ -440,13 +446,39 @@ class _WireResponse extends Stream<List<int>> implements HttpClientResponse {
   @override
   int get statusCode => _inner.statusCode;
 
-  /// A protocol switch, such as a WebSocket upgrade, hands the socket away. The
-  /// call is over as far as HTTP is concerned; the frames are not recorded.
+  /// A WebSocket upgrade hands the socket away. The call stays open and lists
+  /// the messages that cross the socket until it is closed. Any other protocol
+  /// switch is over as far as HTTP is concerned, and its bytes are not read.
   @override
-  Future<Socket> detachSocket() {
-    _recorder.complete();
-    return _inner.detachSocket();
+  Future<Socket> detachSocket() async {
+    if (!_isWebSocket) {
+      _recorder.complete();
+      return _inner.detachSocket();
+    }
+    // The app owns the socket from here and closes it.
+    // ignore: close_sinks
+    final Socket socket;
+    try {
+      socket = await _inner.detachSocket();
+    } catch (error, stack) {
+      _recorder.fail(error, stack);
+      rethrow;
+    }
+    _onDetached();
+    return WireSocket(
+      socket,
+      _recorder,
+      deflate: WebSocketDeflate.parse(
+        _inner.headers['sec-websocket-extensions']?.join(','),
+      ),
+    );
   }
+
+  bool get _isWebSocket =>
+      _inner.statusCode == HttpStatus.switchingProtocols &&
+      (_inner.headers[HttpHeaders.upgradeHeader] ?? const <String>[]).any(
+        (value) => value.toLowerCase() == 'websocket',
+      );
 
   @override
   Future<HttpClientResponse> redirect([

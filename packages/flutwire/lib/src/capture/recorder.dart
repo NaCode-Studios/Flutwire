@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show internal;
@@ -7,7 +8,10 @@ import '../config.dart';
 import '../model/body.dart';
 import '../model/call.dart';
 import '../model/headers.dart';
+import '../model/message.dart';
 import 'graphql.dart';
+import 'messages/message_log.dart';
+import 'messages/sse_parser.dart';
 
 /// What a recorder needs from the engine that created it.
 abstract interface class FlutwireRecorderHost {
@@ -57,6 +61,11 @@ final class FlutwireCallRecorder {
   String? _contentType;
   DateTime? _lastProgress;
   int _publishedResponseBytes = -1;
+  final MessageLog _messages = MessageLog();
+  FlutwireConversationKind? _conversation;
+  DateTime? _lastMessagePublish;
+  Timer? _messageTimer;
+  SseParser? _sse;
 
   /// The latest published snapshot.
   FlutwireCall get snapshot => _call;
@@ -105,6 +114,10 @@ final class FlutwireCallRecorder {
   }) => _guard(() {
     if (_finished) return;
     _finishRequest();
+    _sse =
+        (headers.contentType ?? '').toLowerCase().contains('text/event-stream')
+        ? SseParser(_onEvent, maxChars: _host.config.maxBodyBytes)
+        : null;
     final redacted = _host.config.redaction.applyToHeaders(headers);
     _call = _call.copyWith(
       firstByteAt: _host.now(),
@@ -131,11 +144,66 @@ final class FlutwireCallRecorder {
   void responseBody(List<int> chunk) => _guard(() {
     if (_finished) return;
     _res.add(chunk);
+    _sse?.add(chunk);
     final now = _host.now();
     final last = _lastProgress;
     if (last != null && now.difference(last) < _progressInterval) return;
     _lastProgress = now;
     _publishProgress();
+  });
+
+  /// Says that the call carries a conversation from now on, which a WebSocket
+  /// does after its handshake. The call then has a list of messages, empty
+  /// until the first one arrives. Reporting a message does the same.
+  void startConversation(FlutwireConversationKind kind) => _guard(() {
+    if (_finished || _conversation != null) return;
+    _conversation = kind;
+    if (kind == FlutwireConversationKind.webSocket) {
+      _call = _call.copyWith(uri: _webSocketAddress(_call.uri));
+    }
+    _publishMessages(force: true);
+  });
+
+  /// Adds a message to the conversation: a WebSocket message or frame, or a
+  /// server-sent event. [sent] is true for what the app sent.
+  ///
+  /// Only the first `maxBodyBytes` of [payload] are kept, and [totalBytes] is
+  /// the size of the whole, which defaults to the length of [payload]. Only the
+  /// latest messages are kept, to bound what a conversation that runs for hours
+  /// can hold; the count of all of them is kept.
+  void message({
+    required bool sent,
+    required FlutwireMessageKind kind,
+    required List<int> payload,
+    int? totalBytes,
+    String? event,
+    String? eventId,
+    bool undecoded = false,
+  }) => _guard(() {
+    if (_finished) return;
+    _conversation ??= kind == FlutwireMessageKind.event
+        ? FlutwireConversationKind.eventStream
+        : FlutwireConversationKind.webSocket;
+    final cap = _host.config.maxBodyBytes;
+    var bytes = payload is Uint8List ? payload : Uint8List.fromList(payload);
+    if (bytes.length > cap) bytes = Uint8List.fromList(bytes.sublist(0, cap));
+    if (kind == FlutwireMessageKind.text || kind == FlutwireMessageKind.event) {
+      bytes = _host.config.redaction.applyToBody(bytes, contentType: null);
+    }
+    _messages.add(
+      FlutwireMessage(
+        index: _messages.total,
+        sent: sent,
+        at: _host.now(),
+        kind: kind,
+        bytes: bytes,
+        totalBytes: totalBytes ?? payload.length,
+        event: event,
+        eventId: eventId,
+        undecoded: undecoded,
+      ),
+    );
+    _publishMessages(force: false);
   });
 
   /// Passes [source], the bytes of the request body, through unchanged while
@@ -201,16 +269,69 @@ final class FlutwireCallRecorder {
 
   static const Duration _progressInterval = Duration(milliseconds: 200);
 
+  /// The address of a WebSocket as the app wrote it. The handshake is an HTTP
+  /// request, so the capture is handed an `http` or `https` address, with a
+  /// port of 0 when the app gave none and an empty fragment.
+  static Uri _webSocketAddress(Uri handshake) => Uri(
+    scheme: switch (handshake.scheme) {
+      'https' => 'wss',
+      'http' => 'ws',
+      final other => other,
+    },
+    userInfo: handshake.userInfo.isEmpty ? null : handshake.userInfo,
+    host: handshake.host,
+    port: handshake.hasPort && handshake.port != 0 ? handshake.port : null,
+    path: handshake.path.isEmpty ? '/' : handshake.path,
+    query: handshake.query.isEmpty ? null : handshake.query,
+    fragment: handshake.fragment.isEmpty ? null : handshake.fragment,
+  );
+
+  void _onEvent(SseEvent event) => message(
+    sent: false,
+    kind: FlutwireMessageKind.event,
+    payload: Uint8List.fromList(utf8.encode(event.data)),
+    totalBytes: event.totalBytes,
+    event: event.event,
+    eventId: event.id,
+  );
+
+  /// Puts the messages in a new snapshot. Messages come in bursts, so this
+  /// publishes at most every [_progressInterval] and leaves the rest to a timer
+  /// that fires once the burst is over.
+  void _publishMessages({required bool force}) {
+    final kind = _conversation;
+    if (kind == null) return;
+    final now = _host.now();
+    final last = _lastMessagePublish;
+    if (!force && last != null && now.difference(last) < _progressInterval) {
+      _messageTimer ??= Timer(_progressInterval, () {
+        _messageTimer = null;
+        _guard(() => _publishMessages(force: true));
+      });
+      return;
+    }
+    _messageTimer?.cancel();
+    _messageTimer = null;
+    _lastMessagePublish = now;
+    _call = _call.copyWith(messages: _messages.snapshot(kind));
+    _publish(finished: false);
+  }
+
   void _end(FlutwireCallState state, {FlutwireError? error}) => _guard(() {
     if (_finished) return;
     _finishRequest();
     _finished = true;
+    _messageTimer?.cancel();
+    _messageTimer = null;
+    _sse?.close();
     final res = _call.response;
+    final conversation = _conversation;
     _call = _call.copyWith(
       state: state,
       endedAt: _host.now(),
       error: error,
       response: res?.copyWith(body: _responseBody(res.headers.contentType)),
+      messages: conversation == null ? null : _messages.snapshot(conversation),
     );
     _publish(finished: true);
     _done.complete();
