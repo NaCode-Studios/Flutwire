@@ -45,6 +45,12 @@ Future<void> handle(HttpRequest req) async {
     } else if (path.startsWith('/status/')) {
       req.response.statusCode = int.parse(path.substring(8));
       req.response.write('nope');
+    } else if (path == '/not-modified') {
+      req.response.statusCode = HttpStatus.notModified;
+    } else if (path == '/no-content') {
+      req.response.statusCode = HttpStatus.noContent;
+    } else if (path == '/empty') {
+      req.response.contentLength = 0;
     } else if (path == '/big') {
       for (var i = 0; i < 100; i++) {
         req.response.add(List.filled(4096, 65));
@@ -317,6 +323,70 @@ void main() {
     client.close(force: true);
     final call = (await settled()).single;
     expect(call.state, FlutwireCallState.cancelled);
+  });
+
+  // The app often never reads these: it looks at the status of a conditional
+  // request and goes on, so nothing listens to the stream, and a call that
+  // ended with its stream would stay open for as long as the app runs.
+  group('an answer with no body', () {
+    for (final (name, path, status) in [
+      ('a 304', '/not-modified', 304),
+      ('a 204', '/no-content', 204),
+      ('a 200 that says it is empty', '/empty', 200),
+    ]) {
+      test('$name that the app never reads is a completed call', () async {
+        start();
+        final client = HttpClient();
+        final request = await client.getUrl(Uri.parse('$base$path'));
+        final response = await request.close();
+        expect(response.statusCode, status);
+
+        final call = (await settled()).single;
+        client.close();
+        expect(call.state, FlutwireCallState.completed);
+        expect(call.statusCode, status);
+        expect(call.endedAt, isNotNull);
+        expect(call.response!.body.totalBytes, 0);
+      });
+    }
+
+    test('the answer to a HEAD request is a completed call', () async {
+      start();
+      final client = HttpClient();
+      final request = await client.headUrl(Uri.parse('$base/json'));
+      final response = await request.close();
+      expect(response.statusCode, 200);
+
+      final call = (await settled()).single;
+      client.close();
+      expect(call.method, 'HEAD');
+      expect(call.state, FlutwireCallState.completed);
+    });
+
+    test('package:http records a 304 whose stream is never read', () async {
+      start();
+      final client = http.Client();
+      final response = await client.send(
+        http.Request('GET', Uri.parse('$base/not-modified')),
+      );
+      expect(response.statusCode, 304);
+
+      final call = (await settled()).single;
+      client.close();
+      expect(call.state, FlutwireCallState.completed);
+      expect(call.statusCode, 304);
+    });
+
+    test('a body that has not been read yet keeps the call open', () async {
+      start();
+      final client = HttpClient();
+      final request = await client.getUrl(Uri.parse('$base/big'));
+      await request.close();
+
+      final call = (await settled()).single;
+      client.close(force: true);
+      expect(call.state, FlutwireCallState.pending);
+    });
   });
 }
 

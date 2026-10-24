@@ -132,6 +132,118 @@ void main() {
     });
   });
 
+  // A client reads the body of such a response only when it feels like it, and
+  // for most of them it never does. Waiting for a reader would leave the call
+  // running for as long as the app does.
+  group('a response that has no body', () {
+    FlutwireCall answer(
+      int status, {
+      String method = 'GET',
+      Map<String, String> headers = const {},
+    }) {
+      final t = make();
+      final rec = t.engine.begin(
+        method: method,
+        uri: Uri.parse('https://x.test/'),
+        source: FlutwireSource.io,
+      )!;
+      rec.responseHead(
+        statusCode: status,
+        headers: FlutwireHeaders.fromMap(headers),
+      );
+      return t.store.find(rec.id)!;
+    }
+
+    test('ends the call at its head when it is a 304 or a 204', () {
+      for (final status in [204, 304]) {
+        final call = answer(status);
+        expect(call.state, FlutwireCallState.completed, reason: '$status');
+        expect(call.statusCode, status);
+        expect(call.endedAt, isNotNull);
+        expect(call.response!.body.totalBytes, 0);
+      }
+    });
+
+    test('ends the call at its head when it answers a HEAD request', () {
+      expect(answer(200, method: 'HEAD').state, FlutwireCallState.completed);
+    });
+
+    test('ends the call at its head when it says it is empty', () {
+      final call = answer(201, headers: {'Content-Length': ' 0 '});
+      expect(call.state, FlutwireCallState.completed);
+    });
+
+    test('leaves the call open when a body may follow', () {
+      expect(answer(200).state, FlutwireCallState.pending);
+      expect(
+        answer(200, headers: {'content-length': '12'}).state,
+        FlutwireCallState.pending,
+      );
+      // The bytes of the protocol it switches to follow a 101, whatever else
+      // it says about its length.
+      expect(
+        answer(101, headers: {'upgrade': 'websocket'}).state,
+        FlutwireCallState.pending,
+      );
+      expect(
+        answer(
+          101,
+          headers: {'upgrade': 'websocket', 'content-length': '0'},
+        ).state,
+        FlutwireCallState.pending,
+      );
+    });
+
+    test('leaves a redirect open, because the client may follow it', () {
+      expect(answer(301, method: 'HEAD').state, FlutwireCallState.pending);
+
+      final t = make();
+      final rec = t.engine.begin(
+        method: 'GET',
+        uri: Uri.parse('https://x.test/'),
+        source: FlutwireSource.io,
+      )!;
+      rec.responseHead(
+        statusCode: 302,
+        headers: FlutwireHeaders.fromMap({
+          'content-length': '0',
+          'location': '/next',
+        }),
+      );
+      expect(t.store.find(rec.id)!.state, FlutwireCallState.pending);
+
+      rec
+        ..responseHead(
+          statusCode: 200,
+          headers: FlutwireHeaders.fromMap({'content-type': 'text/plain'}),
+        )
+        ..responseBody(utf('hello'))
+        ..complete();
+      final call = t.store.find(rec.id)!;
+      expect(call.statusCode, 200);
+      expect(call.response!.body.text, 'hello');
+    });
+
+    test('ignores the reports that come after the end', () {
+      final t = make();
+      final rec = t.engine.begin(
+        method: 'GET',
+        uri: Uri.parse('https://x.test/'),
+        source: FlutwireSource.io,
+      )!;
+      rec.responseHead(statusCode: 304, headers: FlutwireHeaders.empty);
+      final ended = t.store.find(rec.id)!.endedAt;
+      t.clock.advance(const Duration(seconds: 5));
+      rec
+        ..responseBody(utf('late'))
+        ..cancel();
+      final call = t.store.find(rec.id)!;
+      expect(call.state, FlutwireCallState.completed);
+      expect(call.endedAt, ended);
+      expect(call.response!.body.totalBytes, 0);
+    });
+  });
+
   test('a response is hidden by the redaction policy, body included', () {
     final t = make(
       const FlutwireConfig(
