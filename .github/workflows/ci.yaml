@@ -142,6 +142,20 @@ jobs:
       - run: flutter build apk --debug
         working-directory: packages/flutwire/example
 
+  # The web has no dart:io, so it is where the adapters do the recording and
+  # where the example is compiled by a different compiler than anywhere else.
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter build web
+        working-directory: packages/flutwire/example
+
   # The Swift halves can only be compiled on a Mac.
   apple:
     runs-on: macos-latest
