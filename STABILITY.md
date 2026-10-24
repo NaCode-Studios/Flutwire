@@ -34,7 +34,9 @@ Some promises are about behaviour and not about names. Recording does not change
 
 ### What is written to disk and to a file
 
-The history on disk has a layout, a number kept in a file called `layout` in its folder, and it is `1`. A folder with no such file is a new one, or one that 0.1.0 or 0.2.0 wrote, which has layout `1` as well. A release reads every layout up to its own. It does not change the layout in a minor or a patch: a field may be added to a summary, because a reader ignores what it does not know, and a field that a reader needs is not removed. A release that finds a layout newer than its own leaves the folder exactly as it is and keeps the history in memory, so going back to an older release never costs the history of a newer one. A new layout comes only with a major release, which reads the layout of the one before it.
+The history on disk has a layout, a number kept in a file called `layout` in its folder, and it is `1`. A folder with no such file is a new one, or one that 0.1.0 or 0.2.0 wrote, which has layout `1` as well.
+
+A release reads every layout up to its own. A minor or a patch does not change the layout: a field may be added to a summary, because a reader ignores what it does not know, and a field that a reader needs is not removed. A new layout comes only with a major release, which reads the layout of the one before it. A release that finds a layout newer than its own leaves the folder exactly as it is and keeps the history in memory, so going back to an older release never costs the history of a newer one.
 
 The Flutwire JSON export carries `"flutwire": 1` at its top. A field may be added to it in a minor release, and none is removed or renamed before the next major, which is also the only release that changes that number. The HAR export follows HAR 1.2.
 
