@@ -2,7 +2,7 @@ name: flutwire
 description: >-
   Network inspector for Flutter. Records the HTTP calls your app makes, keeps
   them across restarts, and opens them from a notification in the shade.
-version: 0.1.0
+version: 0.2.0
 repository: https://github.com/NaCode-Studios/Flutwire
 issue_tracker: https://github.com/NaCode-Studios/Flutwire/issues
 funding:
