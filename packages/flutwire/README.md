@@ -109,7 +109,7 @@ await Flutwire.init(config: const FlutwireConfig(interception: true));
 
 A rule matches the address of a request, with `*` for any run of characters, as in `api.example.com/items/*`, and can be limited to one method. The newest rule that is switched on and matches decides what happens. "Mocks and breakpoints" in the menu of the inspector lists the rules and switches them on and off, and they are kept for the next run for as long as the history is.
 
-A mock answers the request with a stored response and sends nothing. Open a call and choose "Mock this response" to start from what the server said, then change the status, the header fields or the body, or add a delay to make the server seem slow.
+A mock answers the request with a stored response and sends nothing. Open a call and choose "Mock this response" to start from what the server said, then change the status, the header fields or the body, or add a delay to make the server seem slow. A value the redaction masked was never kept, so a mock made from a call serves the placeholder in its place.
 
 A breakpoint holds a request before it leaves, while the app waits for the answer, and opens it in the editor used for sending a call again. Send it on as it is or with changes, or stop it, and the app gets an error. A request that went out changed is recorded as a call that repeats the one the app made, and the first call ends as held. Switching a breakpoint off or deleting it sends on what it holds, as it was. Nothing has been recorded when the request is held, so the editor shows its real header fields, authorization included; the call that is recorded afterwards is masked as usual.
 
