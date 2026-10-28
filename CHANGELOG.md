@@ -9,6 +9,8 @@ board can be cross-checked against what actually shipped.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-28
+
 ### Fixed
 
 - A call whose answer has no body stayed pending, with a duration that kept growing, when the app never read the answer, as it does not after looking at the status of a conditional request. The call now ends when the head arrives, for the answer to a HEAD request, a 204, a 304 and an answer that says it is empty. A redirect still waits, because the client may follow it
@@ -106,7 +108,8 @@ board can be cross-checked against what actually shipped.
 - The screens of the inspector work on an injected session instead of reading a global, which lets them be tested against a fake (M33)
 - Analysis rules for open subscriptions and sinks, dropped futures, catch clauses that name no type, positional booleans and dynamic calls (M33)
 
-[Unreleased]: https://github.com/NaCode-Studios/Flutwire/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/NaCode-Studios/Flutwire/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/NaCode-Studios/Flutwire/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/NaCode-Studios/Flutwire/compare/v0.2.0...v1.0.0
 [0.2.0]: https://github.com/NaCode-Studios/Flutwire/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/NaCode-Studios/Flutwire/releases/tag/v0.1.0

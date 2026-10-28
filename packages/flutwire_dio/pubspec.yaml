@@ -2,7 +2,7 @@ name: flutwire_dio
 description: >-
   A Dio interceptor for Flutwire. It records the calls that the dart:io capture
   cannot see, such as every call on the web.
-version: 1.0.0
+version: 1.0.1
 repository: https://github.com/NaCode-Studios/Flutwire
 issue_tracker: https://github.com/NaCode-Studios/Flutwire/issues
 funding:
@@ -24,7 +24,7 @@ dependencies:
   dio: ^5.2.0
   flutter:
     sdk: flutter
-  flutwire: ^1.0.0
+  flutwire: ^1.0.1
 
 dev_dependencies:
   flutter_lints: ^6.0.0

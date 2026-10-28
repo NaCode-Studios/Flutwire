@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1
+
+A call whose answer has no body, such as a 304, a 204 or the answer to a HEAD request, ends when its head arrives instead of staying pending, and the pulse of the inspector beats a few times and rests instead of running for as long as it is on screen. The [repository changelog](https://github.com/NaCode-Studios/Flutwire/blob/main/CHANGELOG.md#101---2026-10-28) has the detail.
+
 ## 1.0.0
 
 The first stable release. The public API follows [Semantic Versioning](https://github.com/NaCode-Studios/Flutwire/blob/main/STABILITY.md), every export names what it makes public, and the history kept on disk records its layout, so that a release that does not know a layout leaves it alone. A Protobuf enum with a negative value shows by name, and a float shows its shortest digits. The [repository changelog](https://github.com/NaCode-Studios/Flutwire/blob/main/CHANGELOG.md#100---2026-10-24) lists what it contains, and what was removed or closed to implementing.
