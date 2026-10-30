@@ -161,6 +161,16 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
+      # The notification delegates meet only on a device, which CI does not
+      # have, and a mistake in how the plugin passes a call on to them is a
+      # crash loop in an app that has a second delegate. This compiles the
+      # chain that keeps them next to a model of the three that met, and runs it.
+      - name: Run the model of the notification delegates
+        run: |
+          xcrun swiftc -swift-version 5 -o "$RUNNER_TEMP/delegate-chain" \
+            packages/flutwire/darwin/flutwire/Sources/flutwire/DelegateChain.swift \
+            packages/flutwire/darwin/flutwire/Tests/DelegateChain/main.swift
+          "$RUNNER_TEMP/delegate-chain"
       - uses: subosito/flutter-action@v2
         with:
           channel: stable

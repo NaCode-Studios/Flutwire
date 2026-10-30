@@ -15,8 +15,8 @@ import UserNotifications
 ///
 /// The app may already have a notification delegate, for push or for its own
 /// local notifications. Flutwire takes the delegate over and passes everything
-/// that is not its own notification on to the one it replaced, so neither side
-/// notices the other.
+/// that is not its own notification on to the delegates it replaced, so neither
+/// side notices the other.
 ///
 /// It does that only once Flutwire has run in the build. The plugin is part of
 /// every build of an app that depends on Flutwire, including the ones that
@@ -37,7 +37,7 @@ public final class FlutwirePlugin: NSObject, FlutterPlugin, UNUserNotificationCe
     private static var shared: FlutwirePlugin?
 
     private let channel: FlutterMethodChannel
-    private weak var previousDelegate: UNUserNotificationCenterDelegate?
+    private let previousDelegates = DelegateChain<UNUserNotificationCenterDelegate>()
     private var dartIsListening = false
     private var launchAction: String?
 
@@ -129,10 +129,16 @@ public final class FlutwirePlugin: NSObject, FlutterPlugin, UNUserNotificationCe
     /// It runs at registration, when Flutwire has run in this build before, and
     /// again when Dart starts, because an app may set its own delegate after
     /// plugins register.
+    ///
+    /// Both runs keep what they replace. Another plugin can take the delegate
+    /// from Flutwire in between and keep Flutwire to pass calls on to, so the
+    /// second run replaces that plugin and has to pass calls on to it as well.
     private func adoptNotificationCenter() {
         let center = UNUserNotificationCenter.current()
         guard center.delegate !== self else { return }
-        previousDelegate = center.delegate
+        if let current = center.delegate {
+            previousDelegates.remember(current)
+        }
         center.delegate = self
     }
 
@@ -201,10 +207,12 @@ public final class FlutwirePlugin: NSObject, FlutterPlugin, UNUserNotificationCe
             completionHandler([.list])
             return
         }
-        if let previous = previousDelegate,
-           previous.responds(to: #selector(UNUserNotificationCenterDelegate.userNotificationCenter(_:willPresent:withCompletionHandler:))) {
+        let passedOn = previousDelegates.forward(
+            #selector(UNUserNotificationCenterDelegate.userNotificationCenter(_:willPresent:withCompletionHandler:))
+        ) { previous in
             previous.userNotificationCenter?(center, willPresent: notification, withCompletionHandler: completionHandler)
-        } else {
+        }
+        if !passedOn {
             completionHandler([])
         }
     }
@@ -215,10 +223,12 @@ public final class FlutwirePlugin: NSObject, FlutterPlugin, UNUserNotificationCe
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         guard response.notification.request.identifier == Self.notificationId else {
-            if let previous = previousDelegate,
-               previous.responds(to: #selector(UNUserNotificationCenterDelegate.userNotificationCenter(_:didReceive:withCompletionHandler:))) {
+            let passedOn = previousDelegates.forward(
+                #selector(UNUserNotificationCenterDelegate.userNotificationCenter(_:didReceive:withCompletionHandler:))
+            ) { previous in
                 previous.userNotificationCenter?(center, didReceive: response, withCompletionHandler: completionHandler)
-            } else {
+            }
+            if !passedOn {
                 completionHandler()
             }
             return
@@ -239,8 +249,9 @@ public final class FlutwirePlugin: NSObject, FlutterPlugin, UNUserNotificationCe
         _ center: UNUserNotificationCenter,
         openSettingsFor notification: UNNotification?
     ) {
-        if let previous = previousDelegate,
-           previous.responds(to: #selector(UNUserNotificationCenterDelegate.userNotificationCenter(_:openSettingsFor:))) {
+        previousDelegates.forward(
+            #selector(UNUserNotificationCenterDelegate.userNotificationCenter(_:openSettingsFor:))
+        ) { previous in
             previous.userNotificationCenter?(center, openSettingsFor: notification)
         }
     }
