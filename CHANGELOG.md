@@ -13,6 +13,10 @@ board can be cross-checked against what actually shipped.
 
 - On iOS and macOS, a notification that was not Flutwire's closed the app when it was tapped, or when it arrived with the app open, if the app also had Firebase Messaging or another plugin that passes calls on to the delegate it replaces. It happened from the second launch of a build, when the plugin takes the notification center at registration and again when Dart starts. In between, Firebase Messaging takes the center and keeps the plugin as the delegate to pass calls on to, so the second time the plugin remembered Firebase Messaging as its previous delegate, and each handed the call back to the other until the stack ran out. The plugin now keeps every delegate it replaces and hands a call to the newest one that the call has not reached yet. A delegate that hands the call back gets the next one down, none gets the same call twice, and the app's own delegate is reached as before
 
+### Internal
+
+- The Apple job in CI compiles the chain that keeps those delegates and runs it against a model of the three delegates that met in the crash, in each order in which they can take the center. It is the first check of the Swift half other than building it
+
 ## [1.0.1] - 2026-10-28
 
 ### Fixed

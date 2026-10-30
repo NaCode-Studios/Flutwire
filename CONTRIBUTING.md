@@ -42,7 +42,7 @@ flutter analyze --fatal-infos
 (cd packages/flutwire_cloud_functions && flutter test)
 ```
 
-The Android and Apple halves are compiled by building the example app: `flutter build apk --debug`, `flutter build ios --simulator --no-codesign` and `flutter build macos --debug`, each from `packages/flutwire/example`. The web has no native half, and `flutter build web` from the same folder is what compiles the example for it.
+The Android and Apple halves are compiled by building the example app: `flutter build apk --debug`, `flutter build ios --simulator --no-codesign` and `flutter build macos --debug`, each from `packages/flutwire/example`. The web has no native half, and `flutter build web` from the same folder is what compiles the example for it. The Apple half also has a model of how it passes notifications on to the delegates it replaced, which needs no device: the first lines of `packages/flutwire/darwin/flutwire/Tests/DelegateChain/main.swift` say how to run it, and CI runs it.
 
 The public API is checked against the latest release on pub.dev, and a breaking change needs a new major version in the pubspec. To see what a change does to it:
 
