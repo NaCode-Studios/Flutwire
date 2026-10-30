@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'flutwire'
-  s.version          = '1.0.1'
+  s.version          = '1.0.2'
   s.summary          = 'Network inspector for Flutter that lives in the notification shade.'
   s.description      = <<-DESC
 Records the HTTP calls a Flutter app makes and opens them from a notification.

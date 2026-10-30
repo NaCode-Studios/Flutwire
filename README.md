@@ -131,6 +131,8 @@ Flutwire
 
 ## Roadmap
 
+**Shipped (`1.0.2`).** A notification that is not Flutwire's no longer closes an app that also has Firebase Messaging on iOS and macOS, because the plugin now keeps every delegate it replaces instead of one. [`CHANGELOG.md`](CHANGELOG.md) has the detail.
+
 **Shipped (`1.0.1`).** A call whose answer has no body now ends when its head arrives, and the pulse of the inspector beats a few times and stops, so that an inspector left open no longer keeps the app drawing. [`CHANGELOG.md`](CHANGELOG.md) has the detail.
 
 **Shipped (`1.0.0`).** A review of the public API, so that every export names what it makes public and the types that were never meant to be implemented are closed to it, a written [stability policy](STABILITY.md) with its deprecation window, a layout number on the history kept on disk, and a Protobuf decoder checked against what `protoc` writes. [`CHANGELOG.md`](CHANGELOG.md) has the detail.
