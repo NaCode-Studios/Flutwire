@@ -9,6 +9,8 @@ board can be cross-checked against what actually shipped.
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-10-30
+
 ### Fixed
 
 - On iOS and macOS, a notification that was not Flutwire's closed the app when it was tapped, or when it arrived with the app open, if the app also had Firebase Messaging or another plugin that passes calls on to the delegate it replaces. It happened from the second launch of a build, when the plugin takes the notification center at registration and again when Dart starts. In between, Firebase Messaging takes the center and keeps the plugin as the delegate to pass calls on to, so the second time the plugin remembered Firebase Messaging as its previous delegate, and each handed the call back to the other until the stack ran out. The plugin now keeps every delegate it replaces and hands a call to the newest one that the call has not reached yet. A delegate that hands the call back gets the next one down, none gets the same call twice, and the app's own delegate is reached as before
@@ -116,7 +118,8 @@ board can be cross-checked against what actually shipped.
 - The screens of the inspector work on an injected session instead of reading a global, which lets them be tested against a fake (M33)
 - Analysis rules for open subscriptions and sinks, dropped futures, catch clauses that name no type, positional booleans and dynamic calls (M33)
 
-[Unreleased]: https://github.com/NaCode-Studios/Flutwire/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/NaCode-Studios/Flutwire/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/NaCode-Studios/Flutwire/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/NaCode-Studios/Flutwire/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/NaCode-Studios/Flutwire/compare/v0.2.0...v1.0.0
 [0.2.0]: https://github.com/NaCode-Studios/Flutwire/compare/v0.1.0...v0.2.0

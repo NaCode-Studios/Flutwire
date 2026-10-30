@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2
+
+On iOS and macOS, a notification that was not Flutwire's no longer closes an app that also has Firebase Messaging, or another plugin that passes calls on to the delegate it replaces. The plugin now keeps every delegate it replaces and hands a call to each of them once, where it remembered one and could pass a call back and forth with the plugin that had replaced it. The [repository changelog](https://github.com/NaCode-Studios/Flutwire/blob/main/CHANGELOG.md#102---2026-10-30) has the detail.
+
 ## 1.0.1
 
 A call whose answer has no body, such as a 304, a 204 or the answer to a HEAD request, ends when its head arrives instead of staying pending, and the pulse of the inspector beats a few times and rests instead of running for as long as it is on screen. The [repository changelog](https://github.com/NaCode-Studios/Flutwire/blob/main/CHANGELOG.md#101---2026-10-28) has the detail.
